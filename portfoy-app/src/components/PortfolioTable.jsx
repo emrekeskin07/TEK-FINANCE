@@ -1,0 +1,392 @@
+import React, { useState } from 'react';
+import { Coins, AlertCircle, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { formatCurrencyParts } from '../utils/helpers';
+import { resolveAssetLivePrice, unitTypeToLabel } from '../utils/assetPricing';
+import { getCategoryBadgeStyle } from '../utils/categoryStyles';
+import { calculateRealReturnPercent, getLatestAnnualInflationRate } from '../utils/financeMath';
+
+const getLatestAnnualEnagRate = () => {
+  try {
+    const result = getLatestAnnualInflationRate({ source: 'enag' });
+    return Number(result?.inflationRatePercent || 0);
+  } catch {
+    return 0;
+  }
+};
+
+const LATEST_ANNUAL_ENAG_RATE = getLatestAnnualEnagRate();
+const OUNCE_TO_GRAM = 31.1035;
+
+const getInflationScore = (itemCost, itemProfit) => {
+  const nominalReturnPercent = itemCost > 0 ? ((itemProfit / itemCost) * 100) : 0;
+  const realReturnPercent = calculateRealReturnPercent(nominalReturnPercent, LATEST_ANNUAL_ENAG_RATE);
+  const isProtected = realReturnPercent >= 0;
+  const tooltip = `Bu varlık enflasyona karşı alım gücünü %${Math.abs(realReturnPercent).toFixed(2)} ${isProtected ? 'korudu' : 'kaybetti'}.`;
+
+  return {
+    isProtected,
+    tooltip,
+  };
+};
+
+export default function PortfolioTable({
+  portfolio,
+  marketData,
+  loading,
+  lastUpdated,
+  baseCurrency,
+  rates,
+  totalValue,
+  selectedBank,
+  selectedCategory,
+  onSelectCategory,
+  sortConfig,
+  setSortConfig,
+  onClearFilter,
+  openEditModal,
+  handleRemoveAsset
+}) {
+  const filteredPortfolio = portfolio.filter((item) => {
+    const bankName = item.bank || 'Banka Belirtilmedi';
+    const categoryName = item.category || 'Diğer';
+    const bankMatch = !selectedBank || bankName === selectedBank;
+    const categoryMatch = !selectedCategory || categoryName === selectedCategory;
+
+    return bankMatch && categoryMatch;
+  });
+
+  const handleSortChange = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return {
+          key,
+          direction: prev.direction === 'asc' ? 'desc' : 'asc'
+        };
+      }
+
+      return { key, direction: 'desc' };
+    });
+  };
+
+  const displayedPortfolio = filteredPortfolio
+    .map((item) => {
+      const normalizedSymbol = String(item?.symbol || '').trim().toUpperCase();
+      const usdTry = Number(marketData?.['TRY=X']);
+      const gcfOunceUsd = Number(marketData?.['GC=F__USD_OUNCE']);
+      const gcfGramTry = Number(marketData?.['GC=F__GRAM']);
+      const gcfOunceTry = Number(marketData?.['GC=F__ONS'] || marketData?.['GC=F']);
+
+      let livePrice = resolveAssetLivePrice(item, marketData);
+      if (normalizedSymbol === 'GC=F') {
+        if (Number.isFinite(gcfOunceUsd) && gcfOunceUsd > 0 && Number.isFinite(usdTry) && usdTry > 0) {
+          livePrice = (gcfOunceUsd / OUNCE_TO_GRAM) * usdTry;
+        } else if (Number.isFinite(gcfGramTry) && gcfGramTry > 0) {
+          livePrice = gcfGramTry;
+        } else if (Number.isFinite(gcfOunceTry) && gcfOunceTry > 0) {
+          livePrice = gcfOunceTry / OUNCE_TO_GRAM;
+        }
+      }
+
+      const activePrice = Number.isFinite(livePrice) ? livePrice : item.avgPrice;
+      const itemTotalValue = activePrice * item.amount;
+      const itemCost = item.avgPrice * item.amount;
+      const itemProfit = itemTotalValue - itemCost;
+
+      return {
+        item,
+        livePrice,
+        activePrice,
+        itemTotalValue,
+        itemCost,
+        itemProfit,
+      };
+    })
+    .sort((a, b) => {
+      let aValue = 0;
+      let bValue = 0;
+
+      if (sortConfig.key === 'totalValue') {
+        aValue = a.itemTotalValue;
+        bValue = b.itemTotalValue;
+      } else if (sortConfig.key === 'profit') {
+        aValue = a.itemProfit;
+        bValue = b.itemProfit;
+      }
+
+      const directionFactor = sortConfig.direction === 'asc' ? 1 : -1;
+      return (aValue - bValue) * directionFactor;
+    });
+
+  const renderCurrencyWithMutedSymbol = (value) => (
+    <>
+      {formatCurrencyParts(value, baseCurrency, rates).map((part, index) => (
+        part.type === 'currency'
+          ? <span key={`${part.type}-${index}`} className="text-slate-400/75">{part.value}</span>
+          : <span key={`${part.type}-${index}`}>{part.value}</span>
+      ))}
+    </>
+  );
+
+  const getHesapDetayi = (item) => {
+    if (item.hesapTuru === 'Vadeli (Mevduat)' || item.hesapTuru === 'Vadeli Hesap (Mevduat)') {
+      const faiz = Number(item.faizOrani);
+      const faizText = Number.isFinite(faiz) ? `Vadeli %${faiz}` : 'Vadeli';
+      const rawDate = item.vadeSonuTarihi ? new Date(item.vadeSonuTarihi) : null;
+      const isDateValid = rawDate && !Number.isNaN(rawDate.getTime());
+
+      if (isDateValid) {
+        return `${faizText} • ${rawDate.toLocaleDateString('tr-TR')}`;
+      }
+
+      return faizText;
+    }
+
+    if (item.hesapTuru === 'Faizsiz Katılım') {
+      return 'Faizsiz Katılım';
+    }
+
+    if (item.hesapTuru === 'Vadesiz Hesap') {
+      return 'Vadesiz';
+    }
+
+    return 'Vadesiz';
+  };
+
+  const getAssetDetailLabel = (item) => {
+    const categoryName = item.category || 'Diğer';
+    const normalizedSymbol = String(item?.symbol || '').trim().toUpperCase();
+    const displayName = normalizedSymbol === 'GC=F' ? 'Gram Altın' : (item.name || item.symbol);
+
+    if (categoryName === 'Değerli Madenler' || categoryName === 'Emtia/Altın' || categoryName === 'Emtia') {
+      const storagePrefix = item.saklamaTuru === 'Fiziksel/Evde' ? 'Fiziksel' : 'Banka';
+      return `${storagePrefix} ${displayName}`;
+    }
+
+    return displayName;
+  };
+
+  const getAssetTitle = (item) => {
+    const normalizedSymbol = String(item?.symbol || '').trim().toUpperCase();
+    return normalizedSymbol === 'GC=F' ? 'Gram Altın' : item.symbol;
+  };
+
+  const showSkeleton = loading && !(lastUpdated instanceof Date);
+  const [expandedAssetId, setExpandedAssetId] = useState(null);
+
+  const handleAccordionToggle = (assetId) => {
+    setExpandedAssetId((prevId) => (prevId === assetId ? null : assetId));
+  };
+
+  return (
+    <div className="bg-white/5 relative overflow-hidden backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/5 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/5 after:content-[''] flex flex-col">
+      <div className="p-6 md:p-8 border-b border-white/10 flex flex-wrap justify-between items-center gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Coins className="w-5 h-5 text-blue-400" />
+            Varlık Listesi
+          </h3>
+          {(selectedBank || selectedCategory) && (
+            <button
+              type="button"
+              onClick={() => onClearFilter?.()}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-blue-400/30 bg-blue-500/10 text-blue-200 hover:bg-blue-500/20 transition-colors"
+              title="Filtreleri temizle"
+            >
+              <X className="w-3.5 h-3.5" />
+              Filtreyi Temizle
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 p-1">
+          <button
+            type="button"
+            onClick={() => handleSortChange('totalValue')}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${sortConfig.key === 'totalValue' ? 'bg-blue-500/20 text-blue-200' : 'text-slate-300 hover:bg-white/10'}`}
+            title="Toplam değere göre sırala"
+          >
+            Toplam Değer
+            {sortConfig.key === 'totalValue' && (
+              sortConfig.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSortChange('profit')}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${sortConfig.key === 'profit' ? 'bg-emerald-500/20 text-emerald-200' : 'text-slate-300 hover:bg-white/10'}`}
+            title="Kâr/zarara göre sırala"
+          >
+            Kâr/Zarar
+            {sortConfig.key === 'profit' && (
+              sortConfig.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
+
+        {lastUpdated ? (
+          <span className="text-xs text-slate-500">
+            Son: {lastUpdated.toLocaleTimeString('tr-TR')}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="p-4 md:p-6 space-y-3">
+        {displayedPortfolio.length === 0 ? (
+          <div className="p-6 rounded-xl border border-white/10 bg-white/5 text-center text-sm text-slate-500">
+            {portfolio.length === 0
+              ? 'Henüz bir varlık eklemediniz.'
+              : 'Seçili filtreler için varlık bulunamadı.'}
+          </div>
+        ) : displayedPortfolio.map(({ item, livePrice, activePrice, itemTotalValue, itemCost, itemProfit }) => {
+          const categoryName = item.category || 'Diğer';
+          const isCategorySelected = selectedCategory === categoryName;
+          const isCashAsset = categoryName === 'Nakit' || categoryName === 'Nakit/Banka';
+          const isApiFailed = !loading && !(Number.isFinite(livePrice) && livePrice > 0);
+          const itemWeightPercent = totalValue > 0 ? ((itemTotalValue / totalValue) * 100).toFixed(1) : '0.0';
+          const itemProfitPercent = itemCost > 0 ? ((itemProfit / itemCost) * 100).toFixed(2) : '0.00';
+          const inflationScore = getInflationScore(itemCost, itemProfit);
+          const isExpanded = expandedAssetId === item.id;
+
+          return (
+            <article key={item.id} className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => handleAccordionToggle(item.id)}
+                className="w-full text-left px-4 py-3 md:px-5 md:py-4 hover:bg-white/[0.04] transition-colors"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-3 md:gap-4">
+                  <div className="md:col-span-4 min-w-0">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Banka / Kurum</p>
+                    <p className="text-sm font-semibold text-slate-200 truncate">{item.bank || 'Banka Belirtilmedi'}</p>
+                  </div>
+                  <div className="md:col-span-5 min-w-0">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Varlık Adı</p>
+                    <p className="text-sm font-semibold text-slate-100 truncate">{getAssetTitle(item)}</p>
+                  </div>
+                  <div className="md:col-span-2 md:text-right min-w-0">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Toplam Değer</p>
+                    <div className="text-sm font-bold text-slate-100">
+                      {showSkeleton ? (
+                        <div className="animate-pulse h-4 bg-white/10 rounded w-24 md:ml-auto" />
+                      ) : (
+                        renderCurrencyWithMutedSymbol(itemTotalValue)
+                      )}
+                    </div>
+                  </div>
+                  <div className="md:col-span-1 flex md:justify-end">
+                    <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/20 transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
+                      <ChevronDown className="h-4 w-4 text-slate-300" />
+                    </span>
+                  </div>
+                </div>
+              </button>
+
+              <AnimatePresence initial={false}>
+                {isExpanded ? (
+                  <motion.div
+                    key="content"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.26, ease: 'easeOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="border-t border-white/10 px-4 py-4 md:px-5 md:py-5 space-y-4 bg-black/10">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                        <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
+                          <p className="text-[11px] text-slate-500">Miktar</p>
+                          <p className="text-sm font-semibold text-slate-200">{item.amount} {unitTypeToLabel(item.unitType || item.unit_type)}</p>
+                        </div>
+                        <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
+                          <p className="text-[11px] text-slate-500">Güncel Fiyat</p>
+                          <p className={`text-sm font-semibold ${isApiFailed ? 'text-slate-400' : 'text-blue-300'}`}>
+                            {renderCurrencyWithMutedSymbol(activePrice)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
+                          <p className="text-[11px] text-slate-500">Ortalama Maliyet</p>
+                          <p className="text-sm font-semibold text-slate-200">{renderCurrencyWithMutedSymbol(item.avgPrice)}</p>
+                        </div>
+                        <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5" title={inflationScore.tooltip}>
+                          <p className="text-[11px] text-slate-500">Enflasyon Karnesi</p>
+                          <div className="mt-1 inline-flex items-center gap-2">
+                            <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full border ${inflationScore.isProtected ? 'border-emerald-300/50 bg-emerald-400/10' : 'border-rose-300/55 bg-rose-400/10'}`}>
+                              {inflationScore.isProtected ? (
+                                <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                              ) : (
+                                <Flame className="h-4 w-4 text-rose-300" />
+                              )}
+                            </span>
+                            <span className={`text-xs font-medium ${inflationScore.isProtected ? 'text-emerald-200' : 'text-rose-200'}`}>
+                              {inflationScore.isProtected ? 'Alım gücü korunuyor' : 'Alım gücü eriyor'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+                          <p className="text-[11px] text-slate-500">Kâr / Zarar</p>
+                          <p className={`text-sm font-semibold ${itemProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'}`}>
+                            {itemProfit > 0 ? '+' : ''}{renderCurrencyWithMutedSymbol(itemProfit)}
+                          </p>
+                          <p className={`text-[11px] ${itemProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'}`}>
+                            {itemProfit > 0 ? '+' : ''}{itemProfitPercent}%
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+                          <p className="text-[11px] text-slate-500">Portföy Payı</p>
+                          <p className="text-sm font-semibold text-blue-300">%{itemWeightPercent}</p>
+                          {isCashAsset ? (
+                            <p className="text-[11px] text-cyan-200 mt-1">{getHesapDetayi(item)}</p>
+                          ) : null}
+                        </div>
+                        <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+                          <p className="text-[11px] text-slate-500">Kategori</p>
+                          <button
+                            type="button"
+                            onClick={() => onSelectCategory?.(categoryName)}
+                            style={getCategoryBadgeStyle(categoryName, isCategorySelected)}
+                            className={`mt-1 text-[11px] font-semibold uppercase tracking-[0.04em] rounded-full px-3 py-1.5 border transition-all cursor-pointer ${
+                              isCategorySelected ? 'ring-1 ring-white/50 shadow-[0_0_12px_rgba(255,255,255,0.12)]' : 'hover:brightness-110'
+                            }`}
+                            title={`${categoryName} filtresi uygula`}
+                          >
+                            {categoryName}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-1">
+                        {isApiFailed ? (
+                          <span className="mr-auto inline-flex items-center gap-1.5 text-xs text-amber-300">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            Canlı fiyat alınamadı, maliyet fiyatı gösteriliyor.
+                          </span>
+                        ) : null}
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="p-2 rounded-lg text-slate-300 hover:text-blue-300 hover:bg-blue-400/10 transition-colors"
+                          title="Düzenle"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveAsset(item.id)}
+                          className="p-2 rounded-lg text-slate-300 hover:text-rose-300 hover:bg-rose-400/10 transition-colors"
+                          title="Sil"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

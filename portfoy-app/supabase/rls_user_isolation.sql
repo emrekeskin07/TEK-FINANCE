@@ -1,0 +1,103 @@
+-- Run this script in Supabase SQL Editor.
+-- It enforces per-user data isolation for assets and manual_assets tables.
+
+-- 1) Ensure user_id column exists on both tables
+alter table if exists public.assets
+  add column if not exists user_id uuid;
+
+alter table if exists public.assets
+  add column if not exists unit_type text;
+
+alter table if exists public.manual_assets
+  add column if not exists user_id uuid;
+
+-- 2) Default new rows to current authenticated user
+alter table if exists public.assets
+  alter column user_id set default auth.uid();
+
+alter table if exists public.assets
+  alter column unit_type set default 'adet';
+
+update public.assets
+set unit_type = 'adet'
+where unit_type is null;
+
+alter table if exists public.assets
+  alter column unit_type set not null;
+
+alter table if exists public.manual_assets
+  alter column user_id set default auth.uid();
+
+-- 3) Helpful indexes for user-scoped queries
+create index if not exists idx_assets_user_id on public.assets (user_id);
+create index if not exists idx_manual_assets_user_id on public.manual_assets (user_id);
+
+-- 4) Enable RLS
+alter table if exists public.assets enable row level security;
+alter table if exists public.manual_assets enable row level security;
+
+-- 5) Recreate policies (idempotent)
+drop policy if exists assets_select_own on public.assets;
+drop policy if exists assets_insert_own on public.assets;
+drop policy if exists assets_update_own on public.assets;
+drop policy if exists assets_delete_own on public.assets;
+
+create policy assets_select_own
+  on public.assets
+  for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+create policy assets_insert_own
+  on public.assets
+  for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+create policy assets_update_own
+  on public.assets
+  for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy assets_delete_own
+  on public.assets
+  for delete
+  to authenticated
+  using (auth.uid() = user_id);
+
+-- manual_assets policies
+drop policy if exists manual_assets_select_own on public.manual_assets;
+drop policy if exists manual_assets_insert_own on public.manual_assets;
+drop policy if exists manual_assets_update_own on public.manual_assets;
+drop policy if exists manual_assets_delete_own on public.manual_assets;
+
+create policy manual_assets_select_own
+  on public.manual_assets
+  for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+create policy manual_assets_insert_own
+  on public.manual_assets
+  for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+create policy manual_assets_update_own
+  on public.manual_assets
+  for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy manual_assets_delete_own
+  on public.manual_assets
+  for delete
+  to authenticated
+  using (auth.uid() = user_id);
+
+-- Optional one-time migration note:
+-- Existing rows with NULL user_id will be invisible after this script.
+-- If needed, assign those rows to a specific user manually before enabling strict access.
