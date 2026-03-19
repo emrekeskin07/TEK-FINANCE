@@ -53,7 +53,7 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAssetId, setEditingAssetId] = useState(null);
   const [editingAssetData, setEditingAssetData] = useState(null);
-  const [prefilledPortfolioName, setPrefilledPortfolioName] = useState('');
+  const [initialPortfolioName, setInitialPortfolioName] = useState('');
   const [isAlertDrawerOpen, setIsAlertDrawerOpen] = useState(false);
 
   const { portfolio, addAsset, updateAsset, removeAsset, sellAsset } = usePortfolio(authUser?.id, (updatedPort) => {
@@ -99,13 +99,18 @@ export default function App() {
     const explicitPortfolioName = typeof context === 'string'
       ? context
       : (context?.portfolioName || '');
+    const forcePrefill = typeof context === 'object' && context !== null
+      ? Boolean(context.forcePrefill)
+      : false;
 
     // Dashboard acilisinda alan bos gelsin; detay sayfasi veya URL'den acilis senaryosunda prefill kullan.
-    const resolvedPrefill = activePage === 'dashboard'
-      ? ''
-      : (String(explicitPortfolioName || resolvePortfolioNameFromUrl()).trim());
+    const resolvedPrefill = String(
+      explicitPortfolioName
+      || (activePage === 'dashboard' ? '' : resolvePortfolioNameFromUrl())
+    ).trim();
+    const shouldUsePrefill = Boolean(resolvedPrefill) && (activePage !== 'dashboard' || forcePrefill);
 
-    setPrefilledPortfolioName(resolvedPrefill);
+    setInitialPortfolioName(shouldUsePrefill ? resolvedPrefill : '');
     setEditingAssetData(null);
     setEditingAssetId(null);
     setIsModalOpen(true);
@@ -121,7 +126,7 @@ export default function App() {
     setIsModalOpen(false);
     setEditingAssetData(null);
     setEditingAssetId(null);
-    setPrefilledPortfolioName('');
+    setInitialPortfolioName('');
   };
 
   const handleManualRefresh = () => {
@@ -495,6 +500,7 @@ export default function App() {
                     setSelectedCategory(null);
                   }}
                   openEditModal={openEditModal}
+                  onQuickAddPortfolio={(portfolioName) => openAddModal({ portfolioName, forcePrefill: true })}
                   handleSellAsset={sellAsset}
                   handleRemoveAsset={removeAsset}
                 />
@@ -539,7 +545,7 @@ export default function App() {
           onAdd={addAsset}
           onUpdate={updateAsset}
           portfolioNameOptions={portfolioNameOptions}
-          prefilledPortfolioName={prefilledPortfolioName}
+          initialPortfolioName={initialPortfolioName}
         />
       ) : null}
     </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, ShoppingCart, ArrowUpRight } from 'lucide-react';
+import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, ShoppingCart, ArrowUpRight, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts, formatTickerName, groupAssetsByPortfolio } from '../utils/helpers';
@@ -47,6 +47,7 @@ export default function PortfolioTable({
   setSortConfig,
   onClearFilter,
   openEditModal,
+  onQuickAddPortfolio,
   handleSellAsset,
   handleRemoveAsset,
 }) {
@@ -363,44 +364,52 @@ export default function PortfolioTable({
 
           return (
             <section key={`portfolio-group-${group.portfolioName}`} className="space-y-2">
-              <button
-                type="button"
-                onClick={() => togglePortfolioAccordion(portfolioKey)}
-                aria-expanded={isPortfolioOpen}
-                className="w-full rounded-xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 text-left transition-colors hover:bg-blue-500/15 md:px-5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Portföy</p>
-                    <h4 className="text-base font-semibold text-slate-100">{group.portfolioName}</h4>
-                    <p className="mt-0.5 text-xs text-slate-400">{group.items.length} varlık</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="text-right">
-                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Toplam Değer</p>
-                      <p className="text-sm font-semibold text-slate-100">{renderCurrencyWithMutedSymbol(group.totalValue)}</p>
-                      <p className={`text-[11px] ${group.totalProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
-                        {isPrivacyActive ? maskValue(`%${groupProfitPercent}`) : `%${groupProfitPercent}`}
-                      </p>
+              <div className="group flex items-stretch gap-2">
+                <button
+                  type="button"
+                  onClick={() => togglePortfolioAccordion(portfolioKey)}
+                  aria-expanded={isPortfolioOpen}
+                  className="w-full rounded-xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 text-left transition-all duration-300 ease-in-out hover:bg-blue-500/15 md:px-5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Portföy</p>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <h4 className="text-base font-semibold text-slate-100">{group.portfolioName}</h4>
+                        <span className="inline-flex items-center rounded-full border border-white/10 bg-black/35 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-slate-300">
+                          {group.items.length} Varlık
+                        </span>
+                      </div>
                     </div>
-                    <span className={`mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/20 transition-transform ${isPortfolioOpen ? 'rotate-180' : 'rotate-0'}`}>
-                      <ChevronDown className="h-4 w-4 text-slate-300" />
-                    </span>
+                    <div className="flex items-start gap-3">
+                      <div className="text-right">
+                        <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Toplam Değer</p>
+                        <p className="text-sm font-semibold text-slate-100">{renderCurrencyWithMutedSymbol(group.totalValue)}</p>
+                        <p className={`text-[11px] ${group.totalProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                          {isPrivacyActive ? maskValue(`%${groupProfitPercent}`) : `%${groupProfitPercent}`}
+                        </p>
+                      </div>
+                      <span className={`mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/20 transition-transform duration-300 ease-in-out ${isPortfolioOpen ? 'rotate-180' : 'rotate-0'}`}>
+                        <ChevronDown className="h-4 w-4 text-slate-300" />
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </button>
+                </button>
 
-              <AnimatePresence initial={false}>
-                {isPortfolioOpen ? (
-                  <motion.div
-                    key={`portfolio-items-${portfolioKey}`}
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.24, ease: 'easeOut' }}
-                    className="overflow-hidden"
-                  >
-                    <div className="ml-3 space-y-2 border-l border-white/10 pl-3 md:ml-4 md:pl-4">
+                <button
+                  type="button"
+                  onClick={() => onQuickAddPortfolio?.(portfolioKey)}
+                  className="inline-flex h-auto min-w-10 items-center justify-center rounded-xl border border-white/10 bg-black/25 px-2 text-slate-300 opacity-55 transition-all duration-300 ease-in-out hover:border-blue-300/40 hover:bg-blue-500/15 hover:text-blue-200 hover:opacity-100 group-hover:opacity-100"
+                  title={`${group.portfolioName} portföyüne hızlı varlık ekle`}
+                  aria-label={`${group.portfolioName} portföyüne hızlı varlık ekle`}
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className={`grid transition-all duration-300 ease-in-out ${isPortfolioOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                <div className="overflow-hidden" aria-hidden={!isPortfolioOpen}>
+                  <div className="ml-3 space-y-2 border-l border-white/10 pl-3 md:ml-4 md:pl-4">
               {group.items.map(({ item, livePrice, activePrice, itemTotalValue, itemCost, itemProfit }) => {
                 const categoryName = item.category || 'Diğer';
                 const isCategorySelected = selectedCategory === categoryName;
@@ -569,10 +578,9 @@ export default function PortfolioTable({
             </article>
                 );
               })}
-                    </div>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
+                  </div>
+                </div>
+              </div>
             </section>
           );
         })}

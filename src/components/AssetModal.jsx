@@ -158,6 +158,7 @@ export default function AssetModal({
   onAdd,
   onUpdate,
   portfolioNameOptions = [],
+  initialPortfolioName = '',
   prefilledPortfolioName = '',
 }) {
   const [formData, setFormData] = useState(INITIAL_FORM);
@@ -294,7 +295,7 @@ export default function AssetModal({
       setIsManualInstitutionSelected(Boolean(initialData.bank) && !INSTITUTION_OPTIONS.includes(initialData.bank));
       setPortfolioQuery(initialData.portfolioName || initialData.portfolio_name || 'Genel Portföy');
     } else {
-      const resolvedPrefill = String(prefilledPortfolioName || '').trim();
+      const resolvedPrefill = String(initialPortfolioName || prefilledPortfolioName || '').trim();
       setFormData({
         ...INITIAL_FORM,
         portfolioName: resolvedPrefill,
@@ -314,7 +315,7 @@ export default function AssetModal({
     setActiveInstitutionIndex(-1);
     setIsPortfolioOpen(false);
     setActivePortfolioIndex(-1);
-  }, [isOpen, initialData, prefilledPortfolioName]);
+  }, [isOpen, initialData, initialPortfolioName, prefilledPortfolioName]);
 
   useEffect(() => {
     if (!isOpen || !isStockLikeCategory) {
