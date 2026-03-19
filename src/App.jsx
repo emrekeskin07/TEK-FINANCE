@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
-import { Wallet, TrendingUp, TrendingDown } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { usePortfolio } from './hooks/usePortfolio';
 import { useMarketData } from './hooks/useMarketData';
 import { useAuthSession } from './hooks/useAuthSession';
@@ -241,6 +241,25 @@ export default function App() {
     );
   };
 
+  const renderPercentText = (value) => {
+    const numericValue = Number(value || 0);
+    const percentText = `${numericValue >= 0 ? '+' : '-'}%${Math.abs(numericValue).toFixed(2)}`;
+    return isPrivacyActive ? maskValue(percentText) : percentText;
+  };
+
+  const getAlertVisual = (alertItem) => {
+    const level = String(alertItem?.level || '').toLowerCase();
+    if (level === 'critical') {
+      return { icon: '🚨', label: 'Risk' };
+    }
+
+    if (level === 'warning') {
+      return { icon: '⚠️', label: 'Uyarı' };
+    }
+
+    return { icon: '💡', label: 'Öneri' };
+  };
+
 
   if (authLoading) {
     return (
@@ -331,65 +350,46 @@ export default function App() {
                 <p className="mt-1 text-xs sm:text-sm text-slate-400">Finansal durumunun güncel özetini aşağıda bulabilirsin.</p>
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-8 xl:gap-10">
-                <SpotlightCard
-                  spotlightColor="rgba(34, 197, 94, 0.2)"
-                  className="relative overflow-hidden rounded-3xl border border-slate-600/40 bg-gradient-to-br from-[#111827] via-[#0f172a] to-[#030712] p-5 sm:p-6 md:p-8 lg:p-10 shadow-[0_25px_80px_rgba(3,7,18,0.55)]"
-                >
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-300">Genel Portföy Toplamı</p>
-                      <h2 className="mt-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-100">
-                        <ShinyText>
-                          {renderCurrencyWithMutedSymbol(dashboardTotalValue)}
-                        </ShinyText>
-                      </h2>
-                      <p className="mt-4 text-sm text-slate-400">
-                        (Bankalardaki Toplam: {renderCurrencyWithMutedSymbol(totalValue)})
+              <SpotlightCard
+                spotlightColor="rgba(99, 102, 241, 0.18)"
+                className="relative overflow-hidden rounded-3xl border border-indigo-500/25 bg-gradient-to-br from-indigo-900/35 via-[#16233d] to-[#0b1120] p-5 sm:p-6 md:p-8 lg:p-10 shadow-[0_28px_80px_rgba(8,15,32,0.6)]"
+              >
+                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-200/85">Genel Portföy</p>
+                    <h2 className="mt-2 text-5xl md:text-6xl font-black text-white tracking-tight leading-none">
+                      <ShinyText>
+                        {renderCurrencyWithMutedSymbol(dashboardTotalValue)}
+                      </ShinyText>
+                    </h2>
+                    <p className="mt-4 text-sm text-slate-300">
+                      (Bankalardaki Toplam: {renderCurrencyWithMutedSymbol(totalValue)})
+                    </p>
+                    {malVarligiManuelToplam > 0 ? (
+                      <p className="mt-1 text-xs text-slate-300/85">
+                        Mal Varlığı Katkısı (Araç/Gayrimenkul/Diğer): {renderCurrencyWithMutedSymbol(malVarligiManuelToplam)}
                       </p>
-                      {malVarligiManuelToplam > 0 ? (
-                        <p className="mt-1 text-xs text-slate-300/85">
-                          Mal Varlığı Katkısı (Araç/Gayrimenkul/Diğer): {renderCurrencyWithMutedSymbol(malVarligiManuelToplam)}
-                        </p>
-                      ) : (
-                        <p className="mt-1 text-xs text-slate-500">Şu an net değer yalnızca kurumlardaki varlıklardan oluşuyor.</p>
-                      )}
-                    </div>
-                    <div className="rounded-2xl border border-emerald-300/30 bg-emerald-500/10 p-3">
-                      <Wallet className="h-6 w-6 text-emerald-300" />
-                    </div>
+                    ) : (
+                      <p className="mt-1 text-xs text-slate-500">Şu an net değer yalnızca kurumlardaki varlıklardan oluşuyor.</p>
+                    )}
                   </div>
-                </SpotlightCard>
 
-                <SpotlightCard
-                  spotlightColor={totalProfit >= 0 ? 'rgba(74, 222, 128, 0.24)' : 'rgba(56, 189, 248, 0.2)'}
-                  className="relative overflow-hidden rounded-3xl border border-slate-600/40 bg-gradient-to-br from-[#0b1220] via-[#0a1426] to-[#030712] p-5 sm:p-6 md:p-8 lg:p-10 shadow-[0_25px_80px_rgba(3,7,18,0.55)]"
-                >
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-300">Kâr / Zarar</p>
-                      <h2 className={`mt-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight ${totalProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'}`}>
-                        <ShinyText>
-                          {totalProfit > 0 ? '+' : ''}{renderCurrencyWithMutedSymbol(animatedProfit)}
-                        </ShinyText>
-                      </h2>
-                      <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5">
-                        <span className={`text-sm font-bold ${totalProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'}`}>
-                          {isPrivacyActive ? maskValue(`${totalProfit > 0 ? '+' : ''}${animatedProfitPercent.toFixed(2)}%`) : `${totalProfit > 0 ? '+' : ''}${animatedProfitPercent.toFixed(2)}%`}
-                        </span>
-                        <span className="text-xs text-slate-400">toplam performans</span>
-                      </div>
+                  <div className={`w-full md:w-auto md:min-w-[260px] rounded-2xl border p-4 md:p-5 ${totalProfit >= 0 ? 'border-emerald-300/35 bg-emerald-500/12' : 'border-rose-300/35 bg-rose-500/12'}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-200">Toplam Performans</p>
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 bg-black/20">
+                        <Wallet className={`h-4 w-4 ${totalProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`} />
+                      </span>
                     </div>
-                    <div className={`rounded-2xl border p-3 ${totalProfit >= 0 ? 'border-[#2BFF88]/40 bg-[#2BFF88]/10' : 'border-[#FF3B6B]/40 bg-[#FF3B6B]/10'}`}>
-                      {totalProfit >= 0 ? (
-                        <TrendingUp className="h-6 w-6 text-[#2BFF88]" />
-                      ) : (
-                        <TrendingDown className="h-6 w-6 text-[#FF3B6B]" />
-                      )}
-                    </div>
+                    <p className={`mt-3 text-2xl md:text-3xl font-extrabold tracking-tight ${totalProfit >= 0 ? 'text-emerald-200' : 'text-rose-200'}`}>
+                      {totalProfit > 0 ? '+' : ''}{renderCurrencyWithMutedSymbol(animatedProfit)}
+                    </p>
+                    <p className={`mt-1 text-sm font-bold ${totalProfit >= 0 ? 'text-emerald-100' : 'text-rose-100'}`}>
+                      {renderPercentText(animatedProfitPercent)}
+                    </p>
                   </div>
-                </SpotlightCard>
-              </div>
+                </div>
+              </SpotlightCard>
 
               <div className="mt-4 flex justify-center">
                 <span
@@ -410,7 +410,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="col-span-12 md:col-span-4 md:order-3 rounded-2xl border border-gray-800 bg-[#1A2232] shadow-2xl p-4 md:p-6"
+                className="col-span-12 md:col-span-3 md:order-3 rounded-2xl border border-gray-800 bg-[#1A2232] shadow-2xl p-4 md:p-5"
               >
                 <BankTotals 
                   bankTotals={bankTotals} 
@@ -449,7 +449,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="col-span-12 md:col-span-4 md:order-2 rounded-2xl border border-gray-800 bg-[#1A2232] p-5 md:p-6 shadow-2xl"
+                className="col-span-12 md:col-span-4 md:order-2 rounded-3xl border border-gray-800 bg-[#1A2232] p-5 md:p-6 shadow-2xl"
               >
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-200">Akıllı Öneriler</h3>
@@ -467,8 +467,11 @@ export default function App() {
                 {previewAlerts.length > 0 ? (
                   <ul className="mt-4 space-y-2">
                     {previewAlerts.map((item) => (
-                      <li key={item.id} className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
-                        <p className="text-sm font-semibold text-slate-100">{item.title}</p>
+                      <li key={item.id} className="rounded-3xl border border-white/10 bg-black/20 px-3 py-2.5">
+                        <p className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                          <span aria-hidden="true">{getAlertVisual(item).icon}</span>
+                          <span>{item.title}</span>
+                        </p>
                         <p className="text-xs text-slate-400 mt-1 line-clamp-2">{item.detail}</p>
                       </li>
                     ))}
@@ -481,7 +484,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="col-span-12 md:col-span-8 md:order-4 rounded-2xl border border-gray-800 bg-[#1A2232] shadow-2xl p-4 md:p-6"
+                className="col-span-12 md:col-span-9 md:order-4 rounded-2xl border border-gray-800 bg-[#1A2232] shadow-2xl p-4 md:p-6"
               >
                 <PortfolioTable 
                   portfolio={portfolio}

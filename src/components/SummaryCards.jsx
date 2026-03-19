@@ -799,7 +799,7 @@ export default function SummaryCards({
                   tick={{ fontFamily: CHART_THEME.fontFamily }}
                 />
                 <YAxis 
-                  domain={['dataMin - 500', 'auto']}
+                  domain={['dataMin - 1000', 'dataMax + 1000']}
                   stroke={CHART_THEME.axisStroke}
                   fontSize={CHART_THEME.axisFontSize}
                   tickLine={false} 

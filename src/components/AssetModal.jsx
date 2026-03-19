@@ -26,6 +26,7 @@ const INSTITUTION_OPTIONS = [
   'Anadolubank',
   'Burgan Bank',
   'Denizbank',
+  'Dünya Katılım',
   'Emlak Katılım',
   'Enpara',
   'Fibabanka',

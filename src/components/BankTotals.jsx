@@ -103,7 +103,7 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-300/25 bg-sky-500/10">
           <Building2 className="h-4 w-4 text-sky-200/90" />
         </div>
@@ -116,7 +116,7 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
           Kayıtlı kurum verisi bulunmuyor.
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {topInstitution ? (
             <motion.button
               key={topInstitution.name}
@@ -126,7 +126,7 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
               whileHover={{ y: -3, scale: 1.01 }}
               whileTap={{ scale: 0.995 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
-              className={`w-full text-left relative overflow-hidden rounded-2xl border p-5 md:p-6 transition-all duration-200 ${
+              className={`w-full text-left relative overflow-hidden rounded-2xl border p-4 md:p-5 transition-all duration-200 ${
                 topInstitution.isOther
                   ? 'cursor-default border-emerald-300/20 bg-emerald-500/8'
                   : 'cursor-pointer border-emerald-300/40 bg-gradient-to-br from-emerald-500/15 via-cyan-500/10 to-slate-900/50 hover:border-emerald-300/65'
@@ -139,21 +139,21 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
                     <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-emerald-200/30 bg-emerald-400/15 text-emerald-100">
                       <TopInstitutionIcon className="h-4 w-4" />
                     </span>
-                    <h4 className="text-lg md:text-xl font-bold text-slate-100 break-words whitespace-normal">{topInstitution.name}</h4>
+                    <h4 className="text-base md:text-lg font-bold text-slate-100 break-words whitespace-normal">{topInstitution.name}</h4>
                   </div>
                 </div>
                 <span className="inline-flex items-center rounded-full border border-emerald-200/30 bg-emerald-400/15 px-3 py-1 text-xs font-semibold text-emerald-100">
                   {isPrivacyActive ? maskValue(`%${topInstitution.share.toFixed(1)}`) : `%${topInstitution.share.toFixed(1)}`}
                 </span>
               </div>
-              <p className="mt-3 text-3xl md:text-4xl font-black tracking-tight text-slate-50">
+              <p className="mt-2 text-2xl md:text-3xl font-black tracking-tight text-slate-50">
                 {renderTryCurrencyWithMutedSymbol(topInstitution.value)}
               </p>
             </motion.button>
           ) : null}
 
           {restInstitutions.length > 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-3 md:p-4">
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5 md:p-3">
               <ul className="space-y-2.5">
                 {restInstitutions.map((entry) => {
                   const isSelected = selectedBank === entry.name;
@@ -165,7 +165,7 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
                         type="button"
                         onClick={() => !entry.isOther && onSelectBank(entry.name)}
                         disabled={entry.isOther}
-                        className={`w-full rounded-xl border px-3 py-3 text-left transition-all duration-200 ${
+                        className={`w-full rounded-xl border px-3 py-2.5 text-left transition-all duration-200 ${
                           entry.isOther
                             ? 'cursor-default border-white/10 bg-white/5'
                             : 'cursor-pointer border-white/10 bg-white/[0.03] hover:border-sky-300/40 hover:bg-sky-500/10'
