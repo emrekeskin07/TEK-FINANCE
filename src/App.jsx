@@ -10,6 +10,7 @@ import { useCalculations } from './hooks/useCalculations';
 import { useAnimatedCounter } from './hooks/useAnimatedCounter';
 import Header from './components/Header';
 import GoalTracker from './components/GoalTracker';
+import SidebarMenu from './components/SidebarMenu';
 import DistributionCard from './components/DistributionCard';
 import AssetList from './components/AssetList';
 import AlertDrawer from './components/AlertDrawer';
@@ -63,6 +64,7 @@ export default function App() {
   const [initialPortfolioName, setInitialPortfolioName] = useState('');
   const [assetModalMode, setAssetModalMode] = useState('buy');
   const [isAlertDrawerOpen, setIsAlertDrawerOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showAthCelebration, setShowAthCelebration] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const athCelebrationTimeoutRef = useRef(null);
@@ -235,6 +237,7 @@ export default function App() {
     portfolioNameOptions,
     selectedBank,
     selectedCategory,
+    otherBankNames,
     handleBankSelect,
     handleCategorySelect,
     clearFilters,
@@ -325,10 +328,16 @@ export default function App() {
 
   const handleOpenInflationFromAlert = () => {
     setActivePage('enflasyon');
+    setIsSidebarOpen(false);
     setIsAlertDrawerOpen(false);
     window.setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 0);
+  };
+
+  const handleSidebarNavigate = (nextPage) => {
+    setActivePage(nextPage);
+    setIsSidebarOpen(false);
   };
 
   const renderPercentText = (value) => {
@@ -365,6 +374,7 @@ export default function App() {
     selectedInstitution: selectedBank,
     selectedBank,
     selectedCategory,
+    otherBankNames,
     sortConfig,
     setSortConfig,
     lineChartData,
@@ -392,6 +402,7 @@ export default function App() {
     authUser?.id,
     selectedBank,
     selectedCategory,
+    otherBankNames,
     sortConfig,
     setSortConfig,
     lineChartData,
@@ -479,10 +490,18 @@ export default function App() {
         }} 
       />
 
+      <SidebarMenu
+        isOpen={isSidebarOpen}
+        activePage={activePage}
+        onClose={() => setIsSidebarOpen(false)}
+        onNavigate={handleSidebarNavigate}
+      />
+
       <div>
         <Header 
           activePage={activePage}
           setActivePage={setActivePage}
+          onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
           activeTheme={activeTheme}
           themeOptions={THEME_OPTIONS}
           onThemeChange={setActiveTheme}
@@ -570,6 +589,32 @@ export default function App() {
               </div>
             </DashboardProvider>
           </>
+        ) : activePage === 'varliklarim' ? (
+          <DashboardProvider value={dashboardContextValue}>
+            <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
+              <motion.section
+                layout
+                transition={{ type: 'spring', stiffness: 140, damping: 24 }}
+                className="col-span-12 rounded-3xl border border-white/10 bg-card/70 p-5 shadow-[0_20px_70px_rgba(8,47,73,0.35)] backdrop-blur-2xl md:p-6"
+              >
+                <h3 className="text-sm font-bold uppercase tracking-tight text-text-main">Varlıklarım</h3>
+                <p className="mt-1 text-xs text-text-muted">Portföyündeki varlıkları detaylı filtreleyip yönetebilirsin.</p>
+              </motion.section>
+              <AssetList />
+            </div>
+          </DashboardProvider>
+        ) : activePage === 'hedeflerim' ? (
+          <DashboardProvider value={dashboardContextValue}>
+            <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
+              <GoalTracker />
+            </div>
+          </DashboardProvider>
+        ) : activePage === 'ayarlar' ? (
+          <div className="rounded-3xl border border-white/10 bg-card/70 p-6 shadow-[0_20px_70px_rgba(8,47,73,0.35)] backdrop-blur-2xl md:p-8">
+            <h3 className="text-sm font-bold uppercase tracking-tight text-text-main">Ayarlar</h3>
+            <p className="mt-2 text-sm text-text-muted">Tema ve görünüm ayarlarını üst kısımdaki kontrollerden canlı olarak değiştirebilirsin.</p>
+            <p className="mt-3 text-xs text-text-muted">Tema seçici: palet ikonlu swatch alanı • Para birimi: TRY/USD • Gizlilik modu: göz ikonu</p>
+          </div>
         ) : activePage === 'malvarligi' ? (
           <div>
             <MalVarligiPage

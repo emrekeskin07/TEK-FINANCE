@@ -17,6 +17,7 @@ export default function AssetList() {
     totalValue,
     selectedInstitution,
     selectedBank,
+    otherBankNames,
     selectedCategory,
     handleCategorySelect,
     sortConfig,
@@ -35,7 +36,10 @@ export default function AssetList() {
     const filteredAssets = (Array.isArray(portfolio) ? portfolio : []).filter((item) => {
       const bankName = item.bank || 'Banka Belirtilmedi';
       const categoryName = item.category || 'Diğer';
-      const bankMatch = !activeBankFilter || bankName === activeBankFilter;
+      const bankMatch = !activeBankFilter
+        || (activeBankFilter === 'Diğer'
+          ? otherBankNames.includes(bankName)
+          : bankName === activeBankFilter);
       const categoryMatch = !selectedCategory || categoryName === selectedCategory;
       return bankMatch && categoryMatch;
     });
@@ -91,7 +95,7 @@ export default function AssetList() {
       distribution,
       summary,
     };
-  }, [portfolio, activeBankFilter, selectedCategory, marketData]);
+  }, [portfolio, activeBankFilter, selectedCategory, marketData, otherBankNames]);
 
   const handleExportPdf = async () => {
     try {
@@ -133,6 +137,7 @@ export default function AssetList() {
         rates={rates}
         totalValue={totalValue}
         selectedBank={activeBankFilter}
+        otherBankNames={otherBankNames}
         selectedCategory={selectedCategory}
         onSelectCategory={handleCategorySelect}
         sortConfig={sortConfig}

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, Eye, EyeOff, LogOut, Palette, Plus, RefreshCcw } from 'lucide-react';
+import { Bell, Eye, EyeOff, LogOut, Menu, Palette, Plus, RefreshCcw } from 'lucide-react';
 import { useSyncState } from '../context/SyncContext';
 import { usePrivacy } from '../context/PrivacyContext';
 import SplitText from './ui/SplitText';
@@ -7,6 +7,7 @@ import SplitText from './ui/SplitText';
 export default function Header({
   activePage,
   setActivePage,
+  onToggleSidebar = () => {},
   activeTheme = 'deep-ocean',
   themeOptions = [],
   onThemeChange,
@@ -64,6 +65,16 @@ export default function Header({
   return (
     <header className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-10 gap-4 md:gap-5">
       <div className="flex items-center gap-3 w-full md:w-auto">
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-text-main transition-all duration-200 hover:scale-105 hover:bg-white/10 active:scale-95"
+          title="Menü"
+          aria-label="Sidebar menüyü aç"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
         <div className="bg-primary/20 p-0 w-8 h-8 rounded-lg border border-primary/30 backdrop-blur-md overflow-hidden">
           <img
             src="/pwa-192x192.png"

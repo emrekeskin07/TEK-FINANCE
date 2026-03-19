@@ -43,6 +43,7 @@ export default function PortfolioTable({
   rates,
   totalValue,
   selectedBank,
+  otherBankNames,
   selectedCategory,
   onSelectCategory,
   sortConfig,
@@ -60,7 +61,10 @@ export default function PortfolioTable({
   const filteredPortfolio = portfolio.filter((item) => {
     const bankName = item.bank || 'Banka Belirtilmedi';
     const categoryName = item.category || 'Diğer';
-    const bankMatch = !selectedBank || bankName === selectedBank;
+    const bankMatch = !selectedBank
+      || (selectedBank === 'Diğer'
+        ? otherBankNames.includes(bankName)
+        : bankName === selectedBank);
     const categoryMatch = !selectedCategory || categoryName === selectedCategory;
 
     return bankMatch && categoryMatch;
@@ -737,6 +741,7 @@ PortfolioTable.propTypes = {
   rates: PropTypes.object,
   totalValue: PropTypes.number.isRequired,
   selectedBank: PropTypes.string,
+  otherBankNames: PropTypes.arrayOf(PropTypes.string),
   selectedCategory: PropTypes.string,
   onSelectCategory: PropTypes.func,
   sortConfig: PropTypes.shape({
@@ -761,6 +766,7 @@ PortfolioTable.defaultProps = {
   lastUpdated: null,
   rates: {},
   selectedBank: null,
+  otherBankNames: [],
   selectedCategory: null,
   onSelectCategory: null,
   onClearFilter: null,

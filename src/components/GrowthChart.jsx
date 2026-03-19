@@ -82,6 +82,20 @@ export default function GrowthChart() {
     [filteredLineChartData, baseCurrency, rates]
   );
 
+  const rangeChangePercent = useMemo(() => {
+    if (convertedLineChartData.length < 2) {
+      return null;
+    }
+
+    const firstValue = Number(convertedLineChartData[0]?.value || 0);
+    const lastValue = Number(convertedLineChartData[convertedLineChartData.length - 1]?.value || 0);
+    if (!Number.isFinite(firstValue) || !Number.isFinite(lastValue) || Math.abs(firstValue) < 0.0001) {
+      return null;
+    }
+
+    return ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
+  }, [convertedLineChartData]);
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       return undefined;
@@ -129,6 +143,11 @@ export default function GrowthChart() {
     return isPrivacyActive ? maskValue(rawText) : rawText;
   };
 
+  const rangeChangeText = rangeChangePercent === null
+    ? '--'
+    : `${rangeChangePercent >= 0 ? '+' : '-'}%${Math.abs(rangeChangePercent).toFixed(1)}`;
+  const displayedRangeChangeText = isPrivacyActive ? maskValue(rangeChangeText) : rangeChangeText;
+
   const resolveAggressiveDomainPadding = (minValue, maxValue) => {
     const safeMin = Number.isFinite(Number(minValue)) ? Number(minValue) : 0;
     const safeMax = Number.isFinite(Number(maxValue)) ? Number(maxValue) : safeMin;
@@ -162,10 +181,21 @@ export default function GrowthChart() {
       className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-white/10 bg-card/75 p-6 shadow-[0_24px_72px_rgba(15,23,42,0.5)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45 md:p-8"
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-tight text-text-main">
-          <TrendingUp className="h-4 w-4 text-primary" />
-          Portföy Gelişimi
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-tight text-text-main">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            Portföy Gelişimi
+          </h3>
+          <span className={`inline-flex min-h-[28px] items-center rounded-full border px-2.5 text-[11px] font-semibold ${
+            rangeChangePercent === null
+              ? 'border-white/15 bg-white/5 text-text-muted'
+              : (rangeChangePercent >= 0
+                ? 'border-emerald-300/35 bg-emerald-500/15 text-emerald-100'
+                : 'border-rose-300/35 bg-rose-500/15 text-rose-100')
+          }`}>
+            {displayedRangeChangeText}
+          </span>
+        </div>
 
         <div className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-card/70 p-1 backdrop-blur-md">
           {RANGE_OPTIONS.map((option) => {

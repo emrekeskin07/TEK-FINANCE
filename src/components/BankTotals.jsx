@@ -6,7 +6,7 @@ import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrency, formatCurrencyParts } from '../utils/helpers';
 
 const OTHER_THRESHOLD_PERCENT = 1;
-const PIE_COLORS = ['#38bdf8', '#8b5cf6', '#d946ef', '#10b981', '#22d3ee', '#a78bfa', '#f0abfc', '#34d399'];
+const PIE_COLORS = ['#8B5CF6', '#F59E0B', '#06B6D4', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7'];
 
 export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue, selectedBank, onSelectBank }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
@@ -65,7 +65,15 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
     [bankGroups]
   );
 
-  const centerTotalValue = Number(totalValue || 0) > 0 ? Number(totalValue) : distributionTotal;
+  const selectedEntry = useMemo(
+    () => chartData.find((entry) => entry.name === selectedBank) || null,
+    [chartData, selectedBank]
+  );
+
+  const centerTotalValue = selectedEntry
+    ? selectedEntry.value
+    : (Number(totalValue || 0) > 0 ? Number(totalValue) : distributionTotal);
+  const centerTitle = selectedEntry ? selectedEntry.name : 'Toplam Varlik';
 
   const renderTryCurrencyWithMutedSymbol = (value) => {
     const plainCurrencyText = formatCurrency(value, baseCurrency, rates);
@@ -154,8 +162,8 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
                         fill={entry.color}
                         stroke={isSelected ? '#e2e8f0' : 'rgba(15,23,42,0.45)'}
                         strokeWidth={isSelected ? 3 : 1}
-                        onClick={() => !entry.isOther && onSelectBank?.(entry.name)}
-                        style={{ cursor: entry.isOther ? 'default' : 'pointer' }}
+                        onClick={() => onSelectBank?.(entry.name)}
+                        style={{ cursor: 'pointer' }}
                       />
                     );
                   })}
@@ -165,15 +173,15 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
             </ResponsiveContainer>
 
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="pointer-events-auto px-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-tight text-slate-300">Total Value</p>
+              <div key={`center-${centerTitle}`} className="pointer-events-auto px-3 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-tight text-slate-300">{centerTitle}</p>
                 <p className="mt-1 text-2xl md:text-[28px] font-black leading-tight tracking-tight text-slate-100 drop-shadow-[0_0_12px_rgba(56,189,248,0.3)]">
                   {renderTryCurrencyWithMutedSymbol(centerTotalValue)}
                 </p>
                 {selectedBank ? (
                   <button
                     type="button"
-                    onClick={() => onSelectBank?.(selectedBank)}
+                    onClick={() => onSelectBank?.(null)}
                     className="mt-2 inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-full border border-sky-300/35 bg-sky-500/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-sky-100 transition-all duration-200 hover:scale-105 hover:bg-sky-500/25 active:scale-95 hover:shadow-[0_0_18px_rgba(56,189,248,0.35)]"
                     title="Kurum filtresini temizle"
                   >
@@ -195,13 +203,10 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
                 <li key={`legend-${entry.name}`}>
                   <button
                     type="button"
-                    onClick={() => !entry.isOther && onSelectBank?.(entry.name)}
-                    disabled={entry.isOther}
-                    aria-pressed={entry.isOther ? undefined : isSelected}
+                    onClick={() => onSelectBank?.(entry.name)}
+                    aria-pressed={isSelected}
                     className={`w-full min-h-[44px] transform-gpu rounded-lg border px-2.5 py-2 transition-all duration-200 ${
-                      entry.isOther
-                        ? 'cursor-default border-white/10 bg-white/[0.03]'
-                        : 'cursor-pointer border-white/10 bg-white/[0.03] hover:scale-[1.03] hover:border-sky-300/40 hover:bg-sky-500/10 active:scale-[0.98]'
+                      'cursor-pointer border-white/10 bg-white/[0.03] hover:scale-[1.03] hover:border-sky-300/40 hover:bg-sky-500/10 active:scale-[0.98]'
                     } ${isSelected ? 'border-sky-200/60 bg-sky-400/10 ring-1 ring-sky-200/60' : ''}`}
                   >
                     <div className="flex items-center justify-between gap-3 text-xs">
