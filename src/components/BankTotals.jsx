@@ -1,15 +1,59 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts } from '../utils/helpers';
 
-export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue, selectedBank, onSelectBank }) {
+export default function BankTotals({ bankTotals, rates, totalValue, selectedBank, onSelectBank }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
-  const bankNames = Object.keys(bankTotals);
+  const bankGroups = useMemo(() => {
+    const entries = Object.entries(bankTotals || {})
+      .map(([name, value]) => ({
+        name,
+        value: Number(value || 0),
+      }))
+      .filter((entry) => Number.isFinite(entry.value) && entry.value > 0)
+      .sort((a, b) => b.value - a.value);
 
-  const renderCurrencyWithMutedSymbol = (value) => {
-    const plainCurrencyText = formatCurrencyParts(value, baseCurrency, rates)
+    const safeTotal = Number(totalValue || 0) > 0 ? Number(totalValue) : entries.reduce((sum, entry) => sum + entry.value, 0);
+    if (safeTotal <= 0) {
+      return [];
+    }
+
+    const major = [];
+    let otherValue = 0;
+    const otherInstitutions = [];
+
+    entries.forEach((entry) => {
+      const share = (entry.value / safeTotal) * 100;
+      if (share < 1) {
+        otherValue += entry.value;
+        otherInstitutions.push(entry.name);
+        return;
+      }
+
+      major.push({
+        ...entry,
+        share,
+        isOther: false,
+      });
+    });
+
+    if (otherValue > 0) {
+      major.push({
+        name: 'Diğer',
+        value: otherValue,
+        share: (otherValue / safeTotal) * 100,
+        isOther: true,
+        institutions: otherInstitutions,
+      });
+    }
+
+    return major.sort((a, b) => b.value - a.value);
+  }, [bankTotals, totalValue]);
+
+  const renderTryCurrencyWithMutedSymbol = (value) => {
+    const plainCurrencyText = formatCurrencyParts(value, 'TRY', rates)
       .map((part) => part.value)
       .join('');
 
@@ -19,7 +63,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
 
     return (
       <>
-        {formatCurrencyParts(value, baseCurrency, rates).map((part, index) => (
+        {formatCurrencyParts(value, 'TRY', rates).map((part, index) => (
           part.type === 'currency'
             ? <span key={`${part.type}-${index}`} className="text-slate-400/75">{part.value}</span>
             : <span key={`${part.type}-${index}`}>{part.value}</span>
@@ -28,52 +72,92 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
     );
   };
 
+  const topInstitution = bankGroups[0] || null;
+  const restInstitutions = bankGroups.slice(1);
+  const hasData = bankGroups.length > 0;
+
   return (
     <div>
       <h2 className="text-sm font-bold uppercase tracking-[0.12em] flex items-center gap-2 mb-4 text-slate-300">
         <Building2 className="w-4 h-4 text-sky-200/80" />
         Kurumlardaki Toplam Varlıklar
       </h2>
-      <p className="text-xs font-medium text-slate-500 mb-6">Nakit/Banka + Hisse + Altın dahil kurum bazlı toplam</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 xl:gap-8">
-        {bankNames.length === 0 && (
-            <div className="col-span-full p-4 bg-white/5 border border-white/10 rounded-xl text-slate-400 text-sm">
-              Kayıtlı banka verisi bulunmuyor.
-            </div>
-        )}
-        {bankNames.map((bankName) => {
-          const isSelected = selectedBank === bankName;
-          const bankValue = bankTotals[bankName];
-          const weightPercentage = totalValue > 0 ? (bankValue / totalValue) * 100 : 0;
+      <p className="text-xs font-medium text-slate-500 mb-6">Kurum bazlı toplam (TL), portföy içindeki paya göre sıralı.</p>
 
-          return (
-          <motion.button
-            key={bankName}
-            type="button"
-            onClick={() => onSelectBank(bankName)}
-            aria-pressed={isSelected}
-            whileHover={{ y: -4, scale: 1.03 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ duration: 0.16, ease: 'easeOut' }}
-            className={`text-left relative overflow-hidden bg-white/5 backdrop-blur-md border rounded-2xl p-4 md:p-6 xl:p-7 transition-all duration-150 hover:bg-white/10 hover:border-sky-200/35 hover:shadow-[0_0_15px_rgba(125,211,252,0.18)] before:pointer-events-none before:absolute before:left-3 before:right-3 before:top-0 before:h-px before:bg-white/5 before:content-[''] after:pointer-events-none after:absolute after:top-3 after:bottom-3 after:left-0 after:w-px after:bg-white/5 after:content-[''] cursor-pointer ${
-              isSelected
-                ? 'ring-2 ring-sky-200/60 border-sky-200/60 bg-sky-300/10 shadow-[0_0_24px_rgba(125,211,252,0.12)]'
-                : `border-white/10 ${selectedBank ? 'opacity-70 hover:opacity-90' : ''}`
-            }`}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
-              <h4 className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400/90 truncate" title={bankName}>{bankName}</h4>
-              <span className="shrink-0 bg-white/10 text-sky-200/90 text-[11px] font-semibold px-2 py-1 rounded-full">
-                {isPrivacyActive ? maskValue(`%${weightPercentage.toFixed(1)}`) : `%${weightPercentage.toFixed(1)}`}
-              </span>
+      {!hasData ? (
+        <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-slate-400 text-sm">
+          Kayıtlı kurum verisi bulunmuyor.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {topInstitution ? (
+            <motion.button
+              key={topInstitution.name}
+              type="button"
+              onClick={() => !topInstitution.isOther && onSelectBank(topInstitution.name)}
+              aria-pressed={selectedBank === topInstitution.name}
+              whileHover={{ y: -3, scale: 1.01 }}
+              whileTap={{ scale: 0.995 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className={`w-full text-left relative overflow-hidden rounded-2xl border p-5 md:p-6 transition-all duration-200 ${
+                topInstitution.isOther
+                  ? 'cursor-default border-emerald-300/20 bg-emerald-500/8'
+                  : 'cursor-pointer border-emerald-300/40 bg-gradient-to-br from-emerald-500/15 via-cyan-500/10 to-slate-900/50 hover:border-emerald-300/65'
+              } ${selectedBank === topInstitution.name ? 'ring-2 ring-emerald-200/60 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : 'shadow-[0_8px_30px_rgba(15,23,42,0.35)]'}`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-emerald-200/90">En Yüksek Paylı Kurum</p>
+                  <h4 className="mt-1 text-lg md:text-xl font-bold text-slate-100 break-words whitespace-normal">{topInstitution.name}</h4>
+                </div>
+                <span className="inline-flex items-center rounded-full border border-emerald-200/30 bg-emerald-400/15 px-3 py-1 text-xs font-semibold text-emerald-100">
+                  {isPrivacyActive ? maskValue(`%${topInstitution.share.toFixed(1)}`) : `%${topInstitution.share.toFixed(1)}`}
+                </span>
+              </div>
+              <p className="mt-3 text-2xl md:text-3xl font-extrabold tracking-tight text-slate-50">
+                {renderTryCurrencyWithMutedSymbol(topInstitution.value)}
+              </p>
+            </motion.button>
+          ) : null}
+
+          {restInstitutions.length > 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-3 md:p-4">
+              <ul className="space-y-2.5">
+                {restInstitutions.map((entry) => {
+                  const isSelected = selectedBank === entry.name;
+
+                  return (
+                    <li key={entry.name}>
+                      <button
+                        type="button"
+                        onClick={() => !entry.isOther && onSelectBank(entry.name)}
+                        disabled={entry.isOther}
+                        className={`w-full rounded-xl border px-3 py-3 text-left transition-all duration-200 ${
+                          entry.isOther
+                            ? 'cursor-default border-white/10 bg-white/5'
+                            : 'cursor-pointer border-white/10 bg-white/[0.03] hover:border-sky-300/40 hover:bg-sky-500/10'
+                        } ${isSelected ? 'ring-1 ring-sky-200/60 border-sky-200/60 bg-sky-400/10' : ''}`}
+                        aria-pressed={entry.isOther ? undefined : isSelected}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm md:text-[15px] font-semibold text-slate-200 break-words whitespace-normal">{entry.name}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-base font-bold text-slate-100">{renderTryCurrencyWithMutedSymbol(entry.value)}</p>
+                            <p className="text-xs font-semibold text-slate-400">{isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}</p>
+                          </div>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-            <p className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100">
-              {renderCurrencyWithMutedSymbol(bankValue)}
-            </p>
-          </motion.button>
-          );
-        })}
+          ) : null}
+        </div>
+      )}
       </div>
-    </div>
+    
   );
 }
