@@ -159,15 +159,15 @@ export default function GrowthChart() {
     <motion.section
       layout
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-      className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl transition-all duration-300 hover:scale-[1.01] hover:border-white/10 md:p-8"
+      className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-white/10 bg-card/75 p-6 shadow-[0_24px_72px_rgba(15,23,42,0.5)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45 md:p-8"
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.12em] text-slate-300">
-          <TrendingUp className="h-4 w-4 text-emerald-400" />
+        <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-tight text-text-main">
+          <TrendingUp className="h-4 w-4 text-primary" />
           Portföy Gelişimi
         </h3>
 
-        <div className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-black/20 p-1">
+        <div className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-card/70 p-1 backdrop-blur-md">
           {RANGE_OPTIONS.map((option) => {
             const isActive = selectedRange === option.key;
             return (
@@ -178,13 +178,13 @@ export default function GrowthChart() {
                 onClick={() => setSelectedRange(option.key)}
                 className={`relative min-h-[44px] rounded-md px-3 py-2 text-[11px] ${
                   isActive
-                    ? 'bg-emerald-500/18 text-emerald-100'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-secondary/22 text-text-main'
+                    : 'text-text-muted hover:text-text-main'
                 }`}
               >
                 <span>{option.label}</span>
                 {isActive ? (
-                  <span className="absolute bottom-1 left-2 right-2 h-0.5 rounded-full bg-emerald-400" aria-hidden="true" />
+                  <span className="absolute bottom-1 left-2 right-2 h-0.5 rounded-full bg-accent" aria-hidden="true" />
                 ) : null}
               </Button>
             );
@@ -198,9 +198,22 @@ export default function GrowthChart() {
             <AreaChart data={convertedLineChartData}>
               <defs>
                 <linearGradient id="growthChartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.06} />
+                  <stop offset="0%" stopColor="rgb(var(--primary))" stopOpacity={0.28} />
+                  <stop offset="55%" stopColor="rgb(var(--secondary))" stopOpacity={0.18} />
+                  <stop offset="100%" stopColor="rgb(var(--accent))" stopOpacity={0.05} />
                 </linearGradient>
+                <linearGradient id="growthChartStroke" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="rgb(var(--primary))" />
+                  <stop offset="50%" stopColor="rgb(var(--secondary))" />
+                  <stop offset="100%" stopColor="rgb(var(--accent))" />
+                </linearGradient>
+                <filter id="growthChartGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" vertical={false} />
               <XAxis
@@ -224,11 +237,12 @@ export default function GrowthChart() {
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="#10b981"
+                stroke="url(#growthChartStroke)"
                 strokeWidth={3}
                 fillOpacity={1}
                 fill="url(#growthChartGradient)"
-                activeDot={{ r: 4, stroke: '#0f172a', strokeWidth: 2, fill: '#10b981' }}
+                filter="url(#growthChartGlow)"
+                activeDot={{ r: 4, stroke: '#0f172a', strokeWidth: 2, fill: '#d946ef' }}
               />
             </AreaChart>
           </ResponsiveContainer>

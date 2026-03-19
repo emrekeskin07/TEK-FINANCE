@@ -6,7 +6,7 @@ import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrency, formatCurrencyParts } from '../utils/helpers';
 
 const OTHER_THRESHOLD_PERCENT = 1;
-const PIE_COLORS = ['#0f766e', '#14b8a6', '#0d9488', '#10b981', '#34d399', '#2dd4bf', '#0ea5a4', '#6ee7b7'];
+const PIE_COLORS = ['#38bdf8', '#8b5cf6', '#d946ef', '#10b981', '#22d3ee', '#a78bfa', '#f0abfc', '#34d399'];
 
 export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue, selectedBank, onSelectBank }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
@@ -120,8 +120,8 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
         <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-300/25 bg-sky-500/10">
           <Building2 className="h-4 w-4 text-sky-200/90" />
         </div>
-        <h2 className="text-sm font-bold uppercase tracking-[0.13em] text-slate-200">KURUMLARDAKI DAĞILIM</h2>
-        <p className="mt-1 text-xs font-medium text-slate-500">Portföyün kurumlara göre yüzdesel dağılımı</p>
+        <h2 className="text-sm font-bold uppercase tracking-tight text-text-main">KURUMLARDAKI DAĞILIM</h2>
+        <p className="mt-1 text-xs font-medium text-text-muted">Portföyün kurumlara göre yüzdesel dağılımı</p>
       </div>
 
       {!hasData ? (
@@ -129,7 +129,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
           Kayıtlı kurum verisi bulunmuyor.
         </div>
       ) : (
-        <div className="rounded-2xl border border-white/5 bg-black/15 p-6 shadow-2xl md:p-8">
+        <div className="rounded-2xl border border-white/10 bg-card/70 p-6 shadow-[0_16px_46px_rgba(15,23,42,0.45)] backdrop-blur-md md:p-8">
           <div className="relative h-[250px] w-full min-h-[250px] min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -166,8 +166,8 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
 
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="pointer-events-auto px-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Total Value</p>
-                <p className="mt-1 text-2xl md:text-[28px] font-black leading-tight tracking-tight text-slate-100">
+                <p className="text-[10px] font-bold uppercase tracking-tight text-slate-300">Total Value</p>
+                <p className="mt-1 text-2xl md:text-[28px] font-black leading-tight tracking-tight text-slate-100 drop-shadow-[0_0_12px_rgba(56,189,248,0.3)]">
                   {renderTryCurrencyWithMutedSymbol(centerTotalValue)}
                 </p>
                 {selectedBank ? (
@@ -209,7 +209,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
                         <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: entry.color }} />
                         <span className="truncate font-semibold text-slate-200">{entry.name}</span>
                       </div>
-                      <span className="font-semibold text-slate-400">{isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}</span>
+                      <span className="font-semibold text-slate-300">{isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}</span>
                     </div>
                   </button>
                 </li>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, Eye, EyeOff, LogOut, Plus, RefreshCcw } from 'lucide-react';
+import { Bell, Eye, EyeOff, LogOut, Palette, Plus, RefreshCcw } from 'lucide-react';
 import { useSyncState } from '../context/SyncContext';
 import { usePrivacy } from '../context/PrivacyContext';
 import SplitText from './ui/SplitText';
@@ -7,6 +7,9 @@ import SplitText from './ui/SplitText';
 export default function Header({
   activePage,
   setActivePage,
+  activeTheme = 'deep-ocean',
+  themeOptions = [],
+  onThemeChange,
   baseCurrency,
   setBaseCurrency,
   openAddModal,
@@ -61,7 +64,7 @@ export default function Header({
   return (
     <header className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-10 gap-4 md:gap-5">
       <div className="flex items-center gap-3 w-full md:w-auto">
-        <div className="bg-blue-500/20 p-0 w-8 h-8 rounded-lg border border-blue-500/30 backdrop-blur-md overflow-hidden">
+        <div className="bg-primary/20 p-0 w-8 h-8 rounded-lg border border-primary/30 backdrop-blur-md overflow-hidden">
           <img
             src="/pwa-192x192.png"
             alt="TEK Finans logo"
@@ -69,10 +72,10 @@ export default function Header({
           />
         </div>
         <div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
             <SplitText text="TEK Finans" by="chars" stagger={0.045} />
           </h1>
-          <p className="text-sm text-slate-400">Banka & Kurum Bazlı Varlık Takibi</p>
+          <p className="text-sm text-text-muted">Banka & Kurum Bazlı Varlık Takibi</p>
         </div>
       </div>
 
@@ -107,6 +110,29 @@ export default function Header({
           {isPrivacyActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           <span className="text-xs font-semibold">{isPrivacyActive ? 'Gizlilik Açık' : 'Gizlilik Kapalı'}</span>
         </button>
+
+        <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-card/70 px-2 py-1.5 backdrop-blur-md">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-page/70 text-text-main" title="Tema Seçici">
+            <Palette className="h-4 w-4" />
+          </span>
+          <div className="flex items-center gap-1">
+            {themeOptions.map((option) => {
+              const isActiveTheme = activeTheme === option.id;
+
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onThemeChange?.(option.id)}
+                  className={`h-6 w-6 rounded-full border transition-all duration-300 hover:scale-110 ${isActiveTheme ? 'border-white ring-2 ring-white/40' : 'border-white/20'}`}
+                  title={option.label}
+                  aria-label={`${option.label} temasini sec`}
+                  style={{ background: option.swatch }}
+                />
+              );
+            })}
+          </div>
+        </div>
 
         {activePage === 'dashboard' ? (
           <>

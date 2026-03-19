@@ -35,7 +35,7 @@ const getMotivationMessage = (progress) => {
   return 'Yolun basindasin, damlaya damlaya gol olur! 🌱';
 };
 
-const getPredictionFromLastThreeMonths = ({ lineChartData, currentValue, targetAmount }) => {
+const getPredictionFromRecentTrend = ({ lineChartData, currentValue, targetAmount, windowDays = 30 }) => {
   if (!Array.isArray(lineChartData) || lineChartData.length < 2) {
     return {
       status: 'insufficient-data',
@@ -45,7 +45,7 @@ const getPredictionFromLastThreeMonths = ({ lineChartData, currentValue, targetA
   }
 
   const now = Date.now();
-  const threshold = now - (90 * DAY_MS);
+  const threshold = now - (windowDays * DAY_MS);
 
   const recentPoints = lineChartData
     .filter((point) => {
@@ -120,6 +120,7 @@ export default function GoalTracker() {
   const [goal, setGoal] = useState(createEmptyGoal());
   const [draftName, setDraftName] = useState('');
   const [draftTargetAmount, setDraftTargetAmount] = useState('');
+  const [targetMonths, setTargetMonths] = useState('12');
   const [isEditing, setIsEditing] = useState(true);
 
   const persistGoal = (nextGoal) => {
@@ -175,33 +176,21 @@ export default function GoalTracker() {
   const progress = Math.max(0, Math.min(100, Number.isFinite(progressRaw) ? progressRaw : 0));
 
   const prediction = useMemo(
-    () => getPredictionFromLastThreeMonths({
+    () => getPredictionFromRecentTrend({
       lineChartData,
       currentValue,
       targetAmount,
+      windowDays: 30,
     }),
     [lineChartData, currentValue, targetAmount]
   );
 
-  const progressRing = useMemo(() => {
-    const radius = 94;
-    const strokeWidth = 16;
-    const normalizedRadius = radius - (strokeWidth / 2);
-    const circumference = 2 * Math.PI * normalizedRadius;
-    const dashOffset = circumference * (1 - (progress / 100));
-
-    return {
-      radius,
-      strokeWidth,
-      normalizedRadius,
-      circumference,
-      dashOffset,
-    };
-  }, [progress]);
-
   const percentageLabel = `%${progress.toFixed(0)} Tamamlandi`;
   const motivationMessage = getMotivationMessage(progress);
   const completionSignature = `${goal.name}|${goal.targetAmount}`;
+  const remainingAmount = Math.max(0, targetAmount - currentValue);
+  const parsedTargetMonths = Math.max(1, Number(targetMonths || 0));
+  const monthlyContributionNeeded = remainingAmount / parsedTargetMonths;
 
   useEffect(() => {
     if (!hasGoal || progress < 100 || !triggerCelebration) {
@@ -256,7 +245,7 @@ export default function GoalTracker() {
 
   const renderPrediction = () => {
     if (!hasGoal) {
-      return 'Hedef olusturuldugunda 3 aylik hiz analizi burada gorunecek.';
+      return 'Hedef olusturuldugunda 30 gunluk trend analizi burada gorunecek.';
     }
 
     if (prediction.status === 'completed') {
@@ -269,23 +258,23 @@ export default function GoalTracker() {
     }
 
     if (prediction.status === 'non-positive-trend') {
-      return 'Son 3 ay trendi hedeften uzaklasiyor. Kucuk birikim artisiyla sureyi hizlandirabilirsin.';
+      return 'Hedefin biraz uzaklasiyor, ama disiplini bozma!';
     }
 
-    return 'Son 3 ay verisi henuz yeterli degil, analiz icin biraz daha zamana ihtiyac var.';
+    return 'Son 30 gun verisi henuz yeterli degil, analiz icin biraz daha zamana ihtiyac var.';
   };
 
   return (
     <motion.section
       layout
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-      className="col-span-12 rounded-2xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl transition-all duration-300 hover:scale-[1.01] hover:border-white/10 md:p-8"
+      className="col-span-12 rounded-2xl border border-white/10 bg-card/75 p-6 shadow-[0_24px_72px_rgba(15,23,42,0.5)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45 md:p-8"
     >
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-200/80">Finansal Hedef Takibi</p>
-          <h3 className="mt-1 text-xl font-black tracking-tight text-slate-100 md:text-2xl">Goal Tracker</h3>
-          <p className="mt-2 text-xs text-slate-400">Bir hedef belirle, ilerlemeni takip et ve tahmini bitis suresini gor.</p>
+          <p className="text-xs font-bold uppercase tracking-tight text-text-main/90">Finansal Hedef Takibi</p>
+          <h3 className="mt-1 text-xl font-black tracking-tight text-text-main md:text-2xl">Goal Tracker</h3>
+          <p className="mt-2 text-xs text-text-muted">Bir hedef belirle, ilerlemeni takip et ve tahmini bitis suresini gor.</p>
         </div>
 
         {hasGoal && !isEditing ? (
@@ -311,10 +300,10 @@ export default function GoalTracker() {
       </div>
 
       {isEditing ? (
-        <form onSubmit={handleSaveGoal} className="rounded-2xl border border-white/10 bg-black/20 p-4 md:p-5">
+        <form onSubmit={handleSaveGoal} className="rounded-2xl border border-white/15 bg-card/65 p-4 backdrop-blur-md md:p-5">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="md:col-span-2">
-              <label htmlFor="goal-name" className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
+              <label htmlFor="goal-name" className="mb-1 block text-xs font-semibold uppercase tracking-tight text-slate-300">
                 Hedef Adi
               </label>
               <input
@@ -322,13 +311,13 @@ export default function GoalTracker() {
                 value={draftName}
                 onChange={(event) => setDraftName(event.target.value)}
                 placeholder="Orn: Yeni Araba, Ev Pesinati"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-100 outline-none transition-colors focus:border-blue-400/70"
+                className="w-full rounded-lg border border-white/15 bg-card/70 px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-secondary/70"
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="goal-target" className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
+              <label htmlFor="goal-target" className="mb-1 block text-xs font-semibold uppercase tracking-tight text-slate-300">
                 Hedef Tutar
               </label>
               <NumericFormat
@@ -343,7 +332,7 @@ export default function GoalTracker() {
                 inputMode="decimal"
                 onValueChange={({ value }) => setDraftTargetAmount(value)}
                 placeholder="250.000"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-100 outline-none transition-colors focus:border-blue-400/70"
+                className="w-full rounded-lg border border-white/15 bg-card/70 px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-secondary/70"
                 required
               />
             </div>
@@ -352,7 +341,7 @@ export default function GoalTracker() {
           <div className="mt-4 flex justify-end">
             <button
               type="submit"
-              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-lg border border-emerald-300/35 bg-gradient-to-r from-blue-500/25 to-emerald-400/25 px-4 py-2 text-sm font-semibold text-emerald-100 transition-all duration-200 hover:scale-105 hover:from-blue-500/35 hover:to-emerald-400/35 active:scale-95"
+              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-lg border border-secondary/35 bg-gradient-to-r from-primary/35 via-secondary/30 to-accent/35 px-4 py-2 text-sm font-semibold text-text-main transition-all duration-200 hover:scale-105 hover:shadow-[0_0_20px_rgba(var(--secondary),0.35)] active:scale-95"
             >
               <Save className="h-4 w-4" />
               Hedefi Kaydet
@@ -363,74 +352,81 @@ export default function GoalTracker() {
 
       {hasGoal ? (
         <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="relative rounded-2xl border border-white/10 bg-gradient-to-br from-blue-500/10 via-slate-900/60 to-emerald-500/10 p-5">
-            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-400/20 blur-2xl" aria-hidden="true" />
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-300">
+          <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-secondary/16 via-card/60 to-primary/14 p-5 backdrop-blur-md">
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-accent/20 blur-2xl" aria-hidden="true" />
+            <div className="absolute -left-8 bottom-0 h-24 w-24 rounded-full bg-primary/16 blur-2xl" aria-hidden="true" />
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-tight text-slate-200">
               <Target className="h-4 w-4 text-blue-300" />
               Hedef: {goal.name}
             </div>
 
-            <div className="mt-4 flex justify-center">
-              <div className="relative h-[220px] w-[220px]">
-                <svg viewBox={`0 0 ${progressRing.radius * 2} ${progressRing.radius * 2}`} className="h-full w-full -rotate-90">
-                  <defs>
-                    <linearGradient id="goalProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#3b82f6" />
-                      <stop offset={progress >= 75 ? '70%' : '55%'} stopColor={progress >= 75 ? '#22c55e' : '#34d399'} />
-                      <stop offset="100%" stopColor="#10b981" />
-                    </linearGradient>
-                  </defs>
+            <div className="mt-6">
+              <div className="flex items-end justify-between gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-tight text-slate-300">Ilerleme</p>
+                <p className="text-2xl font-black leading-none text-white drop-shadow-[0_0_14px_rgba(139,92,246,0.45)]">{isPrivacyActive ? maskValue(percentageLabel) : percentageLabel}</p>
+              </div>
 
-                  <circle
-                    cx={progressRing.radius}
-                    cy={progressRing.radius}
-                    r={progressRing.normalizedRadius}
-                    stroke="rgba(148,163,184,0.25)"
-                    strokeWidth={progressRing.strokeWidth}
-                    fill="none"
-                  />
-                  <circle
-                    cx={progressRing.radius}
-                    cy={progressRing.radius}
-                    r={progressRing.normalizedRadius}
-                    stroke="url(#goalProgressGradient)"
-                    strokeWidth={progressRing.strokeWidth}
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeDasharray={progressRing.circumference}
-                    strokeDashoffset={progressRing.dashOffset}
-                    className="transition-[stroke-dashoffset] duration-700 ease-out"
-                    style={{ filter: progress >= 75 ? 'drop-shadow(0 0 14px rgba(16,185,129,0.55))' : 'drop-shadow(0 0 10px rgba(59,130,246,0.45))' }}
-                  />
-                </svg>
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-300">Tamamlanma</p>
-                  <p className="mt-1 text-2xl font-black text-white">{isPrivacyActive ? maskValue(percentageLabel) : percentageLabel}</p>
+              <div className="mt-3 rounded-full border border-white/10 bg-slate-900/80 p-1">
+                <div className="relative h-5 overflow-hidden rounded-full bg-slate-800/80">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
+                    className="relative h-full rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500 shadow-[0_0_22px_rgba(16,185,129,0.45)]"
+                  >
+                    <motion.span
+                      className="absolute -right-1 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-emerald-200/90 blur-[1px]"
+                      animate={{ opacity: [0.55, 1, 0.55], scale: [0.95, 1.05, 0.95] }}
+                      transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                  </motion.div>
                 </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3 text-[12px] text-slate-200">
+                <span>Mevcut: <AnimatedCurrencyValue value={currentValue} baseCurrency={baseCurrency} rates={rates} /></span>
+                <span>Hedef: <AnimatedCurrencyValue value={targetAmount} baseCurrency={baseCurrency} rates={rates} /></span>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+          <div className="rounded-2xl border border-white/15 bg-slate-900/65 p-5 backdrop-blur-md">
             <div className="space-y-2">
-              <p className="text-[11px] uppercase tracking-[0.1em] text-slate-400">Mevcut Portfoy</p>
-              <p className="text-2xl font-black text-slate-100 md:text-3xl">
+              <p className="text-[11px] uppercase tracking-tight text-slate-300">Mevcut Portfoy</p>
+              <p className="text-2xl font-black text-slate-100 drop-shadow-[0_0_14px_rgba(56,189,248,0.35)] md:text-3xl">
                 <AnimatedCurrencyValue value={currentValue} baseCurrency={baseCurrency} rates={rates} />
               </p>
             </div>
 
             <div className="mt-4 space-y-2">
-              <p className="text-[11px] uppercase tracking-[0.1em] text-slate-400">Hedef Tutar</p>
+              <p className="text-[11px] uppercase tracking-tight text-slate-300">Hedef Tutar</p>
               <p className="text-lg font-bold text-emerald-200 md:text-xl">
                 <AnimatedCurrencyValue value={targetAmount} baseCurrency={baseCurrency} rates={rates} />
               </p>
             </div>
 
             <div className="mt-4 space-y-2">
-              <p className="text-[11px] uppercase tracking-[0.1em] text-slate-400">Kalan Tutar</p>
+              <p className="text-[11px] uppercase tracking-tight text-slate-300">Kalan Tutar</p>
               <p className="text-base font-semibold text-slate-200">
-                <AnimatedCurrencyValue value={Math.max(0, targetAmount - currentValue)} baseCurrency={baseCurrency} rates={rates} />
+                <AnimatedCurrencyValue value={remainingAmount} baseCurrency={baseCurrency} rates={rates} />
+              </p>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-violet-300/20 bg-violet-500/10 p-3.5">
+              <p className="text-xs font-semibold text-indigo-100">Hedef icin aylik ne kadar eklemeliyim?</p>
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={240}
+                  value={targetMonths}
+                  onChange={(event) => setTargetMonths(event.target.value)}
+                  className="w-20 rounded-md border border-white/15 bg-slate-900/75 px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-indigo-400/70"
+                />
+                <span className="text-sm text-slate-300">ay icin gerekli aylik birikim:</span>
+              </div>
+              <p className="mt-2 text-lg font-black text-indigo-100 drop-shadow-[0_0_12px_rgba(139,92,246,0.4)]">
+                <AnimatedCurrencyValue value={monthlyContributionNeeded} baseCurrency={baseCurrency} rates={rates} />
               </p>
             </div>
 

@@ -22,12 +22,20 @@ import Stats from './components/dashboard/Stats';
 import { SyncContext } from './context/SyncContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { usePrivacy } from './context/PrivacyContext';
+import {
+  THEME_OPTIONS,
+  THEME_STORAGE_KEY,
+  DEFAULT_THEME_ID,
+  resolveThemeId,
+  applyThemeToRoot,
+} from './utils/themePresets';
 
 const ATH_CELEBRATION_STORAGE_PREFIX = 'tek-finance:ath-celebration';
 const ATH_CELEBRATION_DURATION_MS = 3800;
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
+  const [activeTheme, setActiveTheme] = useState(DEFAULT_THEME_ID);
   const [baseCurrency, setBaseCurrency] = useState('TRY');
   const [sortConfig, setSortConfig] = useState({ key: 'profit', direction: 'desc' });
   const [inflationSource, setInflationSource] = useState('enag');
@@ -80,6 +88,25 @@ export default function App() {
       setLastSyncTime(lastUpdated.getTime());
     }
   }, [lastUpdated]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const savedTheme = resolveThemeId(window.localStorage.getItem(THEME_STORAGE_KEY));
+    setActiveTheme(savedTheme);
+    applyThemeToRoot(savedTheme);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const resolvedTheme = applyThemeToRoot(activeTheme);
+    window.localStorage.setItem(THEME_STORAGE_KEY, resolvedTheme);
+  }, [activeTheme]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -417,7 +444,14 @@ export default function App() {
 
   return (
     <SyncContext.Provider value={{ lastSyncTime, setLastSyncTime }}>
-    <div className="min-h-screen bg-[#0B1120] text-slate-100 font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10">
+    <div className="relative min-h-screen overflow-hidden bg-page text-text-main font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-24 -top-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute right-0 top-16 h-80 w-80 rounded-full bg-secondary/16 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-accent/14 blur-3xl" />
+      </div>
+
+      <div className="relative z-10">
       {showAthCelebration && activePage === 'dashboard' ? (
         <Confetti
           width={viewportSize.width}
@@ -449,6 +483,9 @@ export default function App() {
         <Header 
           activePage={activePage}
           setActivePage={setActivePage}
+          activeTheme={activeTheme}
+          themeOptions={THEME_OPTIONS}
+          onThemeChange={setActiveTheme}
           baseCurrency={baseCurrency}
           setBaseCurrency={setBaseCurrency}
           openAddModal={openAddModal}
@@ -495,30 +532,32 @@ export default function App() {
                 <motion.section
                   layout
                   transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                  className="col-span-12 md:col-span-4 md:order-2 rounded-3xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl transition-all duration-300 hover:scale-[1.01] hover:border-white/10 md:p-8"
+                  className="col-span-12 md:col-span-4 md:order-2 relative overflow-hidden rounded-3xl border border-white/10 bg-card/70 p-6 shadow-[0_20px_70px_rgba(8,47,73,0.35)] backdrop-blur-2xl transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45 md:p-8"
                 >
+                  <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-accent/18 blur-3xl" />
+                  <div className="pointer-events-none absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-secondary/18 blur-3xl" />
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-200">Akıllı Öneriler</h3>
+                    <h3 className="text-sm font-bold uppercase tracking-tight text-text-main">Akıllı Öneriler</h3>
                     <button
                       type="button"
                       onClick={handleToggleAlertDrawer}
-                      className="text-xs font-semibold rounded-md border border-sky-300/30 bg-sky-500/10 px-2.5 py-1 text-sky-200 hover:bg-sky-500/20 transition-colors min-h-[44px]"
+                      className="text-xs font-semibold rounded-md border border-violet-300/35 bg-violet-500/18 px-2.5 py-1 text-violet-100 hover:bg-violet-500/30 transition-colors min-h-[44px]"
                     >
                       Hepsini Gör
                     </button>
                   </div>
 
-                  <p className="mt-2 text-xs text-slate-400">Risk ve öneriler artık Alert panelinde. Burada kısa bir önizleme görebilirsin.</p>
+                  <p className="mt-2 text-xs text-text-muted">Risk ve öneriler artık Alert panelinde. Burada kısa bir önizleme görebilirsin.</p>
 
                   {previewAlerts.length > 0 ? (
                     <ul className="mt-4 space-y-2">
                       {previewAlerts.map((item) => (
-                        <li key={item.id} className="rounded-3xl border border-white/10 bg-black/20 px-3 py-2.5">
+                        <li key={item.id} className="rounded-3xl border border-white/15 bg-slate-900/55 px-3 py-2.5 backdrop-blur-md">
                           <p className="text-sm font-semibold text-slate-100 flex items-center gap-2">
                             <span aria-hidden="true">{getAlertVisual(item).icon}</span>
                             <span>{item.title}</span>
                           </p>
-                          <p className="text-xs text-slate-400 mt-1 line-clamp-2">{item.detail}</p>
+                          <p className="text-xs text-slate-300 mt-1 line-clamp-2">{item.detail}</p>
                         </li>
                       ))}
                     </ul>
@@ -573,6 +612,7 @@ export default function App() {
           initialPortfolioName={initialPortfolioName}
         />
       ) : null}
+      </div>
     </div>
     </SyncContext.Provider>
   );

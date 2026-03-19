@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+	--primary: 14 165 233;
+	--secondary: 20 184 166;
+	--accent: 16 185 129;
+	--bg-card: 15 23 42;
+	--bg-page: 11 17 32;
+	--text-main: 226 232 240;
+	--text-muted: 148 163 184;
+}
+
+*,
+*::before,
+*::after {
+	transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, box-shadow;
+	transition-duration: 500ms;
+	transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html,
+body,
+#root {
+	color: rgb(var(--text-main));
+	background-color: rgb(var(--bg-page));
+}
+
 ::-webkit-scrollbar {
 	width: 6px;
 	height: 6px;
