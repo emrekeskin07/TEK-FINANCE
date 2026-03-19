@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Coins, AlertCircle, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, DollarSign } from 'lucide-react';
+import { Coins, AlertCircle, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, ShoppingCart, ArrowUpRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts } from '../utils/helpers';
@@ -141,6 +141,21 @@ export default function PortfolioTable({
     );
   };
 
+  const formatNumericText = (value, maxFractionDigits = 8) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) {
+      return '-';
+    }
+
+    return numericValue.toLocaleString('tr-TR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: maxFractionDigits,
+    });
+  };
+
+  const renderMaskedText = (text) => (isPrivacyActive ? maskValue(text) : text);
+  const renderQuantity = (value, maxFractionDigits = 8) => renderMaskedText(formatNumericText(value, maxFractionDigits));
+
   const getHesapDetayi = (item) => {
     if (item.hesapTuru === 'Vadeli (Mevduat)' || item.hesapTuru === 'Vadeli Hesap (Mevduat)') {
       const faiz = Number(item.faizOrani);
@@ -244,6 +259,16 @@ export default function PortfolioTable({
       closeSellModal();
     }
   };
+
+  const sellAmountNumber = Number(sellAmount);
+  const sellPriceNumber = Number(sellPrice);
+  const sellTargetAmount = Number(sellTarget?.amount || 0);
+  const estimatedRemainingAmount = Number.isFinite(sellAmountNumber)
+    ? Math.max(0, sellTargetAmount - sellAmountNumber)
+    : sellTargetAmount;
+  const estimatedTotalProceeds = Number.isFinite(sellAmountNumber) && Number.isFinite(sellPriceNumber)
+    ? Math.max(0, sellAmountNumber * sellPriceNumber)
+    : 0;
 
   return (
     <>
@@ -363,7 +388,7 @@ export default function PortfolioTable({
                       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                         <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
                           <p className="text-[11px] text-slate-500">Miktar</p>
-                          <p className="text-sm font-semibold text-slate-200">{item.amount} {unitTypeToLabel(item.unitType || item.unit_type)}</p>
+                          <p className="text-sm font-semibold text-slate-200">{renderQuantity(item.amount)} {unitTypeToLabel(item.unitType || item.unit_type)}</p>
                         </div>
                         <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
                           <p className="text-[11px] text-slate-500">Güncel Fiyat</p>
@@ -434,10 +459,12 @@ export default function PortfolioTable({
                         ) : null}
                         <button
                           onClick={() => openSellModal(item, activePrice)}
-                          className="p-2 rounded-lg text-slate-300 hover:text-emerald-300 hover:bg-emerald-400/10 transition-colors"
+                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/20 transition-colors"
                           title="Sat"
                         >
-                          <DollarSign className="w-4 h-4" />
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                          <span>Sat</span>
+                          <ArrowUpRight className="w-3.5 h-3.5 opacity-85" />
                         </button>
                         <button
                           onClick={() => openEditModal(item)}
@@ -470,18 +497,21 @@ export default function PortfolioTable({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
         >
           <motion.div
             initial={{ y: 8, opacity: 0, scale: 0.98 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 8, opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f172a] p-5 shadow-2xl"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#161b22] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.55)]"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h4 className="text-lg font-semibold text-slate-100">Varlık Sat</h4>
+                <h4 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-emerald-300" />
+                  Parçalı Satış
+                </h4>
                 <p className="mt-1 text-xs text-slate-400">{sellTarget.bank || 'Banka Belirtilmedi'} • {sellTarget.symbol}</p>
               </div>
               <button
@@ -496,7 +526,16 @@ export default function PortfolioTable({
 
             <form onSubmit={handleSellSubmit} className="mt-4 space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Satılacak Lot</label>
+                <div className="mb-1 flex items-center justify-between gap-3">
+                  <label className="block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Satılacak Miktar</label>
+                  <button
+                    type="button"
+                    onClick={() => setSellAmount(String(Number(sellTarget.amount || 0)))}
+                    className="rounded-md border border-emerald-400/40 bg-emerald-500/15 px-2 py-1 text-[11px] font-semibold text-emerald-200 hover:bg-emerald-500/25"
+                  >
+                    Tümünü Sat / MAX
+                  </button>
+                </div>
                 <input
                   type="number"
                   min="0"
@@ -504,9 +543,9 @@ export default function PortfolioTable({
                   max={Number(sellTarget.amount || 0)}
                   value={sellAmount}
                   onChange={(e) => setSellAmount(e.target.value)}
-                  placeholder={`Maks: ${sellTarget.amount}`}
+                  placeholder={renderMaskedText(`Maks: ${formatNumericText(sellTarget.amount || 0)}`)}
                   required
-                  className="w-full rounded-lg border border-white/10 bg-black/20 p-3 text-slate-100 focus:outline-none focus:border-emerald-400"
+                  className="w-full rounded-lg border border-white/10 bg-black/25 p-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400"
                 />
               </div>
 
@@ -520,16 +559,18 @@ export default function PortfolioTable({
                   onChange={(e) => setSellPrice(e.target.value)}
                   placeholder="Örn: 125.45"
                   required
-                  className="w-full rounded-lg border border-white/10 bg-black/20 p-3 text-slate-100 focus:outline-none focus:border-emerald-400"
+                  className="w-full rounded-lg border border-white/10 bg-black/25 p-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400"
                 />
               </div>
 
-              <div className="rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
-                Tahmini Tutar: {
-                  Number.isFinite(Number(sellAmount)) && Number.isFinite(Number(sellPrice))
-                    ? renderCurrencyWithMutedSymbol(Number(sellAmount) * Number(sellPrice))
-                    : ' - '
-                }
+              <div className="rounded-xl border border-sky-300/20 bg-sky-500/10 px-3 py-2.5 text-xs text-sky-100">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-sky-200">Bilgi</p>
+                <p className="mt-1 text-slate-200">
+                  Satış sonrası kalan tahmini miktar: <span className="font-semibold">{renderQuantity(estimatedRemainingAmount)}</span>
+                </p>
+                <p className="mt-1 text-slate-200">
+                  Bu satıştan gelecek toplam para: <span className="font-semibold">{Number.isFinite(estimatedTotalProceeds) ? renderCurrencyWithMutedSymbol(estimatedTotalProceeds) : '-'}</span>
+                </p>
               </div>
 
               <div className="flex justify-end gap-2 pt-1">
@@ -543,7 +584,7 @@ export default function PortfolioTable({
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg border border-emerald-300/35 bg-emerald-500/20 px-3 py-2 text-sm font-semibold text-emerald-100 hover:bg-emerald-500/30 disabled:opacity-60"
+                  className="rounded-lg border border-emerald-300/35 bg-emerald-500 px-3 py-2 text-sm font-semibold text-emerald-50 hover:bg-emerald-400 disabled:opacity-60"
                   disabled={sellSubmitting}
                 >
                   {sellSubmitting ? 'Satılıyor...' : 'Satışı Onayla'}
