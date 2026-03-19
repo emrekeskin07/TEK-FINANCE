@@ -15,6 +15,7 @@ const HESAP_TURU_OPTIONS = ['Vadesiz', 'Vadeli (Mevduat)', 'Faizsiz Katılım'];
 const SAKLAMA_TURU_OPTIONS = ['Banka', 'Fiziksel/Evde'];
 const MIN_SYMBOL_QUERY_LENGTH = 2;
 const MANUAL_INSTITUTION_LABEL = 'Diğer (Manuel)';
+const INSTITUTION_STORAGE_KEY = 'tek-finance:custom-institutions';
 const PORTFOLIO_NAME_STORAGE_KEY = 'tek-finance:portfolio-name-options';
 const DEFAULT_PORTFOLIO_NAME_OPTIONS = ['Genel Portföy', 'Uzun Vadeli', 'Hisse Senedi Portföyüm'];
 
@@ -42,8 +43,10 @@ const INSTITUTION_OPTIONS = [
   'Şekerbank',
   'TEB',
   'Türkiye Finans',
+  'Vakıf Katılım',
   'Vakıfbank',
   'Yapı Kredi',
+  'Ziraat Katılım',
   'Ziraat Bankası',
   MANUAL_INSTITUTION_LABEL,
 ];
@@ -115,6 +118,33 @@ const getAmountUnit = (unitType) => unitTypeToLabel(unitType);
 const normalizeInstitutionForSearch = (value) => String(value || '').toLocaleLowerCase('tr-TR');
 const normalizePortfolioForSearch = (value) => String(value || '').toLocaleLowerCase('tr-TR');
 
+const dedupeInstitutionNames = (institutions) => {
+  const uniqueMap = new Map();
+
+  institutions.forEach((institution) => {
+    const trimmed = String(institution || '').trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const normalized = normalizeInstitutionForSearch(trimmed);
+    if (!uniqueMap.has(normalized)) {
+      uniqueMap.set(normalized, trimmed);
+    }
+  });
+
+  return Array.from(uniqueMap.values());
+};
+
+const isKnownInstitution = (institutionName, options = []) => {
+  const normalized = normalizeInstitutionForSearch(String(institutionName || '').trim());
+  if (!normalized) {
+    return false;
+  }
+
+  return options.some((option) => normalizeInstitutionForSearch(option) === normalized);
+};
+
 const dedupePortfolioNames = (names) => {
   const unique = new Set();
 
@@ -150,6 +180,28 @@ const readStoredPortfolioNames = () => {
   }
 };
 
+const readStoredInstitutions = () => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(INSTITUTION_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return dedupeInstitutionNames(parsed);
+  } catch {
+    return [];
+  }
+};
+
 export default function AssetModal({
   isOpen,
   closeModal,
@@ -172,6 +224,7 @@ export default function AssetModal({
   const [isInstitutionOpen, setIsInstitutionOpen] = useState(false);
   const [activeInstitutionIndex, setActiveInstitutionIndex] = useState(-1);
   const [isManualInstitutionSelected, setIsManualInstitutionSelected] = useState(false);
+  const [savedInstitutions, setSavedInstitutions] = useState(readStoredInstitutions);
   const [savedPortfolioNames, setSavedPortfolioNames] = useState(readStoredPortfolioNames);
   const [portfolioQuery, setPortfolioQuery] = useState(INITIAL_FORM.portfolioName);
   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
@@ -182,20 +235,23 @@ export default function AssetModal({
   const isStockLikeCategory = isStockCategory || isFundCategory;
   const isCashCategory = formData.category === 'Nakit/Banka' || formData.category === 'Nakit';
   const isCommodityCategory = formData.category === 'Değerli Madenler' || formData.category === 'Emtia/Altın' || formData.category === 'Emtia';
-  const isManualInstitution = isManualInstitutionSelected || (Boolean(formData.bank) && !INSTITUTION_OPTIONS.includes(formData.bank));
+  const availableInstitutionOptions = useMemo(
+    () => dedupeInstitutionNames([...savedInstitutions, ...INSTITUTION_OPTIONS]),
+    [savedInstitutions]
+  );
+  const isManualInstitution = isManualInstitutionSelected || (Boolean(formData.bank) && !isKnownInstitution(formData.bank, availableInstitutionOptions));
 
-  const institutionRule = getInstitutionRule(formData.bank);
-  const filteredInstitutionOptions = useMemo(() => {
+  const filteredSavedInstitutionOptions = useMemo(() => {
     const normalizedQuery = normalizeInstitutionForSearch(institutionQuery.trim());
 
     if (!normalizedQuery) {
-      return INSTITUTION_OPTIONS;
+      return savedInstitutions;
     }
 
     const startsWith = [];
     const contains = [];
 
-    INSTITUTION_OPTIONS.forEach((option) => {
+    savedInstitutions.forEach((option) => {
       const normalizedOption = normalizeInstitutionForSearch(option);
       if (normalizedOption.startsWith(normalizedQuery)) {
         startsWith.push(option);
@@ -205,7 +261,37 @@ export default function AssetModal({
     });
 
     return [...startsWith, ...contains];
-  }, [institutionQuery]);
+  }, [institutionQuery, savedInstitutions]);
+
+  const filteredBaseInstitutionOptions = useMemo(() => {
+    const normalizedQuery = normalizeInstitutionForSearch(institutionQuery.trim());
+    const savedSet = new Set(savedInstitutions.map((option) => normalizeInstitutionForSearch(option)));
+    const baseOptions = INSTITUTION_OPTIONS.filter((option) => !savedSet.has(normalizeInstitutionForSearch(option)));
+
+    if (!normalizedQuery) {
+      return baseOptions;
+    }
+
+    const startsWith = [];
+    const contains = [];
+
+    baseOptions.forEach((option) => {
+      const normalizedOption = normalizeInstitutionForSearch(option);
+      if (normalizedOption.startsWith(normalizedQuery)) {
+        startsWith.push(option);
+      } else if (normalizedOption.includes(normalizedQuery)) {
+        contains.push(option);
+      }
+    });
+
+    return [...startsWith, ...contains];
+  }, [institutionQuery, savedInstitutions]);
+
+  const institutionRule = getInstitutionRule(formData.bank);
+  const filteredInstitutionOptions = useMemo(
+    () => [...filteredSavedInstitutionOptions, ...filteredBaseInstitutionOptions],
+    [filteredSavedInstitutionOptions, filteredBaseInstitutionOptions]
+  );
   const availablePortfolioNames = useMemo(() => (
     dedupePortfolioNames([
       ...DEFAULT_PORTFOLIO_NAME_OPTIONS,
@@ -240,6 +326,14 @@ export default function AssetModal({
     inferDefaultUnitType({ category: formData.category, symbol: formData.symbol })
   );
   const amountUnit = getAmountUnit(normalizedUnitType);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(INSTITUTION_STORAGE_KEY, JSON.stringify(savedInstitutions));
+  }, [savedInstitutions]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -292,7 +386,7 @@ export default function AssetModal({
           : null
       );
       setInstitutionQuery(initialData.bank || '');
-      setIsManualInstitutionSelected(Boolean(initialData.bank) && !INSTITUTION_OPTIONS.includes(initialData.bank));
+      setIsManualInstitutionSelected(Boolean(initialData.bank) && !isKnownInstitution(initialData.bank, availableInstitutionOptions));
       setPortfolioQuery(initialData.portfolioName || initialData.portfolio_name || 'Genel Portföy');
     } else {
       const resolvedPrefill = String(initialPortfolioName || prefilledPortfolioName || '').trim();
@@ -315,7 +409,7 @@ export default function AssetModal({
     setActiveInstitutionIndex(-1);
     setIsPortfolioOpen(false);
     setActivePortfolioIndex(-1);
-  }, [isOpen, initialData, initialPortfolioName, prefilledPortfolioName]);
+  }, [isOpen, initialData, initialPortfolioName, prefilledPortfolioName, availableInstitutionOptions]);
 
   useEffect(() => {
     if (!isOpen || !isStockLikeCategory) {
@@ -595,16 +689,22 @@ export default function AssetModal({
       symbol: normalizedSymbol,
     });
     const normalizedPayloadUnitType = normalizeUnitType(formData.unitType, availableUnitTypes[0]);
+    const resolvedInstitutionName = String(formData.bank || institutionQuery || '').trim();
     const resolvedPortfolioName = String(formData.portfolioName || portfolioQuery || 'Genel Portföy').trim() || 'Genel Portföy';
     const resolvedAssetName = resolveAssetName({ symbol: normalizedSymbol, name: formData.name });
 
     const payload = {
       ...formData,
+      bank: resolvedInstitutionName,
       symbol: normalizedSymbol,
       name: resolvedAssetName,
       unitType: normalizedPayloadUnitType,
       portfolioName: resolvedPortfolioName,
     };
+
+    if (resolvedInstitutionName && !isKnownInstitution(resolvedInstitutionName, INSTITUTION_OPTIONS)) {
+      setSavedInstitutions((prev) => dedupeInstitutionNames([resolvedInstitutionName, ...prev]));
+    }
 
     setSavedPortfolioNames((prev) => (
       prev.includes(resolvedPortfolioName)
@@ -682,20 +782,55 @@ export default function AssetModal({
                       <ul role="listbox" className="max-h-56 overflow-y-auto py-1">
                         {filteredInstitutionOptions.length === 0 ? (
                           <li className="px-3 py-2 text-sm text-slate-400">Eşleşen kurum bulunamadı</li>
-                        ) : filteredInstitutionOptions.map((institution, index) => (
-                          <li
-                            key={institution}
-                            role="option"
-                            aria-selected={activeInstitutionIndex === index}
-                            onMouseDown={(event) => {
-                              event.preventDefault();
-                              applyInstitutionSelection(institution);
-                            }}
-                            className={`px-3 py-2 text-sm cursor-pointer transition-colors ${activeInstitutionIndex === index ? 'bg-blue-500/20 text-blue-200' : 'text-slate-200 hover:bg-white/10'}`}
-                          >
-                            {institution}
-                          </li>
-                        ))}
+                        ) : (
+                          <>
+                            {filteredSavedInstitutionOptions.length > 0 ? (
+                              <li className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-sky-200/80">
+                                Kayıtlı Kurumlarım
+                              </li>
+                            ) : null}
+
+                            {filteredSavedInstitutionOptions.map((institution, index) => (
+                              <li
+                                key={`saved-${institution}`}
+                                role="option"
+                                aria-selected={activeInstitutionIndex === index}
+                                onMouseDown={(event) => {
+                                  event.preventDefault();
+                                  applyInstitutionSelection(institution);
+                                }}
+                                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${activeInstitutionIndex === index ? 'bg-blue-500/20 text-blue-200' : 'text-slate-200 hover:bg-white/10'}`}
+                              >
+                                {institution}
+                              </li>
+                            ))}
+
+                            {filteredBaseInstitutionOptions.length > 0 ? (
+                              <li className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                                Tüm Kurumlar
+                              </li>
+                            ) : null}
+
+                            {filteredBaseInstitutionOptions.map((institution, index) => {
+                              const flatIndex = filteredSavedInstitutionOptions.length + index;
+
+                              return (
+                                <li
+                                  key={`base-${institution}`}
+                                  role="option"
+                                  aria-selected={activeInstitutionIndex === flatIndex}
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    applyInstitutionSelection(institution);
+                                  }}
+                                  className={`px-3 py-2 text-sm cursor-pointer transition-colors ${activeInstitutionIndex === flatIndex ? 'bg-blue-500/20 text-blue-200' : 'text-slate-200 hover:bg-white/10'}`}
+                                >
+                                  {institution}
+                                </li>
+                              );
+                            })}
+                          </>
+                        )}
                       </ul>
                     </div>
                   ) : null}
