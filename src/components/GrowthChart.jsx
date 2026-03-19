@@ -4,6 +4,7 @@ import { AreaChart, Area, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { TrendingUp } from 'lucide-react';
 import { usePrivacy } from '../context/PrivacyContext';
 import { useDashboardData } from '../context/DashboardContext';
+import Button from './common/Button';
 import { formatCurrencyParts } from '../utils/helpers';
 
 const RANGE_OPTIONS = [
@@ -148,18 +149,19 @@ export default function GrowthChart() {
           {RANGE_OPTIONS.map((option) => {
             const isActive = selectedRange === option.key;
             return (
-              <button
+              <Button
                 key={option.key}
                 type="button"
+                variant="ghost"
                 onClick={() => setSelectedRange(option.key)}
-                className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all duration-200 ${
+                className={`min-h-0 rounded-md px-2.5 py-1 text-[11px] ${
                   isActive
                     ? 'bg-cyan-400/25 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.3)]'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
+                    : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 {option.label}
-              </button>
+              </Button>
             );
           })}
         </div>

@@ -1,25 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
-import { Wallet } from 'lucide-react';
 import { usePortfolio } from './hooks/usePortfolio';
-import { useMarketData } from './hooks/useMarketData';
+import { useMarketPrices } from './hooks/useMarketPrices';
 import { useAuthSession } from './hooks/useAuthSession';
 import { useManualAssets } from './hooks/useManualAssets';
-import { usePortfolioData } from './hooks/usePortfolioData';
+import { useCalculations } from './hooks/useCalculations';
 import { useAnimatedCounter } from './hooks/useAnimatedCounter';
 import Header from './components/Header';
 import DistributionCard from './components/DistributionCard';
-import GrowthChart from './components/GrowthChart';
 import AssetList from './components/AssetList';
-import SpotlightCard from './components/SpotlightCard';
-import ShinyText from './components/ui/ShinyText';
-import SplitText from './components/ui/SplitText';
 import AlertDrawer from './components/AlertDrawer';
 import AssetModal from './components/AssetModal';
 import AuthPage from './components/AuthPage';
 import MalVarligiPage from './components/MalVarligiPage';
 import EnflasyonAnaliziPage from './components/EnflasyonAnaliziPage';
+import Chart from './components/dashboard/Chart';
+import Stats from './components/dashboard/Stats';
 import { SyncContext } from './context/SyncContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { usePrivacy } from './context/PrivacyContext';
@@ -28,8 +25,6 @@ import { formatCurrencyParts } from './utils/helpers';
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
   const [baseCurrency, setBaseCurrency] = useState('TRY');
-  const [selectedBank, setSelectedBank] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'profit', direction: 'desc' });
   const [inflationSource, setInflationSource] = useState('enag');
   const [lastSyncTime, setLastSyncTime] = useState(null);
@@ -63,7 +58,7 @@ export default function App() {
     }
   });
   
-  const { marketData, marketChanges, marketMeta, loading, lastUpdated, lastFetchFailed, rates, updatePrices } = useMarketData(portfolio);
+  const { marketData, marketChanges, marketMeta, loading, lastUpdated, lastFetchFailed, rates, updatePrices } = useMarketPrices(portfolio);
 
   useEffect(() => {
     if (!authUser) {
@@ -78,14 +73,6 @@ export default function App() {
       setLastSyncTime(lastUpdated.getTime());
     }
   }, [lastUpdated]);
-
-  const handleBankSelect = (bankName) => {
-    setSelectedBank((prevSelected) => (prevSelected === bankName ? null : bankName));
-  };
-
-  const handleCategorySelect = (categoryName) => {
-    setSelectedCategory((prevSelected) => (prevSelected === categoryName ? null : categoryName));
-  };
 
   const resolvePortfolioNameFromUrl = () => {
     if (typeof window === 'undefined') {
@@ -185,7 +172,12 @@ export default function App() {
     activeAlertCount,
     previewAlerts,
     portfolioNameOptions,
-  } = usePortfolioData({
+    selectedBank,
+    selectedCategory,
+    handleBankSelect,
+    handleCategorySelect,
+    clearFilters,
+  } = useCalculations({
     portfolio,
     marketData,
     marketChanges,
@@ -193,7 +185,6 @@ export default function App() {
     inflationSource,
   });
 
-  const animatedProfit = useAnimatedCounter(totalProfit);
   const animatedProfitPercent = useAnimatedCounter(Number(profitPercentage));
 
   const dashboardGreetingName = authUser?.user_metadata?.full_name
@@ -256,11 +247,6 @@ export default function App() {
     return { icon: '💡', label: 'Öneri' };
   };
 
-  const clearDashboardFilters = () => {
-    setSelectedBank(null);
-    setSelectedCategory(null);
-  };
-
   const dashboardContextValue = useMemo(() => ({
     portfolio,
     marketData,
@@ -278,7 +264,7 @@ export default function App() {
     lineChartData,
     handleBankSelect,
     handleCategorySelect,
-    clearDashboardFilters,
+    clearDashboardFilters: clearFilters,
     openEditModal,
     openAddModal,
     onQuickBuyAsset: handleQuickBuyAsset,
@@ -301,7 +287,7 @@ export default function App() {
     lineChartData,
     handleBankSelect,
     handleCategorySelect,
-    clearDashboardFilters,
+    clearFilters,
     openEditModal,
     openAddModal,
     handleQuickBuyAsset,
@@ -386,78 +372,24 @@ export default function App() {
           <>
             <DashboardProvider value={dashboardContextValue}>
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-4 md:p-8">
-                <motion.section
-                  layout
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, ease: 'easeOut' }}
-                  className="col-span-12 rounded-2xl border border-gray-800 bg-[#1A2232] shadow-2xl p-4 md:p-6 space-y-4"
-                >
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 md:px-5 backdrop-blur-sm">
-                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-100">
-                      <SplitText text={`Hoş Geldin ${dashboardGreetingName}`} by="chars" stagger={0.025} />
-                    </h2>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-400">Finansal durumunun güncel özetini aşağıda bulabilirsin.</p>
-                  </div>
+                <Stats
+                  greetingName={dashboardGreetingName}
+                  totalProfit={totalProfit}
+                  dashboardTotalValue={dashboardTotalValue}
+                  totalValue={totalValue}
+                  malVarligiManuelToplam={malVarligiManuelToplam}
+                  portfolioRealReturnPercent={portfolioRealReturnPercent}
+                  selectedInflationSourceLabel={selectedInflationSourceLabel}
+                  renderCurrency={renderCurrencyWithMutedSymbol}
+                  renderPercent={() => renderPercentText(animatedProfitPercent)}
+                  renderRealReturn={() => (
+                    isPrivacyActive
+                      ? maskValue(`${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`)
+                      : `${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`
+                  )}
+                />
 
-                  <SpotlightCard
-                    spotlightColor="rgba(99, 102, 241, 0.18)"
-                    className="relative overflow-hidden rounded-3xl border border-indigo-500/25 bg-gradient-to-br from-indigo-900/35 via-[#16233d] to-[#0b1120] p-5 sm:p-6 md:p-8 lg:p-10 shadow-[0_28px_80px_rgba(8,15,32,0.6)]"
-                  >
-                    <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-200/85">Genel Portföy</p>
-                        <h2 className="mt-2 text-5xl md:text-6xl font-black text-white tracking-tight leading-none">
-                          <ShinyText>
-                            {renderCurrencyWithMutedSymbol(dashboardTotalValue)}
-                          </ShinyText>
-                        </h2>
-                        <p className="mt-4 text-sm text-slate-300">
-                          (Bankalardaki Toplam: {renderCurrencyWithMutedSymbol(totalValue)})
-                        </p>
-                        {malVarligiManuelToplam > 0 ? (
-                          <p className="mt-1 text-xs text-slate-300/85">
-                            Mal Varlığı Katkısı (Araç/Gayrimenkul/Diğer): {renderCurrencyWithMutedSymbol(malVarligiManuelToplam)}
-                          </p>
-                        ) : (
-                          <p className="mt-1 text-xs text-slate-500">Şu an net değer yalnızca kurumlardaki varlıklardan oluşuyor.</p>
-                        )}
-                      </div>
-
-                      <div className={`w-full md:w-auto md:min-w-[260px] rounded-2xl border p-4 md:p-5 ${totalProfit >= 0 ? 'border-emerald-300/35 bg-emerald-500/12' : 'border-rose-300/35 bg-rose-500/12'}`}>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-200">Toplam Performans</p>
-                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 bg-black/20">
-                            <Wallet className={`h-4 w-4 ${totalProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`} />
-                          </span>
-                        </div>
-                        <p className={`mt-3 text-2xl md:text-3xl font-extrabold tracking-tight ${totalProfit >= 0 ? 'text-emerald-200' : 'text-rose-200'}`}>
-                          {totalProfit > 0 ? '+' : ''}{renderCurrencyWithMutedSymbol(animatedProfit)}
-                        </p>
-                        <p className={`mt-1 text-sm font-bold ${totalProfit >= 0 ? 'text-emerald-100' : 'text-rose-100'}`}>
-                          {renderPercentText(animatedProfitPercent)}
-                        </p>
-                      </div>
-                    </div>
-                  </SpotlightCard>
-
-                  <div className="mt-4 flex justify-center">
-                    <span
-                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold tracking-[0.04em] ${
-                        portfolioRealReturnPercent >= 0
-                          ? 'border-emerald-300/40 bg-emerald-500/10 text-emerald-200'
-                          : 'border-rose-300/45 bg-rose-500/10 text-rose-100'
-                      }`}
-                    >
-                      Reel Getiri ({selectedInflationSourceLabel})
-                      <span className="font-bold">
-                        {isPrivacyActive ? maskValue(`${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`) : `${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`}
-                      </span>
-                    </span>
-                  </div>
-                </motion.section>
-
-                <GrowthChart />
+                <Chart />
 
                 <DistributionCard />
 

@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, TrendingUp, TrendingDown, Plus } from 'lucide-react';
+import PropTypes from 'prop-types';
+import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, TrendingUp, TrendingDown } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts, formatTickerName, groupAssetsByPortfolio } from '../utils/helpers';
 import { getMarketPriceKey, resolveAssetLivePrice, unitTypeToLabel } from '../utils/assetPricing';
 import { getCategoryBadgeStyle } from '../utils/categoryStyles';
 import { calculateRealReturnPercent, getLatestAnnualInflationRate } from '../utils/financeMath';
+import AssetGroup from './dashboard/AssetGroup';
 
 const getLatestAnnualEnagRate = () => {
   try {
@@ -365,51 +367,17 @@ export default function PortfolioTable({
           const isPortfolioOpen = openPortfolios[portfolioKey] ?? true;
 
           return (
-            <section key={`portfolio-group-${group.portfolioName}`} className="space-y-2">
-              <div className="group flex items-stretch gap-2">
-                <button
-                  type="button"
-                  onClick={() => togglePortfolioAccordion(portfolioKey)}
-                  aria-expanded={isPortfolioOpen}
-                  className="w-full rounded-xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 text-left transition-all duration-300 ease-in-out hover:bg-blue-500/15 md:px-5"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Portföy Grubu</p>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                        <h4 className="text-base font-semibold text-slate-100 break-words">{group.portfolioName}</h4>
-                        <span className="text-slate-500">-</span>
-                        <p className="text-sm font-semibold text-slate-100">{renderCurrencyWithMutedSymbol(group.totalValue)}</p>
-                        <span className="inline-flex items-center rounded-full border border-white/10 bg-black/35 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-slate-300">
-                          {group.items.length} Varlık
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <p className={`text-[11px] ${group.totalProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
-                        {isPrivacyActive ? maskValue(`%${groupProfitPercent}`) : `%${groupProfitPercent}`}
-                      </p>
-                      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/20 transition-transform duration-300 ease-in-out ${isPortfolioOpen ? 'rotate-180' : 'rotate-0'}`}>
-                        <ChevronDown className="h-4 w-4 text-slate-300" />
-                      </span>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onQuickAddPortfolio?.(portfolioKey)}
-                  className="inline-flex h-auto min-w-10 items-center justify-center rounded-xl border border-white/10 bg-black/25 px-2 text-slate-300 opacity-55 transition-all duration-300 ease-in-out hover:border-blue-300/45 hover:bg-blue-500/20 hover:text-blue-100 hover:opacity-100 group-hover:opacity-100"
-                  title={`${group.portfolioName} portföyüne hızlı varlık ekle`}
-                  aria-label={`${group.portfolioName} portföyüne hızlı varlık ekle`}
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className={`grid transition-all duration-300 ease-in-out ${isPortfolioOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-                <div className="overflow-hidden" aria-hidden={!isPortfolioOpen}>
-                  <div className="ml-3 space-y-2 border-l border-white/10 pl-3 md:ml-4 md:pl-4">
+            <AssetGroup
+              key={`portfolio-group-${group.portfolioName}`}
+              group={group}
+              isOpen={isPortfolioOpen}
+              groupProfitPercent={groupProfitPercent}
+              onToggle={() => togglePortfolioAccordion(portfolioKey)}
+              onQuickAdd={() => onQuickAddPortfolio?.(portfolioKey)}
+              renderCurrency={renderCurrencyWithMutedSymbol}
+              isPrivacyActive={isPrivacyActive}
+              maskValue={maskValue}
+            >
               {group.items.map(({ item, livePrice, activePrice, itemTotalValue, itemCost, itemProfit }) => {
                 const categoryName = item.category || 'Diğer';
                 const isCategorySelected = selectedCategory === categoryName;
@@ -589,10 +557,7 @@ export default function PortfolioTable({
             </article>
                 );
               })}
-                  </div>
-                </div>
-              </div>
-            </section>
+            </AssetGroup>
           );
         })}
       </div>
@@ -706,3 +671,43 @@ export default function PortfolioTable({
     </>
   );
 }
+
+PortfolioTable.propTypes = {
+  portfolio: PropTypes.arrayOf(PropTypes.object).isRequired,
+  marketData: PropTypes.object,
+  marketMeta: PropTypes.object,
+  loading: PropTypes.bool,
+  lastUpdated: PropTypes.instanceOf(Date),
+  baseCurrency: PropTypes.string.isRequired,
+  rates: PropTypes.object,
+  totalValue: PropTypes.number.isRequired,
+  selectedBank: PropTypes.string,
+  selectedCategory: PropTypes.string,
+  onSelectCategory: PropTypes.func,
+  sortConfig: PropTypes.shape({
+    key: PropTypes.string,
+    direction: PropTypes.string,
+  }).isRequired,
+  setSortConfig: PropTypes.func.isRequired,
+  onClearFilter: PropTypes.func,
+  openEditModal: PropTypes.func.isRequired,
+  onQuickBuyAsset: PropTypes.func,
+  onQuickAddPortfolio: PropTypes.func,
+  handleSellAsset: PropTypes.func,
+  handleRemoveAsset: PropTypes.func.isRequired,
+};
+
+PortfolioTable.defaultProps = {
+  marketData: {},
+  marketMeta: {},
+  loading: false,
+  lastUpdated: null,
+  rates: {},
+  selectedBank: null,
+  selectedCategory: null,
+  onSelectCategory: null,
+  onClearFilter: null,
+  onQuickBuyAsset: null,
+  onQuickAddPortfolio: null,
+  handleSellAsset: null,
+};

@@ -1,6 +1,8 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
 import { NumericFormat } from 'react-number-format';
+import Input from './common/Input';
 import { fetchSymbolSuggestions } from '../services/api';
 import {
   getAllowedUnitTypes,
@@ -761,9 +763,10 @@ export default function AssetModal({
           <div className="rounded-xl border border-white/10 bg-black/15 p-4 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Kurum Seçimi</label>
                 <div className="relative">
-                  <input
+                  <Input
+                    id="institution-search"
+                    label="Kurum Seçimi"
                     type="text"
                     value={institutionQuery}
                     placeholder="Kurum ara veya seç"
@@ -783,7 +786,7 @@ export default function AssetModal({
                       setActiveInstitutionIndex(0);
                     }}
                     onKeyDown={handleInstitutionKeyDown}
-                    className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
+                    inputClassName="w-full"
                   />
 
                   {isInstitutionOpen ? (
@@ -987,9 +990,10 @@ export default function AssetModal({
             <h4 className="text-xs font-bold uppercase tracking-[0.1em] text-slate-300">Varlık Detayı</h4>
 
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1">Portföy Adı</label>
               <div className="relative">
-                <input
+                <Input
+                  id="portfolio-name"
+                  label="Portföy Adı"
                   type="text"
                   value={portfolioQuery}
                   placeholder="Portföy adı ara veya yeni ad yaz"
@@ -1006,7 +1010,7 @@ export default function AssetModal({
                     setActivePortfolioIndex(0);
                   }}
                   onKeyDown={handlePortfolioKeyDown}
-                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
+                  inputClassName="w-full"
                 />
 
                 {isPortfolioOpen ? (
@@ -1221,3 +1225,16 @@ export default function AssetModal({
     </div>
   );
 }
+
+AssetModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  closeModal: PropTypes.func.isRequired,
+  editingAssetId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  initialData: PropTypes.object,
+  mode: PropTypes.oneOf(['buy', 'sell', 'edit']),
+  onAdd: PropTypes.func.isRequired,
+  onUpdate: PropTypes.func.isRequired,
+  portfolioNameOptions: PropTypes.arrayOf(PropTypes.string),
+  initialPortfolioName: PropTypes.string,
+  prefilledPortfolioName: PropTypes.string,
+};
