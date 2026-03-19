@@ -9,7 +9,29 @@ const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 const CACHE_TTL_MS = 60 * 1000;
 const TEFAS_HISTORY_URL = "https://www.tefas.gov.tr/api/DB/BindHistoryInfo";
-const yahooFinance = new YahooFinance();
+const YAHOO_MIN_INTERVAL_MS = Number(process.env.YF_INTERVAL_MS) || 2000;
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36";
+const yahooFinance = new YahooFinance({
+  queue: {
+    concurrency: 1,
+  },
+  fetchOptions: {
+    headers: {
+      "User-Agent": BROWSER_USER_AGENT,
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      "Upgrade-Insecure-Requests": "1",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-User": "?1",
+    },
+  },
+});
+let lastYahooRequestAt = 0;
 
 // symbol -> { data, expiresAt }
 const quoteCache = new Map();
@@ -60,6 +82,18 @@ function setCachedQuote(symbol, data) {
     data,
     expiresAt: Date.now() + CACHE_TTL_MS,
   });
+}
+
+async function runYahooRequest(requestFn) {
+  const now = Date.now();
+  const elapsed = now - lastYahooRequestAt;
+  if (elapsed < YAHOO_MIN_INTERVAL_MS) {
+    await new Promise((resolve) => setTimeout(resolve, YAHOO_MIN_INTERVAL_MS - elapsed));
+  }
+
+  const result = await requestFn();
+  lastYahooRequestAt = Date.now();
+  return result;
 }
 
 function toIsoDate(value) {
@@ -218,8 +252,7 @@ function mapTefasRow(row) {
 
 function tefasHeaders() {
   return {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "User-Agent": BROWSER_USER_AGENT,
     Accept: "application/json, text/plain, */*",
     "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
     Referer: "https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=",
@@ -331,7 +364,7 @@ async function getQuoteData(symbol) {
     return { data: { ...cached, cached: true } };
   }
 
-  const quote = await yahooFinance.quote(symbol);
+  const quote = await runYahooRequest(() => yahooFinance.quote(symbol));
   const cleaned = cleanQuote(quote);
   setCachedQuote(symbol, cleaned);
 
@@ -374,11 +407,13 @@ app.get("/api/search", async (req, res) => {
       }
     }
 
-    const result = await yahooFinance.search(query, {
-      quotesCount: 20,
-      newsCount: 0,
-      enableFuzzyQuery: true,
-    });
+    const result = await runYahooRequest(() =>
+      yahooFinance.search(query, {
+        quotesCount: 20,
+        newsCount: 0,
+        enableFuzzyQuery: true,
+      })
+    );
 
     const quotes = Array.isArray(result?.quotes) ? result.quotes : [];
 
@@ -423,9 +458,12 @@ app.get("/api/search", async (req, res) => {
       data,
     });
   } catch (error) {
+    console.error("Hata Detayı:", error.message);
+
     return res.status(502).json({
       ok: false,
       error: error.message || "Failed to search symbols",
+      errorMessage: error.message,
     });
   }
 });
@@ -449,11 +487,12 @@ app.get("/api/finance", async (req, res) => {
       data: result.data,
     });
   } catch (error) {
-    console.error("!!! Yahoo API Hatasi:", error.message);
+    console.error("Hata Detayı:", error.message);
 
     return res.status(502).json({
       ok: false,
       error: error.message || "Failed to fetch quote",
+      errorMessage: error.message,
     });
   }
 });
@@ -476,6 +515,8 @@ app.get("/api/quotes", async (req, res) => {
           const result = await getQuoteData(symbol);
           return result.data;
         } catch (error) {
+          console.error("Hata Detayı:", error.message);
+
           return {
             symbol,
             error: error.message || "Failed to fetch quote",
@@ -491,6 +532,8 @@ app.get("/api/quotes", async (req, res) => {
       data,
     });
   } catch (error) {
+    console.error("Hata Detayı:", error.message);
+
     return res.status(500).json({
       ok: false,
       error: error.message || "Internal server error",
@@ -520,9 +563,13 @@ app.get("/api/fon-fiyati/:kod", async (req, res) => {
     const data = await fetchTefasFundPrice(fundCode);
     return res.json({ ok: true, data });
   } catch (error) {
-    return res.status(error.status || 502).json({
+    console.error("Hata Detayı:", error.message);
+
+    const status = error.status || 502;
+    return res.status(status).json({
       ok: false,
       error: error.message || "TEFAS fon fiyatı alınamadı.",
+      ...(status === 502 ? { errorMessage: error.message } : {}),
     });
   }
 });
