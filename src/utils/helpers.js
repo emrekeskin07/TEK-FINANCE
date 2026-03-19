@@ -41,3 +41,12 @@ export const formatCurrencyParts = (value, baseCurrency, rates) => {
   const converted = convertCurrency(safeValue, baseCurrency, rates);
   return getCurrencyFormatter(baseCurrency).formatToParts(converted);
 };
+
+export const formatMaskedCurrency = (baseCurrency) => {
+  const parts = getCurrencyFormatter(baseCurrency).formatToParts(0);
+  const currencyPart = parts.find((part) => part.type === 'currency');
+  const currency = currencyPart?.value || '₺';
+  return `${currency} ••••,••`;
+};
+
+export const formatMaskedPercent = () => '•••%';

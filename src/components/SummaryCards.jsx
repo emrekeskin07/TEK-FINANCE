@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Wallet, Activity, DollarSign, TrendingUp, TrendingDown, PieChart as PieChartIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, XAxis, YAxis, CartesianGrid, Sector } from 'recharts';
 import { animate, motion, useSpring, useTransform } from 'framer-motion';
-import { formatCurrencyParts, convertCurrency } from '../utils/helpers';
+import { formatCurrencyParts, convertCurrency, formatMaskedCurrency, formatMaskedPercent } from '../utils/helpers';
 import { resolveAssetActivePrice } from '../utils/assetPricing';
 import { getCategoryColor } from '../utils/categoryStyles';
 import { CHART_ANIMATION, CHART_DONUT, CHART_LINE, CHART_THEME, darkenHex, lightenHex } from '../utils/chartConfig';
@@ -178,6 +178,7 @@ export default function SummaryCards({
   marketData,
   lineChartData,
   showTopCards = true,
+  isPrivate = false,
 }) {
   
   const chartData = Object.keys(bankTotals).map(bankName => ({
@@ -258,7 +259,7 @@ export default function SummaryCards({
       .sort((a, b) => b.total - a.total);
   }, [detailedAssetRows, totalValue]);
 
-  const formatPercent = (value) => `%${Number(value || 0).toFixed(1)}`;
+  const formatPercent = (value) => (isPrivate ? formatMaskedPercent() : `%${Number(value || 0).toFixed(1)}`);
 
   const netWorthCategoryData = [...categoryChartData];
   if (convertedPhysicalAssets > 0) {
@@ -290,15 +291,21 @@ export default function SummaryCards({
 
   const premiumCardHighlightClass = "relative overflow-hidden before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/5 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/5 after:content-['']";
 
-  const renderCurrencyWithMutedSymbol = (value) => (
-    <>
-      {formatCurrencyParts(value, baseCurrency, rates).map((part, index) => (
-        part.type === 'currency'
-          ? <span key={`${part.type}-${index}`} className="text-slate-400/75">{part.value}</span>
-          : <span key={`${part.type}-${index}`}>{part.value}</span>
-      ))}
-    </>
-  );
+  const renderCurrencyWithMutedSymbol = (value) => {
+    if (isPrivate) {
+      return <span>{formatMaskedCurrency(baseCurrency)}</span>;
+    }
+
+    return (
+      <>
+        {formatCurrencyParts(value, baseCurrency, rates).map((part, index) => (
+          part.type === 'currency'
+            ? <span key={`${part.type}-${index}`} className="text-slate-400/75">{part.value}</span>
+            : <span key={`${part.type}-${index}`}>{part.value}</span>
+        ))}
+      </>
+    );
+  };
 
   const [activeChartTab, setActiveChartTab] = useState('banks');
   const [selectedPieIndex, setSelectedPieIndex] = useState(null);
@@ -388,7 +395,13 @@ export default function SummaryCards({
   const selectedSlice = selectedPieIndex !== null ? activePieData[selectedPieIndex] : null;
   const selectedSlicePercent = selectedSlice ? getPiePercent(selectedSlice.value) : null;
 
-  const formatChartCurrency = (value) => TRY_CURRENCY_FORMATTER.format(Number(value || 0));
+  const formatChartCurrency = (value) => {
+    if (isPrivate) {
+      return formatMaskedCurrency('TRY');
+    }
+
+    return TRY_CURRENCY_FORMATTER.format(Number(value || 0));
+  };
 
   const renderPieLegend = ({ payload }) => {
     const legendItems = Array.isArray(payload) ? payload : [];
@@ -414,7 +427,7 @@ export default function SummaryCards({
                 />
                 <span className="truncate text-xs font-medium text-slate-300/90">{entry?.value}</span>
               </div>
-              <span className="text-[11px] font-semibold text-slate-400">%{itemPercent.toFixed(1)}</span>
+              <span className="text-[11px] font-semibold text-slate-400">{isPrivate ? formatMaskedPercent() : `%${itemPercent.toFixed(1)}`}</span>
             </li>
           );
         })}
@@ -518,7 +531,7 @@ export default function SummaryCards({
           </div>
           <div className="flex items-center gap-2 text-sm relative z-10">
             <span className={`font-semibold px-2 py-0.5 rounded-md ${totalProfit >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>
-              {totalProfit > 0 ? '+' : ''}{profitPercentage}%
+              {isPrivate ? formatMaskedPercent() : `${totalProfit > 0 ? '+' : ''}${profitPercentage}%`}
             </span>
             <span className="text-slate-400">tüm zamanlar</span>
           </div>
@@ -636,7 +649,7 @@ export default function SummaryCards({
                       >
                         {formatChartCurrency(selectedSlice.value)}
                       </p>
-                      <p className="text-[11px] font-semibold text-slate-400 mt-0.5">%{selectedSlicePercent?.toFixed(1)}</p>
+                      <p className="text-[11px] font-semibold text-slate-400 mt-0.5">{isPrivate ? formatMaskedPercent() : `%${selectedSlicePercent?.toFixed(1)}`}</p>
                     </div>
                   ) : (
                     <div className="text-center px-4">
@@ -693,7 +706,7 @@ export default function SummaryCards({
                   fontSize={CHART_THEME.axisFontSize}
                   tickLine={false} 
                   axisLine={false} 
-                  tickFormatter={(value) => TRY_CURRENCY_FORMATTER.format(Number(value || 0))}
+                  tickFormatter={(value) => formatChartCurrency(value)}
                   width={50}
                   tick={{ fontFamily: CHART_THEME.fontFamily }}
                 />

@@ -21,7 +21,7 @@ import AuthPage from './components/AuthPage';
 import MalVarligiPage from './components/MalVarligiPage';
 import EnflasyonAnaliziPage from './components/EnflasyonAnaliziPage';
 import { SyncContext } from './context/SyncContext';
-import { formatCurrencyParts } from './utils/helpers';
+import { formatCurrencyParts, formatMaskedCurrency, formatMaskedPercent } from './utils/helpers';
 import { buildAlertInsights } from './utils/alertInsights';
 
 const PRIVACY_MODE_STORAGE_KEY = 'tek-finance:privacy-mode';
@@ -198,15 +198,23 @@ export default function App() {
     }, 0);
   };
 
-  const renderCurrencyWithMutedSymbol = (value) => (
-    <>
-      {formatCurrencyParts(value, baseCurrency, rates).map((part, index) => (
-        part.type === 'currency'
-          ? <span key={`${part.type}-${index}`} className="text-slate-400/70">{part.value}</span>
-          : <span key={`${part.type}-${index}`}>{part.value}</span>
-      ))}
-    </>
-  );
+  const renderCurrencyWithMutedSymbol = (value) => {
+    if (isPrivate) {
+      return <span>{formatMaskedCurrency(baseCurrency)}</span>;
+    }
+
+    return (
+      <>
+        {formatCurrencyParts(value, baseCurrency, rates).map((part, index) => (
+          part.type === 'currency'
+            ? <span key={`${part.type}-${index}`} className="text-slate-400/70">{part.value}</span>
+            : <span key={`${part.type}-${index}`}>{part.value}</span>
+        ))}
+      </>
+    );
+  };
+
+  const renderMaskedPercent = () => formatMaskedPercent();
 
 
   if (authLoading) {
@@ -301,49 +309,49 @@ export default function App() {
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-8 xl:gap-10">
                 <SpotlightCard
-                  spotlightColor="rgba(56, 189, 248, 0.26)"
-                  className="relative overflow-hidden rounded-3xl border border-sky-300/20 bg-gradient-to-br from-sky-500/15 via-slate-900/60 to-slate-950 p-5 sm:p-6 md:p-8 lg:p-10 shadow-[0_25px_80px_rgba(2,132,199,0.18)]"
+                  spotlightColor="rgba(34, 197, 94, 0.2)"
+                  className="relative overflow-hidden rounded-3xl border border-slate-600/40 bg-gradient-to-br from-[#111827] via-[#0f172a] to-[#030712] p-5 sm:p-6 md:p-8 lg:p-10 shadow-[0_25px_80px_rgba(3,7,18,0.55)]"
                 >
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-300">Genel Portföy Toplamı</p>
                       <h2 className="mt-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-100">
-                        <ShinyText className={isPrivate ? 'blur-sm select-none' : ''}>
+                        <ShinyText>
                           {renderCurrencyWithMutedSymbol(dashboardTotalValue)}
                         </ShinyText>
                       </h2>
-                      <p className={`mt-4 text-sm text-slate-400 ${isPrivate ? 'blur-sm select-none' : ''}`}>
+                      <p className="mt-4 text-sm text-slate-400">
                         (Bankalardaki Toplam: {renderCurrencyWithMutedSymbol(totalValue)})
                       </p>
                       {malVarligiManuelToplam > 0 ? (
-                        <p className={`mt-1 text-xs text-slate-300/85 ${isPrivate ? 'blur-sm select-none' : ''}`}>
+                        <p className="mt-1 text-xs text-slate-300/85">
                           Mal Varlığı Katkısı (Araç/Gayrimenkul/Diğer): {renderCurrencyWithMutedSymbol(malVarligiManuelToplam)}
                         </p>
                       ) : (
                         <p className="mt-1 text-xs text-slate-500">Şu an net değer yalnızca kurumlardaki varlıklardan oluşuyor.</p>
                       )}
                     </div>
-                    <div className="rounded-2xl border border-sky-300/25 bg-sky-400/10 p-3">
-                      <Wallet className="h-6 w-6 text-sky-200" />
+                    <div className="rounded-2xl border border-emerald-300/30 bg-emerald-500/10 p-3">
+                      <Wallet className="h-6 w-6 text-emerald-300" />
                     </div>
                   </div>
                 </SpotlightCard>
 
                 <SpotlightCard
                   spotlightColor={totalProfit >= 0 ? 'rgba(74, 222, 128, 0.24)' : 'rgba(56, 189, 248, 0.2)'}
-                  className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/80 via-slate-950/80 to-black p-5 sm:p-6 md:p-8 lg:p-10 shadow-[0_25px_80px_rgba(15,23,42,0.35)]"
+                  className="relative overflow-hidden rounded-3xl border border-slate-600/40 bg-gradient-to-br from-[#0b1220] via-[#0a1426] to-[#030712] p-5 sm:p-6 md:p-8 lg:p-10 shadow-[0_25px_80px_rgba(3,7,18,0.55)]"
                 >
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-300">Kâr / Zarar</p>
                       <h2 className={`mt-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight ${totalProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'}`}>
-                        <ShinyText className={isPrivate ? 'blur-sm select-none' : ''}>
+                        <ShinyText>
                           {totalProfit > 0 ? '+' : ''}{renderCurrencyWithMutedSymbol(animatedProfit)}
                         </ShinyText>
                       </h2>
                       <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5">
-                        <span className={`text-sm font-bold ${totalProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'} ${isPrivate ? 'blur-sm select-none' : ''}`}>
-                          {totalProfit > 0 ? '+' : ''}{animatedProfitPercent.toFixed(2)}%
+                        <span className={`text-sm font-bold ${totalProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'}`}>
+                          {isPrivate ? renderMaskedPercent() : `${totalProfit > 0 ? '+' : ''}${animatedProfitPercent.toFixed(2)}%`}
                         </span>
                         <span className="text-xs text-slate-400">toplam performans</span>
                       </div>
@@ -368,8 +376,8 @@ export default function App() {
                   }`}
                 >
                   Reel Getiri ({selectedInflationSourceLabel})
-                  <span className={`font-bold ${isPrivate ? 'blur-sm select-none' : ''}`}>
-                    {portfolioRealReturnPercent >= 0 ? '+' : '-'}%{Math.abs(portfolioRealReturnPercent).toFixed(2)}
+                  <span className="font-bold">
+                    {isPrivate ? renderMaskedPercent() : `${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`}
                   </span>
                 </span>
               </div>
@@ -379,7 +387,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className={`mb-6 break-inside-avoid ${isPrivate ? 'blur-sm select-none' : ''}`}
+                className="mb-6 break-inside-avoid"
               >
                 <BankTotals 
                   bankTotals={bankTotals} 
@@ -388,13 +396,14 @@ export default function App() {
                   totalValue={totalValue}
                   selectedBank={selectedBank}
                   onSelectBank={handleBankSelect}
+                  isPrivate={isPrivate}
                 />
               </motion.section>
 
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className={`mb-6 break-inside-avoid ${isPrivate ? 'blur-sm select-none' : ''}`}
+                className="mb-6 break-inside-avoid"
               >
                 <SummaryCards 
                   totalValue={dashboardTotalValue}
@@ -410,6 +419,7 @@ export default function App() {
                   marketData={marketData}
                   lineChartData={lineChartData}
                   showTopCards={false}
+                  isPrivate={isPrivate}
                 />
               </motion.section>
 
@@ -448,7 +458,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className={`mb-6 break-inside-avoid ${isPrivate ? 'blur-sm select-none' : ''}`}
+                className="mb-6 break-inside-avoid"
               >
                 <PortfolioTable 
                   portfolio={portfolio}
@@ -470,6 +480,7 @@ export default function App() {
                   openEditModal={openEditModal}
                   handleSellAsset={sellAsset}
                   handleRemoveAsset={removeAsset}
+                  isPrivate={isPrivate}
                 />
               </motion.section>
             </div>

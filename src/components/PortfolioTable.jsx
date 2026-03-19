@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Coins, AlertCircle, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, DollarSign } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { formatCurrencyParts } from '../utils/helpers';
+import { formatCurrencyParts, formatMaskedCurrency, formatMaskedPercent } from '../utils/helpers';
 import { resolveAssetLivePrice, unitTypeToLabel } from '../utils/assetPricing';
 import { getCategoryBadgeStyle } from '../utils/categoryStyles';
 import { calculateRealReturnPercent, getLatestAnnualInflationRate } from '../utils/financeMath';
@@ -46,7 +46,8 @@ export default function PortfolioTable({
   onClearFilter,
   openEditModal,
   handleSellAsset,
-  handleRemoveAsset
+  handleRemoveAsset,
+  isPrivate = false,
 }) {
   const filteredPortfolio = portfolio.filter((item) => {
     const bankName = item.bank || 'Banka Belirtilmedi';
@@ -119,15 +120,21 @@ export default function PortfolioTable({
       return (aValue - bValue) * directionFactor;
     });
 
-  const renderCurrencyWithMutedSymbol = (value) => (
-    <>
-      {formatCurrencyParts(value, baseCurrency, rates).map((part, index) => (
-        part.type === 'currency'
-          ? <span key={`${part.type}-${index}`} className="text-slate-400/75">{part.value}</span>
-          : <span key={`${part.type}-${index}`}>{part.value}</span>
-      ))}
-    </>
-  );
+  const renderCurrencyWithMutedSymbol = (value) => {
+    if (isPrivate) {
+      return <span>{formatMaskedCurrency(baseCurrency)}</span>;
+    }
+
+    return (
+      <>
+        {formatCurrencyParts(value, baseCurrency, rates).map((part, index) => (
+          part.type === 'currency'
+            ? <span key={`${part.type}-${index}`} className="text-slate-400/75">{part.value}</span>
+            : <span key={`${part.type}-${index}`}>{part.value}</span>
+        ))}
+      </>
+    );
+  };
 
   const getHesapDetayi = (item) => {
     if (item.hesapTuru === 'Vadeli (Mevduat)' || item.hesapTuru === 'Vadeli Hesap (Mevduat)') {
@@ -387,12 +394,12 @@ export default function PortfolioTable({
                             {itemProfit > 0 ? '+' : ''}{renderCurrencyWithMutedSymbol(itemProfit)}
                           </p>
                           <p className={`text-[11px] ${itemProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'}`}>
-                            {itemProfit > 0 ? '+' : ''}{itemProfitPercent}%
+                            {isPrivate ? formatMaskedPercent() : `${itemProfit > 0 ? '+' : ''}${itemProfitPercent}%`}
                           </p>
                         </div>
                         <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
                           <p className="text-[11px] text-slate-500">Portföy Payı</p>
-                          <p className="text-sm font-semibold text-blue-300">%{itemWeightPercent}</p>
+                          <p className="text-sm font-semibold text-blue-300">{isPrivate ? formatMaskedPercent() : `%${itemWeightPercent}`}</p>
                           {isCashAsset ? (
                             <p className="text-[11px] text-cyan-200 mt-1">{getHesapDetayi(item)}</p>
                           ) : null}
