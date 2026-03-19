@@ -1,8 +1,30 @@
 import React, { useMemo } from 'react';
-import { Building2 } from 'lucide-react';
+import { Briefcase, Building2, Landmark, MoreHorizontal, PiggyBank, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts } from '../utils/helpers';
+
+const INSTITUTION_ICON_SET = [Landmark, Building2, Wallet, PiggyBank, Briefcase];
+
+const getInstitutionIcon = (name, isOther = false) => {
+  if (isOther) {
+    return MoreHorizontal;
+  }
+
+  const normalized = String(name || '').trim();
+  if (!normalized) {
+    return Building2;
+  }
+
+  let hash = 0;
+  for (let i = 0; i < normalized.length; i += 1) {
+    hash = ((hash << 5) - hash) + normalized.charCodeAt(i);
+    hash |= 0;
+  }
+
+  const index = Math.abs(hash) % INSTITUTION_ICON_SET.length;
+  return INSTITUTION_ICON_SET[index];
+};
 
 export default function BankTotals({ bankTotals, rates, totalValue, selectedBank, onSelectBank }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
@@ -75,14 +97,19 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
   const topInstitution = bankGroups[0] || null;
   const restInstitutions = bankGroups.slice(1);
   const hasData = bankGroups.length > 0;
+  const TopInstitutionIcon = topInstitution
+    ? getInstitutionIcon(topInstitution.name, topInstitution.isOther)
+    : Building2;
 
   return (
     <div>
-      <h2 className="text-sm font-bold uppercase tracking-[0.12em] flex items-center gap-2 mb-4 text-slate-300">
-        <Building2 className="w-4 h-4 text-sky-200/80" />
-        Kurumlardaki Toplam Varlıklar
-      </h2>
-      <p className="text-xs font-medium text-slate-500 mb-6">Kurum bazlı toplam (TL), portföy içindeki paya göre sıralı.</p>
+      <div className="mb-6">
+        <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-300/25 bg-sky-500/10">
+          <Building2 className="h-4 w-4 text-sky-200/90" />
+        </div>
+        <h2 className="text-sm font-bold uppercase tracking-[0.13em] text-slate-200">KURUMLARDAKI TOPLAM VARLIKLAR</h2>
+        <p className="mt-1 text-xs font-medium text-slate-500">Nakit/Banka + Hisse + Altın dahil kurum bazlı toplam</p>
+      </div>
 
       {!hasData ? (
         <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-slate-400 text-sm">
@@ -108,13 +135,18 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-emerald-200/90">En Yüksek Paylı Kurum</p>
-                  <h4 className="mt-1 text-lg md:text-xl font-bold text-slate-100 break-words whitespace-normal">{topInstitution.name}</h4>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-emerald-200/30 bg-emerald-400/15 text-emerald-100">
+                      <TopInstitutionIcon className="h-4 w-4" />
+                    </span>
+                    <h4 className="text-lg md:text-xl font-bold text-slate-100 break-words whitespace-normal">{topInstitution.name}</h4>
+                  </div>
                 </div>
                 <span className="inline-flex items-center rounded-full border border-emerald-200/30 bg-emerald-400/15 px-3 py-1 text-xs font-semibold text-emerald-100">
                   {isPrivacyActive ? maskValue(`%${topInstitution.share.toFixed(1)}`) : `%${topInstitution.share.toFixed(1)}`}
                 </span>
               </div>
-              <p className="mt-3 text-2xl md:text-3xl font-extrabold tracking-tight text-slate-50">
+              <p className="mt-3 text-3xl md:text-4xl font-black tracking-tight text-slate-50">
                 {renderTryCurrencyWithMutedSymbol(topInstitution.value)}
               </p>
             </motion.button>
@@ -125,6 +157,7 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
               <ul className="space-y-2.5">
                 {restInstitutions.map((entry) => {
                   const isSelected = selectedBank === entry.name;
+                  const InstitutionIcon = getInstitutionIcon(entry.name, entry.isOther);
 
                   return (
                     <li key={entry.name}>
@@ -140,11 +173,19 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
                         aria-pressed={entry.isOther ? undefined : isSelected}
                       >
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm md:text-[15px] font-semibold text-slate-200 break-words whitespace-normal">{entry.name}</p>
+                          <div className="min-w-0 flex flex-1 items-center gap-2.5">
+                            <span className={`inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border ${entry.isOther ? 'border-white/15 bg-white/10 text-slate-300' : 'border-sky-300/25 bg-sky-500/10 text-sky-200'}`}>
+                              <InstitutionIcon className="h-4 w-4" />
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-sm md:text-[15px] font-semibold text-slate-200 break-words whitespace-normal">{entry.name}</p>
+                              {entry.isOther && Array.isArray(entry.institutions) && entry.institutions.length > 0 ? (
+                                <p className="mt-0.5 text-[11px] text-slate-500">{entry.institutions.length} küçük kurum birleştirildi</p>
+                              ) : null}
+                            </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-base font-bold text-slate-100">{renderTryCurrencyWithMutedSymbol(entry.value)}</p>
+                            <p className="text-sm md:text-base font-medium text-slate-200">{renderTryCurrencyWithMutedSymbol(entry.value)}</p>
                             <p className="text-xs font-semibold text-slate-400">{isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}</p>
                           </div>
                         </div>
