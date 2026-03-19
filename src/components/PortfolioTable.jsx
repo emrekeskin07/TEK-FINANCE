@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Coins, AlertCircle, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, ShoppingCart, ArrowUpRight } from 'lucide-react';
+import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, ShoppingCart, ArrowUpRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
-import { formatCurrencyParts, groupAssetsByPortfolio, resolveAssetName } from '../utils/helpers';
-import { resolveAssetLivePrice, unitTypeToLabel } from '../utils/assetPricing';
+import { formatCurrencyParts, formatTickerName, groupAssetsByPortfolio } from '../utils/helpers';
+import { getMarketPriceKey, resolveAssetLivePrice, unitTypeToLabel } from '../utils/assetPricing';
 import { getCategoryBadgeStyle } from '../utils/categoryStyles';
 import { calculateRealReturnPercent, getLatestAnnualInflationRate } from '../utils/financeMath';
 
@@ -34,6 +34,7 @@ const getInflationScore = (itemCost, itemProfit) => {
 export default function PortfolioTable({
   portfolio,
   marketData,
+  marketMeta,
   loading,
   lastUpdated,
   baseCurrency,
@@ -188,7 +189,7 @@ export default function PortfolioTable({
 
   const getAssetDetailLabel = (item) => {
     const categoryName = item.category || 'Diğer';
-    const displayName = resolveAssetName({ symbol: item?.symbol, name: item?.name });
+    const displayName = String(item?.name || '').trim() || formatTickerName(item?.symbol);
 
     if (categoryName === 'Değerli Madenler' || categoryName === 'Emtia/Altın' || categoryName === 'Emtia') {
       const storagePrefix = item.saklamaTuru === 'Fiziksel/Evde' ? 'Fiziksel' : 'Banka';
@@ -199,7 +200,7 @@ export default function PortfolioTable({
   };
 
   const getAssetTitle = (item) => {
-    return resolveAssetName({ symbol: item?.symbol, name: item?.name });
+    return String(item?.name || '').trim() || formatTickerName(item?.symbol);
   };
 
   const showSkeleton = loading && !(lastUpdated instanceof Date);
@@ -359,7 +360,17 @@ export default function PortfolioTable({
                 const categoryName = item.category || 'Diğer';
                 const isCategorySelected = selectedCategory === categoryName;
                 const isCashAsset = categoryName === 'Nakit' || categoryName === 'Nakit/Banka';
-                const isApiFailed = !loading && !(Number.isFinite(livePrice) && livePrice > 0);
+                const priceSymbol = String(item?.symbol || '').trim().toUpperCase();
+                const unitPriceKey = getMarketPriceKey({ symbol: priceSymbol, unitType: item?.unitType || item?.unit_type });
+                const unitPriceMeta = marketMeta?.[unitPriceKey];
+                const symbolPriceMeta = marketMeta?.[priceSymbol];
+                const resolvedPriceMeta = unitPriceMeta || symbolPriceMeta || null;
+                const isCachedPrice = resolvedPriceMeta?.source === 'cache';
+                const hasLivePrice = Number.isFinite(livePrice) && livePrice > 0;
+                const isCostFallback = !hasLivePrice && !isCachedPrice;
+                const cachedTimeLabel = Number.isFinite(Number(resolvedPriceMeta?.cachedAt))
+                  ? `Saat ${new Date(Number(resolvedPriceMeta.cachedAt)).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} verisi`
+                  : 'Piyasa Kapalı';
                 const itemWeightPercent = totalValue > 0 ? ((itemTotalValue / totalValue) * 100).toFixed(1) : '0.0';
                 const itemProfitPercent = itemCost > 0 ? ((itemProfit / itemCost) * 100).toFixed(2) : '0.00';
                 const inflationScore = getInflationScore(itemCost, itemProfit);
@@ -417,9 +428,15 @@ export default function PortfolioTable({
                         </div>
                         <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
                           <p className="text-[11px] text-slate-500">Güncel Fiyat</p>
-                          <p className={`text-sm font-semibold ${isApiFailed ? 'text-slate-400' : 'text-blue-300'}`}>
+                          <p className={`text-sm font-semibold ${hasLivePrice ? 'text-blue-300' : (isCachedPrice ? 'text-amber-200' : 'text-slate-300')}`}>
                             {renderCurrencyWithMutedSymbol(activePrice)}
                           </p>
+                          {isCachedPrice ? (
+                            <p className="text-[11px] text-amber-300 mt-1">{cachedTimeLabel}</p>
+                          ) : null}
+                          {isCostFallback ? (
+                            <p className="text-[11px] text-slate-500 mt-1">Maliyet fiyatı</p>
+                          ) : null}
                         </div>
                         <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
                           <p className="text-[11px] text-slate-500">Ortalama Maliyet</p>
@@ -476,12 +493,6 @@ export default function PortfolioTable({
                       </div>
 
                       <div className="flex items-center justify-end gap-2 pt-1">
-                        {isApiFailed ? (
-                          <span className="mr-auto inline-flex items-center gap-1.5 text-xs text-amber-300">
-                            <AlertCircle className="h-3.5 w-3.5" />
-                            Canlı fiyat alınamadı, maliyet fiyatı gösteriliyor.
-                          </span>
-                        ) : null}
                         <button
                           onClick={() => openSellModal(item, activePrice)}
                           className="inline-flex items-center gap-1 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/20 transition-colors"

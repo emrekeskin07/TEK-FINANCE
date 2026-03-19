@@ -62,7 +62,7 @@ export default function App() {
     }
   });
   
-  const { marketData, marketChanges, loading, lastUpdated, lastFetchFailed, rates, updatePrices } = useMarketData(portfolio);
+  const { marketData, marketChanges, marketMeta, loading, lastUpdated, lastFetchFailed, rates, updatePrices } = useMarketData(portfolio);
 
   useEffect(() => {
     if (!authUser) {
@@ -479,6 +479,7 @@ export default function App() {
                 <PortfolioTable 
                   portfolio={portfolio}
                   marketData={marketData}
+                  marketMeta={marketMeta}
                   loading={loading}
                   lastUpdated={lastUpdated}
                   baseCurrency={baseCurrency}

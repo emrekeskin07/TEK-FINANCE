@@ -64,18 +64,33 @@ export const getMappedAssetName = (symbol) => {
   return ASSET_SYMBOL_NAME_MAP[normalizedSymbol] || '';
 };
 
+export const formatTickerName = (symbol) => {
+  const normalizedSymbol = String(symbol || '').trim().toUpperCase();
+  if (!normalizedSymbol) {
+    return '';
+  }
+
+  const exactMappedName = getMappedAssetName(normalizedSymbol);
+  if (exactMappedName) {
+    return exactMappedName;
+  }
+
+  const cleanedSymbol = normalizedSymbol.replace(/(\.IS|=F)$/g, '').replace(/_/g, ' ').trim();
+  const cleanedMappedName = getMappedAssetName(cleanedSymbol);
+  if (cleanedMappedName) {
+    return cleanedMappedName;
+  }
+
+  return cleanedSymbol || normalizedSymbol;
+};
+
 export const resolveAssetName = ({ symbol, name }) => {
   const resolvedName = String(name || '').trim();
   if (resolvedName) {
     return resolvedName;
   }
 
-  const mappedName = getMappedAssetName(symbol);
-  if (mappedName) {
-    return mappedName;
-  }
-
-  return String(symbol || '').trim().toUpperCase();
+  return formatTickerName(symbol);
 };
 
 export const groupAssetsByPortfolio = (assets = []) => {
