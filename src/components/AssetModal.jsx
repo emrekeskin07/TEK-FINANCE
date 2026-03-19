@@ -8,6 +8,7 @@ import {
   normalizeUnitType,
   unitTypeToLabel,
 } from '../utils/assetPricing';
+import { resolveAssetName } from '../utils/helpers';
 
 const CATEGORY_OPTIONS = ['Hisse Senedi', 'Yatırım Fonu', 'Döviz', 'Değerli Madenler', 'Kripto', 'Nakit/Banka'];
 const HESAP_TURU_OPTIONS = ['Vadesiz', 'Vadeli (Mevduat)', 'Faizsiz Katılım'];
@@ -594,10 +595,12 @@ export default function AssetModal({
     });
     const normalizedPayloadUnitType = normalizeUnitType(formData.unitType, availableUnitTypes[0]);
     const resolvedPortfolioName = String(formData.portfolioName || portfolioQuery || 'Genel Portföy').trim() || 'Genel Portföy';
+    const resolvedAssetName = resolveAssetName({ symbol: normalizedSymbol, name: formData.name });
 
     const payload = {
       ...formData,
       symbol: normalizedSymbol,
+      name: resolvedAssetName,
       unitType: normalizedPayloadUnitType,
       portfolioName: resolvedPortfolioName,
     };

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Coins, AlertCircle, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, ShoppingCart, ArrowUpRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
-import { formatCurrencyParts, groupAssetsByPortfolio } from '../utils/helpers';
+import { formatCurrencyParts, groupAssetsByPortfolio, resolveAssetName } from '../utils/helpers';
 import { resolveAssetLivePrice, unitTypeToLabel } from '../utils/assetPricing';
 import { getCategoryBadgeStyle } from '../utils/categoryStyles';
 import { calculateRealReturnPercent, getLatestAnnualInflationRate } from '../utils/financeMath';
@@ -188,8 +188,7 @@ export default function PortfolioTable({
 
   const getAssetDetailLabel = (item) => {
     const categoryName = item.category || 'Diğer';
-    const normalizedSymbol = String(item?.symbol || '').trim().toUpperCase();
-    const displayName = normalizedSymbol === 'GC=F' ? 'Gram Altın' : (item.name || item.symbol);
+    const displayName = resolveAssetName({ symbol: item?.symbol, name: item?.name });
 
     if (categoryName === 'Değerli Madenler' || categoryName === 'Emtia/Altın' || categoryName === 'Emtia') {
       const storagePrefix = item.saklamaTuru === 'Fiziksel/Evde' ? 'Fiziksel' : 'Banka';
@@ -200,8 +199,7 @@ export default function PortfolioTable({
   };
 
   const getAssetTitle = (item) => {
-    const normalizedSymbol = String(item?.symbol || '').trim().toUpperCase();
-    return normalizedSymbol === 'GC=F' ? 'Gram Altın' : item.symbol;
+    return resolveAssetName({ symbol: item?.symbol, name: item?.name });
   };
 
   const showSkeleton = loading && !(lastUpdated instanceof Date);

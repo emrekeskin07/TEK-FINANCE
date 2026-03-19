@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
 import { inferDefaultUnitType, normalizeUnitType } from '../utils/assetPricing';
+import { resolveAssetName } from '../utils/helpers';
 
 const CATEGORY_BY_TYPE = {
   stock: 'Hisse Senedi',
@@ -127,7 +128,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     return {
       id: asset.id,
       symbol,
-      name: asset.name || symbol,
+      name: resolveAssetName({ symbol, name: asset.name }),
       category,
       amount,
       avgPrice,
@@ -182,7 +183,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     const payload = {
       user_id: userId,
       symbol,
-      name: formData.name || symbol,
+      name: resolveAssetName({ symbol, name: formData.name }),
       category: normalizedCategory,
       amount,
       cost,

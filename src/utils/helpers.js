@@ -18,6 +18,14 @@ export const convertCurrency = (value, baseCurrency, rates) => {
 };
 
 const formatterCache = new Map();
+const ASSET_SYMBOL_NAME_MAP = {
+  'SI=F': 'Gümüş',
+  'GC=F': 'Altın',
+  GRAM_ALTIN: 'Gram Altın',
+  'PL=F': 'Platin',
+  'PA=F': 'Paladyum',
+  'TUPRS.IS': 'Tüpraş',
+};
 
 const getCurrencyFormatter = (baseCurrency) => {
   const normalizedCurrency = String(baseCurrency || 'TRY').toUpperCase();
@@ -50,6 +58,25 @@ export const formatMaskedCurrency = (baseCurrency) => {
 };
 
 export const formatMaskedPercent = () => '•••%';
+
+export const getMappedAssetName = (symbol) => {
+  const normalizedSymbol = String(symbol || '').trim().toUpperCase();
+  return ASSET_SYMBOL_NAME_MAP[normalizedSymbol] || '';
+};
+
+export const resolveAssetName = ({ symbol, name }) => {
+  const resolvedName = String(name || '').trim();
+  if (resolvedName) {
+    return resolvedName;
+  }
+
+  const mappedName = getMappedAssetName(symbol);
+  if (mappedName) {
+    return mappedName;
+  }
+
+  return String(symbol || '').trim().toUpperCase();
+};
 
 export const groupAssetsByPortfolio = (assets = []) => {
   const groups = new Map();
