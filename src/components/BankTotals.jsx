@@ -6,7 +6,7 @@ import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrency } from '../utils/helpers';
 
 const OTHER_THRESHOLD_PERCENT = 1;
-const PIE_COLORS = ['#8B5CF6', '#F59E0B', '#06B6D4', '#EC4899', '#A78BFA', '#FBBF24', '#67E8F9', '#F9A8D4'];
+const PIE_COLORS = ['#A78BFA', '#06B6D4', '#EC4899', '#10B981', '#C4B5FD', '#22D3EE', '#F472B6', '#34D399'];
 
 export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue, selectedBank, onSelectBank }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
@@ -65,19 +65,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
     [bankGroups]
   );
 
-  const selectedEntry = useMemo(
-    () => chartData.find((entry) => entry.name === selectedBank) || null,
-    [chartData, selectedBank]
-  );
-
-  const centerTotalValue = selectedEntry
-    ? selectedEntry.value
-    : (Number(totalValue || 0) > 0 ? Number(totalValue) : distributionTotal);
-  const centerTitle = selectedEntry ? selectedEntry.name : 'Toplam Varlik';
-
-  const centerStateKey = selectedEntry
-    ? `selected-${selectedEntry.name}-${Math.round(Number(selectedEntry.value || 0))}`
-    : 'selected-total';
+  const centerTotalValue = Number(totalValue || 0) > 0 ? Number(totalValue) : distributionTotal;
 
   const formatTryCurrencyText = (value) => {
     const rawText = formatCurrency(value, baseCurrency, rates);
@@ -110,7 +98,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="mb-5">
         <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-primary/30 bg-primary/18">
           <Building2 className="h-4 w-4 text-primary" />
         </div>
@@ -119,94 +107,111 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
       </div>
 
       {!hasData ? (
-        <div className="rounded-xl border border-white/5 bg-slate-900/35 p-6 text-sm text-slate-400 shadow-[0_16px_46px_rgba(2,6,23,0.6)] backdrop-blur-xl">
+        <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-8 text-sm text-slate-400 shadow-[0_16px_46px_rgba(2,6,23,0.6)] backdrop-blur-xl">
           Kayıtlı kurum verisi bulunmuyor.
         </div>
       ) : (
-        <div className="rounded-2xl border border-white/5 bg-slate-900/35 p-6 shadow-[0_16px_46px_rgba(2,6,23,0.6)] backdrop-blur-xl md:p-8">
-          <div className="relative h-[250px] w-full min-h-[250px] min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={54}
-                  outerRadius={98}
-                  minAngle={5}
-                  paddingAngle={1}
-                  activeIndex={activePieIndex >= 0 ? activePieIndex : undefined}
-                >
-                  {chartData.map((entry) => {
-                    const isSelected = selectedBank === entry.name;
+        <div className="relative rounded-3xl border border-white/5 bg-slate-900/40 p-8 shadow-[0_18px_56px_rgba(2,6,23,0.62)] backdrop-blur-xl">
+          {selectedBank ? (
+            <button
+              type="button"
+              onClick={() => onSelectBank?.(null)}
+              className="absolute right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-slate-950/70 text-slate-300 transition-all duration-200 hover:scale-105 hover:border-fuchsia-300/40 hover:text-slate-100"
+              title="Filtreyi temizle"
+              aria-label="Filtreyi temizle"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
 
-                    return (
-                      <Cell
-                        key={`institution-slice-${entry.name}`}
-                        fill={entry.color}
-                        stroke={isSelected ? '#e2e8f0' : 'rgba(15,23,42,0.45)'}
-                        strokeWidth={isSelected ? 3 : 1}
-                        onClick={() => onSelectBank?.(entry.name)}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    );
-                  })}
-                </Pie>
-                <Tooltip content={renderTooltip} />
-              </PieChart>
-            </ResponsiveContainer>
-
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div key={centerStateKey} className="pointer-events-auto px-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-tight text-slate-400">{centerTitle}</p>
-                <p className="mt-1 text-2xl font-black leading-tight tracking-tight text-slate-50 drop-shadow-[0_0_16px_rgba(217,70,239,0.38)] md:text-[28px]">
-                  {formatTryCurrencyText(centerTotalValue)}
-                </p>
-                {selectedBank ? (
-                  <button
-                    type="button"
-                    onClick={() => onSelectBank?.(null)}
-                    className="mt-2 inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-full border border-sky-300/35 bg-sky-500/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-sky-100 transition-all duration-200 hover:scale-105 hover:bg-sky-500/25 active:scale-95 hover:shadow-[0_0_18px_rgba(56,189,248,0.35)]"
-                    title="Kurum filtresini temizle"
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+            <div className="relative min-h-[280px] md:col-span-7">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={64}
+                    outerRadius={112}
+                    minAngle={6}
+                    paddingAngle={2}
+                    activeIndex={activePieIndex >= 0 ? activePieIndex : undefined}
                   >
-                    <X className="h-3.5 w-3.5" />
-                    Filtreyi Temizle (X)
-                  </button>
-                ) : (
-                  <p className="mt-2 text-[10px] font-medium text-slate-400">Bir dilime tıklayarak filtrele</p>
-                )}
+                    {chartData.map((entry) => {
+                      const isSelected = selectedBank === entry.name;
+
+                      return (
+                        <Cell
+                          key={`institution-slice-${entry.name}`}
+                          fill={entry.color}
+                          stroke={isSelected ? '#f8fafc' : 'rgba(15,23,42,0.5)'}
+                          strokeWidth={isSelected ? 3 : 1.5}
+                          onClick={() => onSelectBank?.(entry.name)}
+                          style={{
+                            cursor: 'pointer',
+                            filter: `drop-shadow(0 0 12px ${entry.color}55)`,
+                          }}
+                        />
+                      );
+                    })}
+                  </Pie>
+                  <Tooltip content={renderTooltip} />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="relative px-3 text-center">
+                  <span className="pointer-events-none absolute inset-x-6 top-1/2 h-12 -translate-y-1/2 rounded-full bg-fuchsia-500/10 blur-2xl" aria-hidden="true" />
+                  <p className="relative text-sm font-medium text-slate-400">Toplam Portföy</p>
+                  <p className="relative mt-1 text-4xl font-black tracking-tight text-slate-50 drop-shadow-[0_0_16px_rgba(236,72,153,0.2)]">
+                    {formatTryCurrencyText(centerTotalValue)}
+                  </p>
+                </div>
               </div>
             </div>
+
+            <div className="md:col-span-5">
+              <ul className="space-y-2">
+                {chartData.map((entry) => {
+                  const isSelected = selectedBank === entry.name;
+
+                  return (
+                    <li key={`legend-${entry.name}`}>
+                      <button
+                        type="button"
+                        onClick={() => onSelectBank?.(entry.name)}
+                        aria-pressed={isSelected}
+                        className={`w-full min-h-[52px] rounded-xl border px-3 py-2.5 transition-all duration-200 ${
+                          isSelected
+                            ? 'border-fuchsia-300/40 bg-slate-900/60 ring-1 ring-fuchsia-300/35'
+                            : 'border-white/5 bg-slate-900/40 hover:border-sky-300/35 hover:bg-slate-900/55'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex items-center gap-2.5">
+                            <span
+                              className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                              style={{
+                                backgroundColor: entry.color,
+                                boxShadow: `0 0 14px ${entry.color}`,
+                              }}
+                            />
+                            <span className="truncate text-sm font-medium text-slate-300">{entry.name}</span>
+                          </div>
+                          <span className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-violet-300">
+                            {isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}
+                          </span>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
-
-          <ul className="mt-3 space-y-1.5">
-            {chartData.map((entry) => {
-              const isSelected = selectedBank === entry.name;
-
-              return (
-                <li key={`legend-${entry.name}`}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectBank?.(entry.name)}
-                    aria-pressed={isSelected}
-                    className={`w-full min-h-[44px] transform-gpu rounded-lg border px-2.5 py-2 transition-all duration-200 ${
-                      'cursor-pointer border-white/5 bg-slate-900/35 hover:scale-[1.03] hover:border-sky-300/40 hover:bg-sky-500/10 active:scale-[0.98]'
-                    } ${isSelected ? 'border-sky-200/60 bg-sky-400/10 ring-1 ring-sky-200/60' : ''}`}
-                  >
-                    <div className="flex items-center justify-between gap-3 text-xs">
-                      <div className="min-w-0 flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: entry.color }} />
-                        <span className="truncate font-semibold text-slate-300">{entry.name}</span>
-                      </div>
-                      <span className="font-semibold text-slate-300">{isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}</span>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
         </div>
       )}
     </div>

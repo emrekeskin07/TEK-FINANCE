@@ -531,7 +531,7 @@ export default function MalVarligiPage({
 
   return (
     <section className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-md shadow-[0_22px_70px_rgba(2,6,23,0.58)] md:p-10">
+      <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl shadow-[0_22px_70px_rgba(2,6,23,0.58)] md:p-10">
         <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-fuchsia-500/20 blur-3xl" />
         <div className="pointer-events-none absolute -left-16 -bottom-20 h-52 w-52 rounded-full bg-violet-500/20 blur-3xl" />
 
@@ -541,7 +541,7 @@ export default function MalVarligiPage({
             <p className="mt-2 text-sm text-slate-400">Tüm varlık kategorileri tek ekranda, tam kontrol sende.</p>
           </div>
 
-          <div className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3">
+          <div className="inline-flex items-center gap-3 rounded-2xl border border-white/5 bg-slate-900/40 px-4 py-3 backdrop-blur-xl">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-500/15">
               <Landmark className="h-5 w-5 text-emerald-300" />
             </span>
@@ -553,18 +553,18 @@ export default function MalVarligiPage({
         </div>
 
         <div className="relative z-10 mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-white/10 bg-slate-950/55 p-4">
+          <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-4 backdrop-blur-xl">
             <p className="text-xs uppercase tracking-tight text-slate-400">Banka + Portföy Tarafı</p>
             <p className="mt-1 text-lg font-bold text-cyan-300">{formatTl(portfolioCashTotal)}</p>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-slate-950/55 p-4">
+          <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-4 backdrop-blur-xl">
             <p className="text-xs uppercase tracking-tight text-slate-400">Manuel Net Servet Kalemleri</p>
             <p className="mt-1 text-lg font-bold text-violet-300">{formatTl(manualAssetsTotal)}</p>
           </div>
         </div>
       </div>
 
-      <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md shadow-[0_22px_70px_rgba(2,6,23,0.58)] md:p-8">
+      <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-xl shadow-[0_22px_70px_rgba(2,6,23,0.58)] md:p-8">
         <div className="mb-4">
           <h2 className="text-xl font-black text-slate-50">Net Servet Kalemi Ekle</h2>
           <p className="mt-1 text-xs text-slate-400">Yıl ve tutar alanları mobil sayısal klavye için optimize edildi.</p>
@@ -800,7 +800,7 @@ export default function MalVarligiPage({
       </div>
 
       {manualAssetsLoading ? (
-        <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 text-slate-400 backdrop-blur-md shadow-[0_22px_70px_rgba(2,6,23,0.58)]">Net servet kayıtları yükleniyor...</div>
+        <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 text-slate-400 backdrop-blur-xl shadow-[0_22px_70px_rgba(2,6,23,0.58)]">Net servet kayıtları yükleniyor...</div>
       ) : (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
           {BENTO_LAYOUT.map((layout) => {
@@ -812,7 +812,7 @@ export default function MalVarligiPage({
             return (
               <article
                 key={layout.key}
-                className={`relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-7 backdrop-blur-md shadow-[0_22px_70px_rgba(2,6,23,0.58)] ${layout.className}`}
+                className={`relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-7 backdrop-blur-xl shadow-[0_22px_70px_rgba(2,6,23,0.58)] ${layout.className}`}
               >
                 <div className={`pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-gradient-to-br ${meta.gradient} blur-3xl`} />
                 <div className="relative z-10">
@@ -840,7 +840,7 @@ export default function MalVarligiPage({
                         return (
                           <li
                             key={asset.id}
-                            className="rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3"
+                            className="rounded-2xl border border-white/5 bg-slate-900/40 px-4 py-3 backdrop-blur-xl"
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
