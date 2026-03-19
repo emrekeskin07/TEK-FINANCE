@@ -304,7 +304,7 @@ export default function PortfolioTable({
 
   return (
     <>
-    <div className="bg-white/5 relative overflow-hidden backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/5 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/5 after:content-[''] flex flex-col">
+    <div className="bg-white/5 relative overflow-hidden backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-[1.01] hover:border-white/10 before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/5 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/5 after:content-[''] flex flex-col">
       <div className="p-6 md:p-8 border-b border-white/5 flex flex-wrap justify-between items-center gap-4">
         <div className="flex items-center gap-3 flex-wrap">
           <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -325,7 +325,7 @@ export default function PortfolioTable({
             <button
               type="button"
               onClick={() => onClearFilter?.()}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-blue-300/40 bg-gradient-to-r from-blue-500/20 to-cyan-400/20 px-3 py-1.5 text-xs font-semibold text-blue-100 transition-all duration-200 hover:shadow-[0_0_18px_rgba(59,130,246,0.28)]"
+              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-full border border-blue-300/40 bg-gradient-to-r from-blue-500/20 to-cyan-400/20 px-3 py-1.5 text-xs font-semibold text-blue-100 transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-[0_0_18px_rgba(59,130,246,0.28)]"
               title="Filtreleri temizle"
             >
               <X className="w-3.5 h-3.5" />
@@ -337,7 +337,7 @@ export default function PortfolioTable({
           <button
             type="button"
             onClick={() => handleSortChange('totalValue')}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${sortConfig.key === 'totalValue' ? 'bg-blue-500/20 text-blue-200' : 'text-slate-300 hover:bg-white/10'}`}
+            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'totalValue' ? 'bg-blue-500/20 text-blue-200' : 'text-slate-300 hover:bg-white/10'}`}
             title="Toplam değere göre sırala"
           >
             Toplam Değer
@@ -348,7 +348,7 @@ export default function PortfolioTable({
           <button
             type="button"
             onClick={() => handleSortChange('profit')}
-            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${sortConfig.key === 'profit' ? 'bg-emerald-500/20 text-emerald-200' : 'text-slate-300 hover:bg-white/10'}`}
+            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'profit' ? 'bg-emerald-500/20 text-emerald-200' : 'text-slate-300 hover:bg-white/10'}`}
             title="Kâr/zarara göre sırala"
           >
             Kâr/Zarar
@@ -362,7 +362,7 @@ export default function PortfolioTable({
           <button
             type="button"
             onClick={() => onExportPdfReport?.()}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-emerald-300/30 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/25"
+            className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md border border-emerald-300/30 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition-all duration-200 hover:scale-105 hover:bg-emerald-500/25 active:scale-95"
             title="PDF raporu indir"
           >
             <FileText className="h-3.5 w-3.5" />
@@ -371,7 +371,7 @@ export default function PortfolioTable({
           <button
             type="button"
             onClick={() => onExportExcelReport?.()}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-sky-300/30 bg-sky-500/15 px-3 py-1.5 text-xs font-semibold text-sky-100 transition-colors hover:bg-sky-500/25"
+            className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md border border-sky-300/30 bg-sky-500/15 px-3 py-1.5 text-xs font-semibold text-sky-100 transition-all duration-200 hover:scale-105 hover:bg-sky-500/25 active:scale-95"
             title="Excel uyumlu CSV raporu indir"
           >
             <Download className="h-3.5 w-3.5" />

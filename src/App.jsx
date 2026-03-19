@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
+import Confetti from 'react-confetti';
 import { usePortfolio } from './hooks/usePortfolio';
 import { useMarketPrices } from './hooks/useMarketPrices';
 import { useAuthSession } from './hooks/useAuthSession';
@@ -20,7 +21,9 @@ import Stats from './components/dashboard/Stats';
 import { SyncContext } from './context/SyncContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { usePrivacy } from './context/PrivacyContext';
-import { formatCurrencyParts } from './utils/helpers';
+
+const ATH_CELEBRATION_STORAGE_PREFIX = 'tek-finance:ath-celebration';
+const ATH_CELEBRATION_DURATION_MS = 3800;
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -51,6 +54,9 @@ export default function App() {
   const [initialPortfolioName, setInitialPortfolioName] = useState('');
   const [assetModalMode, setAssetModalMode] = useState('buy');
   const [isAlertDrawerOpen, setIsAlertDrawerOpen] = useState(false);
+  const [showAthCelebration, setShowAthCelebration] = useState(false);
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+  const athCelebrationTimeoutRef = useRef(null);
 
   const { portfolio, addAsset, updateAsset, removeAsset, sellAsset } = usePortfolio(authUser?.id, (updatedPort) => {
     if (authUser) {
@@ -73,6 +79,33 @@ export default function App() {
       setLastSyncTime(lastUpdated.getTime());
     }
   }, [lastUpdated]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const syncViewportSize = () => {
+      setViewportSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    syncViewportSize();
+    window.addEventListener('resize', syncViewportSize);
+
+    return () => {
+      window.removeEventListener('resize', syncViewportSize);
+    };
+  }, []);
+
+  useEffect(() => () => {
+    if (athCelebrationTimeoutRef.current) {
+      window.clearTimeout(athCelebrationTimeoutRef.current);
+      athCelebrationTimeoutRef.current = null;
+    }
+  }, []);
 
   const resolvePortfolioNameFromUrl = () => {
     if (typeof window === 'undefined') {
@@ -187,6 +220,60 @@ export default function App() {
 
   const animatedProfitPercent = useAnimatedCounter(Number(profitPercentage));
 
+  const athStatus = useMemo(() => {
+    const series = Array.isArray(lineChartData) ? lineChartData : [];
+    const fallbackCurrentValue = Number.isFinite(Number(dashboardTotalValue)) ? Number(dashboardTotalValue) : 0;
+
+    if (series.length < 2) {
+      return {
+        hasRecordBreak: false,
+        currentValue: fallbackCurrentValue,
+      };
+    }
+
+    const latestPointValue = Number(series[series.length - 1]?.value);
+    const currentValue = Number.isFinite(latestPointValue) ? latestPointValue : fallbackCurrentValue;
+
+    const previousHigh = series.slice(0, -1).reduce((maxValue, point) => {
+      const value = Number(point?.value);
+      return Number.isFinite(value) ? Math.max(maxValue, value) : maxValue;
+    }, Number.NEGATIVE_INFINITY);
+
+    return {
+      hasRecordBreak: Number.isFinite(previousHigh) && currentValue > (previousHigh + 0.01),
+      currentValue,
+    };
+  }, [lineChartData, dashboardTotalValue]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (activePage !== 'dashboard' || !authUser?.id || !athStatus.hasRecordBreak) {
+      return;
+    }
+
+    const storageKey = `${ATH_CELEBRATION_STORAGE_PREFIX}:${authUser.id}`;
+    const lastCelebratedHigh = Number(window.localStorage.getItem(storageKey) || 0);
+
+    if (athStatus.currentValue <= (lastCelebratedHigh + 0.01)) {
+      return;
+    }
+
+    window.localStorage.setItem(storageKey, String(athStatus.currentValue));
+    setShowAthCelebration(true);
+
+    if (athCelebrationTimeoutRef.current) {
+      window.clearTimeout(athCelebrationTimeoutRef.current);
+    }
+
+    athCelebrationTimeoutRef.current = window.setTimeout(() => {
+      setShowAthCelebration(false);
+      athCelebrationTimeoutRef.current = null;
+    }, ATH_CELEBRATION_DURATION_MS);
+  }, [activePage, authUser?.id, athStatus]);
+
   const dashboardGreetingName = authUser?.user_metadata?.full_name
     || authUser?.user_metadata?.name
     || authUser?.email?.split('@')?.[0]
@@ -206,26 +293,6 @@ export default function App() {
     window.setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 0);
-  };
-
-  const renderCurrencyWithMutedSymbol = (value) => {
-    const plainCurrencyText = formatCurrencyParts(value, baseCurrency, rates)
-      .map((part) => part.value)
-      .join('');
-
-    if (isPrivacyActive) {
-      return <span>{maskValue(plainCurrencyText)}</span>;
-    }
-
-    return (
-      <>
-        {formatCurrencyParts(value, baseCurrency, rates).map((part, index) => (
-          part.type === 'currency'
-            ? <span key={`${part.type}-${index}`} className="text-slate-400/70">{part.value}</span>
-            : <span key={`${part.type}-${index}`}>{part.value}</span>
-        ))}
-      </>
-    );
   };
 
   const renderPercentText = (value) => {
@@ -336,6 +403,18 @@ export default function App() {
   return (
     <SyncContext.Provider value={{ lastSyncTime, setLastSyncTime }}>
     <div className="min-h-screen bg-[#0B1120] text-slate-100 font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10">
+      {showAthCelebration && activePage === 'dashboard' ? (
+        <Confetti
+          width={viewportSize.width}
+          height={viewportSize.height}
+          recycle={false}
+          numberOfPieces={200}
+          colors={['#f59e0b', '#fbbf24', '#fcd34d', '#10b981', '#34d399']}
+          gravity={0.12}
+          style={{ pointerEvents: 'none', zIndex: 70 }}
+        />
+      ) : null}
+
       <Toaster 
         position="top-right" 
         toastOptions={{ 
@@ -382,7 +461,8 @@ export default function App() {
                   malVarligiManuelToplam={malVarligiManuelToplam}
                   portfolioRealReturnPercent={portfolioRealReturnPercent}
                   selectedInflationSourceLabel={selectedInflationSourceLabel}
-                  renderCurrency={renderCurrencyWithMutedSymbol}
+                  baseCurrency={baseCurrency}
+                  rates={rates}
                   renderPercent={() => renderPercentText(animatedProfitPercent)}
                   renderRealReturn={() => (
                     isPrivacyActive
@@ -398,7 +478,7 @@ export default function App() {
                 <motion.section
                   layout
                   transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                  className="col-span-12 md:col-span-4 md:order-2 rounded-3xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl md:p-8"
+                  className="col-span-12 md:col-span-4 md:order-2 rounded-3xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl transition-all duration-300 hover:scale-[1.01] hover:border-white/10 md:p-8"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-200">Akıllı Öneriler</h3>

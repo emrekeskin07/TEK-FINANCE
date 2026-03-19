@@ -174,7 +174,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
                   <button
                     type="button"
                     onClick={() => onSelectBank?.(selectedBank)}
-                    className="mt-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-sky-300/35 bg-sky-500/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-sky-100 transition-all duration-200 hover:bg-sky-500/25 hover:shadow-[0_0_18px_rgba(56,189,248,0.35)]"
+                    className="mt-2 inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-full border border-sky-300/35 bg-sky-500/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-sky-100 transition-all duration-200 hover:scale-105 hover:bg-sky-500/25 active:scale-95 hover:shadow-[0_0_18px_rgba(56,189,248,0.35)]"
                     title="Kurum filtresini temizle"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -198,10 +198,10 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
                     onClick={() => !entry.isOther && onSelectBank?.(entry.name)}
                     disabled={entry.isOther}
                     aria-pressed={entry.isOther ? undefined : isSelected}
-                    className={`w-full min-h-[44px] rounded-lg border px-2.5 py-2 transition-all duration-200 ${
+                    className={`w-full min-h-[44px] transform-gpu rounded-lg border px-2.5 py-2 transition-all duration-200 ${
                       entry.isOther
                         ? 'cursor-default border-white/10 bg-white/[0.03]'
-                        : 'cursor-pointer border-white/10 bg-white/[0.03] hover:border-sky-300/40 hover:bg-sky-500/10'
+                        : 'cursor-pointer border-white/10 bg-white/[0.03] hover:scale-[1.03] hover:border-sky-300/40 hover:bg-sky-500/10 active:scale-[0.98]'
                     } ${isSelected ? 'border-sky-200/60 bg-sky-400/10 ring-1 ring-sky-200/60' : ''}`}
                   >
                     <div className="flex items-center justify-between gap-3 text-xs">

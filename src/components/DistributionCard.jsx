@@ -19,7 +19,7 @@ export default function DistributionCard() {
     <motion.section
       layout
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-      className="col-span-12 md:col-span-3 md:order-3 rounded-2xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl md:p-8"
+      className="col-span-12 md:col-span-3 md:order-3 rounded-2xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl transition-all duration-300 hover:scale-[1.01] hover:border-white/10 md:p-8"
     >
       <BankTotals
         bankTotals={bankTotals}

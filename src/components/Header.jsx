@@ -80,19 +80,19 @@ export default function Header({
         <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-1 backdrop-blur-sm w-full md:w-auto overflow-x-auto">
           <button
             onClick={() => setActivePage('dashboard')}
-            className={`px-3 py-1.5 text-sm rounded-md transition-all duration-300 ${activePage === 'dashboard' ? 'bg-blue-600/30 text-blue-300 border border-blue-500/40' : 'text-slate-300 hover:bg-white/10'}`}
+            className={`transform-gpu px-3 py-1.5 text-sm rounded-md transition-all duration-300 hover:scale-105 active:scale-95 ${activePage === 'dashboard' ? 'bg-blue-600/30 text-blue-300 border border-blue-500/40' : 'text-slate-300 hover:bg-white/10'}`}
           >
             Dashboard
           </button>
           <button
             onClick={() => setActivePage('malvarligi')}
-            className={`px-3 py-1.5 text-sm rounded-md transition-all duration-300 ${activePage === 'malvarligi' ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40' : 'text-slate-300 hover:bg-white/10'}`}
+            className={`transform-gpu px-3 py-1.5 text-sm rounded-md transition-all duration-300 hover:scale-105 active:scale-95 ${activePage === 'malvarligi' ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40' : 'text-slate-300 hover:bg-white/10'}`}
           >
             Mal Varlığı
           </button>
           <button
             onClick={() => setActivePage('enflasyon')}
-            className={`px-3 py-1.5 text-sm rounded-md transition-all duration-300 ${activePage === 'enflasyon' ? 'bg-rose-600/25 text-rose-200 border border-rose-400/40' : 'text-slate-300 hover:bg-white/10'}`}
+            className={`transform-gpu px-3 py-1.5 text-sm rounded-md transition-all duration-300 hover:scale-105 active:scale-95 ${activePage === 'enflasyon' ? 'bg-rose-600/25 text-rose-200 border border-rose-400/40' : 'text-slate-300 hover:bg-white/10'}`}
           >
             Enflasyon Analizi
           </button>
@@ -101,7 +101,7 @@ export default function Header({
         <button
           type="button"
           onClick={togglePrivacy}
-          className={`inline-flex items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-all duration-300 backdrop-blur-sm w-full md:w-auto ${isPrivacyActive ? 'bg-amber-500/15 border-amber-300/35 text-amber-100 hover:bg-amber-500/25' : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'}`}
+          className={`inline-flex transform-gpu items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm w-full md:w-auto ${isPrivacyActive ? 'bg-amber-500/15 border-amber-300/35 text-amber-100 hover:bg-amber-500/25' : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'}`}
           title={isPrivacyActive ? 'Gizlilik modunu kapat' : 'Gizlilik modunu aç'}
         >
           {isPrivacyActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -114,7 +114,7 @@ export default function Header({
           <button
             type="button"
             onClick={() => setBaseCurrency('TRY')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${baseCurrency === 'TRY' ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/35' : 'text-slate-300 hover:bg-white/10'}`}
+            className={`transform-gpu px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 hover:scale-105 active:scale-95 ${baseCurrency === 'TRY' ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/35' : 'text-slate-300 hover:bg-white/10'}`}
             title="Portföyü TL görüntüle"
           >
             TRY
@@ -122,7 +122,7 @@ export default function Header({
           <button
             type="button"
             onClick={() => setBaseCurrency('USD')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${baseCurrency === 'USD' ? 'bg-sky-500/20 text-sky-200 border border-sky-400/35' : 'text-slate-300 hover:bg-white/10'}`}
+            className={`transform-gpu px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 hover:scale-105 active:scale-95 ${baseCurrency === 'USD' ? 'bg-sky-500/20 text-sky-200 border border-sky-400/35' : 'text-slate-300 hover:bg-white/10'}`}
             title="Portföyü USD görüntüle"
           >
             USD
@@ -131,7 +131,7 @@ export default function Header({
 
         <button 
           onClick={openAddModal}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 rounded-lg transition-all duration-300 backdrop-blur-sm w-full md:w-auto"
+          className="flex transform-gpu items-center justify-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm w-full md:w-auto"
         >
           <Plus className="w-4 h-4" />
           <span className="text-sm font-medium">Varlık Ekle</span>
@@ -142,7 +142,7 @@ export default function Header({
           <button 
             onClick={onRefresh} 
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all duration-300 backdrop-blur-sm disabled:opacity-50"
+            className="flex transform-gpu items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm disabled:opacity-50"
           >
             <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-400' : 'text-slate-300'}`} />
             <span className="text-sm hidden sm:inline">{loading ? 'Güncelleniyor...' : 'Yenile'}</span>
@@ -171,7 +171,7 @@ export default function Header({
             <button
               type="button"
               onClick={onToggleAlerts}
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition-colors hover:bg-white/10"
+              className="relative inline-flex h-10 w-10 transform-gpu items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition-all duration-200 hover:scale-105 hover:bg-white/10 active:scale-95"
               title="Uyarılar"
               aria-label="Uyarı panelini aç"
             >
@@ -209,7 +209,7 @@ export default function Header({
             <button
               type="button"
               onClick={onSignOut}
-              className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-black/25 px-2 py-1 text-[11px] text-slate-200 hover:bg-black/40 transition-colors"
+              className="inline-flex transform-gpu items-center gap-1 rounded-md border border-white/10 bg-black/25 px-2 py-1 text-[11px] text-slate-200 transition-all duration-200 hover:scale-105 hover:bg-black/40 active:scale-95"
               title="Çıkış yap"
             >
               <LogOut className="w-3.5 h-3.5" />

@@ -4,6 +4,7 @@ import { Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ShinyText from '../ui/ShinyText';
 import SplitText from '../ui/SplitText';
+import AnimatedCurrencyValue from '../ui/AnimatedCurrencyValue';
 import SpotlightCard from '../SpotlightCard';
 import Card from '../common/Card';
 
@@ -15,7 +16,8 @@ export default function Stats({
   malVarligiManuelToplam,
   portfolioRealReturnPercent,
   selectedInflationSourceLabel,
-  renderCurrency,
+  baseCurrency,
+  rates,
   renderPercent,
   renderRealReturn,
 }) {
@@ -25,7 +27,7 @@ export default function Stats({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="col-span-12 space-y-4 rounded-2xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl md:p-8"
+      className="col-span-12 space-y-4 rounded-2xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl transition-all duration-300 hover:scale-[1.01] hover:border-white/10 md:p-8"
     >
       <Card className="border-white/5 bg-white/5 p-6 md:p-8">
         <h2 className="text-lg font-bold text-slate-100 sm:text-xl md:text-2xl">
@@ -42,12 +44,31 @@ export default function Stats({
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-200/85">Genel Portföy</p>
             <h2 className="mt-2 text-5xl font-black leading-none tracking-tight text-white md:text-6xl">
-              <ShinyText>{renderCurrency(dashboardTotalValue)}</ShinyText>
+              <ShinyText>
+                <AnimatedCurrencyValue
+                  value={dashboardTotalValue}
+                  baseCurrency={baseCurrency}
+                  rates={rates}
+                />
+              </ShinyText>
             </h2>
-            <p className="mt-4 text-sm text-slate-300">(Bankalardaki Toplam: {renderCurrency(totalValue)})</p>
+            <p className="mt-4 text-sm text-slate-300">
+              (Bankalardaki Toplam:{' '}
+              <AnimatedCurrencyValue
+                value={totalValue}
+                baseCurrency={baseCurrency}
+                rates={rates}
+              />
+              )
+            </p>
             {malVarligiManuelToplam > 0 ? (
               <p className="mt-1 text-xs text-slate-300/85">
-                Mal Varlığı Katkısı (Araç/Gayrimenkul/Diğer): {renderCurrency(malVarligiManuelToplam)}
+                Mal Varlığı Katkısı (Araç/Gayrimenkul/Diğer):{' '}
+                <AnimatedCurrencyValue
+                  value={malVarligiManuelToplam}
+                  baseCurrency={baseCurrency}
+                  rates={rates}
+                />
               </p>
             ) : (
               <p className="mt-1 text-xs text-slate-500">Şu an net değer yalnızca kurumlardaki varlıklardan oluşuyor.</p>
@@ -61,9 +82,13 @@ export default function Stats({
                 <Wallet className={`h-4 w-4 ${totalProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`} />
               </span>
             </div>
-            <p className={`mt-3 text-2xl font-extrabold tracking-tight md:text-3xl ${totalProfit >= 0 ? 'text-emerald-200' : 'text-rose-200'}`}>
-              {totalProfit > 0 ? '+' : ''}{renderCurrency(totalProfit)}
-            </p>
+            <AnimatedCurrencyValue
+              value={totalProfit}
+              baseCurrency={baseCurrency}
+              rates={rates}
+              showPositiveSign
+              className={`mt-3 block text-2xl font-extrabold tracking-tight md:text-3xl ${totalProfit >= 0 ? 'text-emerald-200' : 'text-rose-200'}`}
+            />
             <p className={`mt-1 text-sm font-bold ${totalProfit >= 0 ? 'text-emerald-100' : 'text-rose-100'}`}>
               {renderPercent()}
             </p>
@@ -89,7 +114,8 @@ Stats.propTypes = {
   malVarligiManuelToplam: PropTypes.number.isRequired,
   portfolioRealReturnPercent: PropTypes.number.isRequired,
   selectedInflationSourceLabel: PropTypes.string.isRequired,
-  renderCurrency: PropTypes.func.isRequired,
+  baseCurrency: PropTypes.string.isRequired,
+  rates: PropTypes.object,
   renderPercent: PropTypes.func.isRequired,
   renderRealReturn: PropTypes.func.isRequired,
 };
