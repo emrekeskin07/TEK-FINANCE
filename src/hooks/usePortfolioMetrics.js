@@ -94,8 +94,8 @@ export function usePortfolioMetrics({
   ), [portfolio, marketData]);
 
   const lineChartData = useMemo(() => {
-    const total = Number(totalValue) || 0;
-    const dayCount = 7;
+    const total = Number(dashboardTotalValue) || 0;
+    const dayCount = 120;
     const points = Array.from({ length: dayCount }, (_, index) => {
       const date = new Date();
       date.setHours(0, 0, 0, 0);
@@ -131,7 +131,7 @@ export function usePortfolioMetrics({
 
     series[dayCount - 1].value = total;
     return series;
-  }, [totalValue]);
+  }, [dashboardTotalValue]);
 
   return {
     totalValue,

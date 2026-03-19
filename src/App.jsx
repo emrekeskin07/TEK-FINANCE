@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import Confetti from 'react-confetti';
@@ -9,6 +9,7 @@ import { useManualAssets } from './hooks/useManualAssets';
 import { useCalculations } from './hooks/useCalculations';
 import { useAnimatedCounter } from './hooks/useAnimatedCounter';
 import Header from './components/Header';
+import GoalTracker from './components/GoalTracker';
 import DistributionCard from './components/DistributionCard';
 import AssetList from './components/AssetList';
 import AlertDrawer from './components/AlertDrawer';
@@ -220,6 +221,23 @@ export default function App() {
 
   const animatedProfitPercent = useAnimatedCounter(Number(profitPercentage));
 
+  const triggerCelebration = useCallback((durationMs = ATH_CELEBRATION_DURATION_MS) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    setShowAthCelebration(true);
+
+    if (athCelebrationTimeoutRef.current) {
+      window.clearTimeout(athCelebrationTimeoutRef.current);
+    }
+
+    athCelebrationTimeoutRef.current = window.setTimeout(() => {
+      setShowAthCelebration(false);
+      athCelebrationTimeoutRef.current = null;
+    }, durationMs);
+  }, []);
+
   const athStatus = useMemo(() => {
     const series = Array.isArray(lineChartData) ? lineChartData : [];
     const fallbackCurrentValue = Number.isFinite(Number(dashboardTotalValue)) ? Number(dashboardTotalValue) : 0;
@@ -262,17 +280,8 @@ export default function App() {
     }
 
     window.localStorage.setItem(storageKey, String(athStatus.currentValue));
-    setShowAthCelebration(true);
-
-    if (athCelebrationTimeoutRef.current) {
-      window.clearTimeout(athCelebrationTimeoutRef.current);
-    }
-
-    athCelebrationTimeoutRef.current = window.setTimeout(() => {
-      setShowAthCelebration(false);
-      athCelebrationTimeoutRef.current = null;
-    }, ATH_CELEBRATION_DURATION_MS);
-  }, [activePage, authUser?.id, athStatus]);
+    triggerCelebration();
+  }, [activePage, authUser?.id, athStatus, triggerCelebration]);
 
   const dashboardGreetingName = authUser?.user_metadata?.full_name
     || authUser?.user_metadata?.name
@@ -323,7 +332,9 @@ export default function App() {
     baseCurrency,
     rates,
     totalValue,
+    dashboardTotalValue,
     bankTotals,
+    userId: authUser?.id || null,
     selectedInstitution: selectedBank,
     selectedBank,
     selectedCategory,
@@ -337,6 +348,7 @@ export default function App() {
     openEditModal,
     openAddModal,
     onQuickBuyAsset: handleQuickBuyAsset,
+    triggerCelebration,
     sellAsset,
     removeAsset,
   }), [
@@ -348,7 +360,9 @@ export default function App() {
     baseCurrency,
     rates,
     totalValue,
+    dashboardTotalValue,
     bankTotals,
+    authUser?.id,
     selectedBank,
     selectedCategory,
     sortConfig,
@@ -360,6 +374,7 @@ export default function App() {
     openEditModal,
     openAddModal,
     handleQuickBuyAsset,
+    triggerCelebration,
     sellAsset,
     removeAsset,
   ]);
@@ -470,6 +485,8 @@ export default function App() {
                       : `${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`
                   )}
                 />
+
+                <GoalTracker />
 
                 <Chart />
 
