@@ -28,3 +28,12 @@
 .hide-scrollbar::-webkit-scrollbar {
 	display: none;
 }
+
+@media (max-width: 767px) {
+	button,
+	[role='button'],
+	[aria-pressed='true'],
+	[aria-pressed='false'] {
+		min-height: 44px;
+	}
+}

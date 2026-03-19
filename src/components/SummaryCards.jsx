@@ -784,7 +784,7 @@ export default function SummaryCards({
                         key={stop.offset}
                         offset={stop.offset}
                         stopColor={stop.color}
-                        stopOpacity={stop.opacity}
+                        stopOpacity={0.1}
                       />
                     ))}
                   </linearGradient>
@@ -799,6 +799,7 @@ export default function SummaryCards({
                   tick={{ fontFamily: CHART_THEME.fontFamily }}
                 />
                 <YAxis 
+                  domain={['dataMin - 500', 'auto']}
                   stroke={CHART_THEME.axisStroke}
                   fontSize={CHART_THEME.axisFontSize}
                   tickLine={false} 
@@ -819,7 +820,7 @@ export default function SummaryCards({
                   type="monotone" 
                   dataKey="value" 
                   stroke={CHART_THEME.lineStrokeColor}
-                  strokeWidth={CHART_LINE.strokeWidth}
+                  strokeWidth={3}
                   fillOpacity={1}
                   fill="url(#portfolioFlowGradient)" 
                   activeDot={CHART_LINE.activeDot}

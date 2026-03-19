@@ -406,11 +406,11 @@ export default function App() {
               </div>
             </motion.section>
 
-            <div className="columns-1 2xl:columns-2 gap-6 [column-fill:_balance]">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="mb-6 break-inside-avoid"
+                className="col-span-12 md:col-span-4 md:order-2"
               >
                 <BankTotals 
                   bankTotals={bankTotals} 
@@ -425,7 +425,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="mb-6 break-inside-avoid"
+                className="col-span-12 md:col-span-8 md:order-1"
               >
                 <SummaryCards 
                   totalValue={dashboardTotalValue}
@@ -449,14 +449,14 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="mb-6 break-inside-avoid rounded-2xl border border-white/10 bg-white/5 p-5 md:p-6 shadow-2xl"
+                className="col-span-12 md:col-span-4 md:order-4 rounded-2xl border border-white/10 bg-white/5 p-5 md:p-6 shadow-2xl"
               >
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-200">Akıllı Öneriler</h3>
                   <button
                     type="button"
                     onClick={handleToggleAlertDrawer}
-                    className="text-xs font-semibold rounded-md border border-sky-300/30 bg-sky-500/10 px-2.5 py-1 text-sky-200 hover:bg-sky-500/20 transition-colors"
+                    className="text-xs font-semibold rounded-md border border-sky-300/30 bg-sky-500/10 px-2.5 py-1 text-sky-200 hover:bg-sky-500/20 transition-colors min-h-[44px]"
                   >
                     Hepsini Gör
                   </button>
@@ -481,7 +481,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="mb-6 break-inside-avoid"
+                className="col-span-12 md:col-span-8 md:order-3"
               >
                 <PortfolioTable 
                   portfolio={portfolio}
