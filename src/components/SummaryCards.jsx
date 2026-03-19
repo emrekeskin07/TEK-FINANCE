@@ -582,7 +582,7 @@ export default function SummaryCards({
             {isBankTab ? 'Kurum bazlı portföy dağılımı' : 'Varlık türü bazlı net değer dağılımı (Fiziksel Varlıklar dahil)'}
           </p>
 
-          <div ref={pieChartContainerRef} className="h-[280px] sm:h-[320px] md:h-[360px] w-full relative">
+          <div ref={pieChartContainerRef} className="h-[280px] sm:h-[320px] md:h-[360px] w-full min-w-0 min-h-[280px] relative">
             {activePieData.length > 0 && canRenderPieChart ? (
               <>
                 <ResponsiveContainer width="100%" height="100%">
@@ -686,7 +686,7 @@ export default function SummaryCards({
             <TrendingUp className="w-4 h-4 text-emerald-400" />
             Portföy Gelişimi (Son 7 Gün)
           </h3>
-          <div ref={areaChartContainerRef} className="h-[260px] sm:h-[320px] md:h-[360px] w-full relative">
+          <div ref={areaChartContainerRef} className="h-[260px] sm:h-[320px] md:h-[360px] w-full min-w-0 min-h-[260px] relative">
             {canRenderAreaChart ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={lineChartData}>

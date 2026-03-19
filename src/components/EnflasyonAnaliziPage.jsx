@@ -184,7 +184,7 @@ export default function EnflasyonAnaliziPage({
 
       <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 md:p-6">
         <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-300 mb-4">Getiri vs Enflasyon</h3>
-        <div className="h-[300px] w-full relative">
+        <div className="h-[300px] w-full min-w-0 min-h-[300px] relative">
           {chartReady ? (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={bars} margin={{ top: 10, right: 12, left: 0, bottom: 6 }}>
