@@ -3,6 +3,13 @@ import toast from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
 import { inferDefaultUnitType, normalizeUnitType } from '../utils/assetPricing';
 import { resolveAssetName } from '../utils/helpers';
+import {
+  toFiniteNumber,
+  roundToEight,
+  calculateWeightedAverageCost,
+  calculateMergedAmount,
+  calculateSellSummary,
+} from '../utils/financeUtils';
 
 const CATEGORY_BY_TYPE = {
   stock: 'Hisse Senedi',
@@ -25,28 +32,6 @@ const isUnitTypeSchemaError = (error) => {
 
   return message.includes('unit_type') || details.includes('unit_type') || hint.includes('unit_type');
 };
-
-const toFiniteNumber = (value, fallback = 0) => {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric : fallback;
-};
-
-const calculateWeightedAverageCost = ({ existingAmount, existingCost, newAmount, newCost }) => {
-  const safeExistingAmount = toFiniteNumber(existingAmount);
-  const safeExistingCost = toFiniteNumber(existingCost);
-  const safeNewAmount = toFiniteNumber(newAmount);
-  const safeNewCost = toFiniteNumber(newCost);
-  const totalAmount = safeExistingAmount + safeNewAmount;
-
-  if (totalAmount <= 0) {
-    return safeNewCost;
-  }
-
-  const weightedCost = ((safeExistingAmount * safeExistingCost) + (safeNewAmount * safeNewCost)) / totalAmount;
-  return Number(weightedCost.toFixed(8));
-};
-
-const roundToEight = (value) => Number(toFiniteNumber(value).toFixed(8));
 
 const normalizeCategoryLabel = (category) => {
   if (category === 'Emtia/Altın' || category === 'Emtia') {
@@ -241,7 +226,10 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     if (existingAssetRow) {
       const existingAmount = toFiniteNumber(existingAssetRow.amount);
       const newAmount = toFiniteNumber(dbPayload.amount);
-      const mergedAmount = existingAmount + newAmount;
+      const mergedAmount = calculateMergedAmount({
+        existingAmount,
+        incomingAmount: newAmount,
+      });
       const mergedCost = calculateWeightedAverageCost({
         existingAmount,
         existingCost: existingAssetRow.cost,
@@ -474,8 +462,11 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       return false;
     }
 
-    const proceeds = roundToEight(safeSellAmount * safeSellPrice);
-    const remainingAmount = roundToEight(sourceAmount - safeSellAmount);
+    const { proceeds, remainingAmount } = calculateSellSummary({
+      sourceAmount,
+      sellAmount: safeSellAmount,
+      sellPrice: safeSellPrice,
+    });
 
     if (remainingAmount <= 0) {
       const { error: deleteError } = await supabase
@@ -521,7 +512,10 @@ export const usePortfolio = (userId, onPortfolioChange) => {
 
     if (targetCashRow) {
       const existingCashAmount = toFiniteNumber(targetCashRow.amount);
-      const mergedCashAmount = roundToEight(existingCashAmount + proceeds);
+      const mergedCashAmount = calculateMergedAmount({
+        existingAmount: existingCashAmount,
+        incomingAmount: proceeds,
+      });
       const mergedCashCost = calculateWeightedAverageCost({
         existingAmount: existingCashAmount,
         existingCost: targetCashRow.cost,

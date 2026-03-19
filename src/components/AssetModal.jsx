@@ -1,8 +1,7 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
-import { NumericFormat } from 'react-number-format';
-import Input from './common/Input';
+import AssetFormFields from './AssetFormFields';
 import { fetchSymbolSuggestions } from '../services/api';
 import {
   getAllowedUnitTypes,
@@ -734,6 +733,59 @@ export default function AssetModal({
     ? 'Mevcut varlığı güncelle'
     : (isSellMode ? 'Varlık satışı için düzenleme' : 'Yeni varlık alımı için ekleme');
 
+  const institutionFieldState = {
+    institutionQuery,
+    setInstitutionQuery,
+    isInstitutionOpen,
+    setIsInstitutionOpen,
+    activeInstitutionIndex,
+    setActiveInstitutionIndex,
+    filteredInstitutionOptions,
+    filteredSavedInstitutionOptions,
+    filteredBaseInstitutionOptions,
+    isManualInstitution,
+    setIsManualInstitutionSelected,
+    handleInstitutionKeyDown,
+    applyInstitutionSelection,
+  };
+
+  const portfolioFieldState = {
+    portfolioQuery,
+    setPortfolioQuery,
+    isPortfolioOpen,
+    setIsPortfolioOpen,
+    activePortfolioIndex,
+    setActivePortfolioIndex,
+    filteredPortfolioNames,
+    handlePortfolioInputBlur,
+    handlePortfolioKeyDown,
+    applyPortfolioSelection,
+  };
+
+  const symbolFieldState = {
+    symbolSuggestions,
+    setSymbolSuggestions,
+    isSearchingSymbol,
+    isSuggestionOpen,
+    setIsSuggestionOpen,
+    activeSuggestionIndex,
+    setActiveSuggestionIndex,
+    selectedSuggestion,
+    setSelectedSuggestion,
+    symbolValidationError,
+    setSymbolValidationError,
+    handleSymbolKeyDown,
+    applySuggestion,
+  };
+
+  const formUiState = {
+    isStep2Active,
+    isStep3Active,
+    isStockLikeCategory,
+    isCommodityCategory,
+    isCashCategory,
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-[#0f172a] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-2xl overflow-y-auto hide-scrollbar animate-in fade-in zoom-in duration-200">
@@ -748,462 +800,22 @@ export default function AssetModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-3">
-          <div className="grid grid-cols-3 gap-1.5">
-            <div className="rounded-lg border px-2 py-1.5 text-[11px] font-semibold text-center uppercase tracking-[0.08em] bg-blue-500/15 border-blue-500/40 text-blue-200">
-              Adım 1 • Kurum
-            </div>
-            <div className={`rounded-lg border px-2 py-1.5 text-[11px] font-semibold text-center uppercase tracking-[0.08em] ${isStep2Active ? 'bg-blue-500/10 border-blue-500/30 text-blue-100' : 'bg-white/5 border-white/10 text-slate-400'}`}>
-              Adım 2 • Hesap/Saklama
-            </div>
-            <div className={`rounded-lg border px-2 py-1.5 text-[11px] font-semibold text-center uppercase tracking-[0.08em] ${isStep3Active ? 'bg-blue-500/10 border-blue-500/30 text-blue-100' : 'bg-white/5 border-white/10 text-slate-400'}`}>
-              Adım 3 • Varlık
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-black/15 p-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <div className="relative">
-                  <Input
-                    id="institution-search"
-                    label="Kurum Seçimi"
-                    type="text"
-                    value={institutionQuery}
-                    placeholder="Kurum ara veya seç"
-                    onFocus={() => {
-                      setIsInstitutionOpen(true);
-                      setActiveInstitutionIndex(filteredInstitutionOptions.length ? 0 : -1);
-                    }}
-                    onBlur={() => {
-                      window.setTimeout(() => {
-                        setIsInstitutionOpen(false);
-                        setActiveInstitutionIndex(-1);
-                      }, 120);
-                    }}
-                    onChange={(e) => {
-                      setInstitutionQuery(e.target.value);
-                      setIsInstitutionOpen(true);
-                      setActiveInstitutionIndex(0);
-                    }}
-                    onKeyDown={handleInstitutionKeyDown}
-                    inputClassName="w-full"
-                  />
-
-                  {isInstitutionOpen ? (
-                    <div className="absolute z-20 mt-1 w-full rounded-lg border border-white/10 bg-[#0b1220] shadow-2xl overflow-hidden">
-                      <ul role="listbox" className="max-h-56 overflow-y-auto py-1">
-                        {filteredInstitutionOptions.length === 0 ? (
-                          <li className="px-3 py-2 text-sm text-slate-400">Eşleşen kurum bulunamadı</li>
-                        ) : (
-                          <>
-                            {filteredSavedInstitutionOptions.length > 0 ? (
-                              <li className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-sky-200/80">
-                                Kayıtlı Kurumlarım
-                              </li>
-                            ) : null}
-
-                            {filteredSavedInstitutionOptions.map((institution, index) => (
-                              <li
-                                key={`saved-${institution}`}
-                                role="option"
-                                aria-selected={activeInstitutionIndex === index}
-                                onMouseDown={(event) => {
-                                  event.preventDefault();
-                                  applyInstitutionSelection(institution);
-                                }}
-                                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${activeInstitutionIndex === index ? 'bg-blue-500/20 text-blue-200' : 'text-slate-200 hover:bg-white/10'}`}
-                              >
-                                {institution}
-                              </li>
-                            ))}
-
-                            {filteredBaseInstitutionOptions.length > 0 ? (
-                              <li className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
-                                Tüm Kurumlar
-                              </li>
-                            ) : null}
-
-                            {filteredBaseInstitutionOptions.map((institution, index) => {
-                              const flatIndex = filteredSavedInstitutionOptions.length + index;
-
-                              return (
-                                <li
-                                  key={`base-${institution}`}
-                                  role="option"
-                                  aria-selected={activeInstitutionIndex === flatIndex}
-                                  onMouseDown={(event) => {
-                                    event.preventDefault();
-                                    applyInstitutionSelection(institution);
-                                  }}
-                                  className={`px-3 py-2 text-sm cursor-pointer transition-colors ${activeInstitutionIndex === flatIndex ? 'bg-blue-500/20 text-blue-200' : 'text-slate-200 hover:bg-white/10'}`}
-                                >
-                                  {institution}
-                                </li>
-                              );
-                            })}
-                          </>
-                        )}
-                      </ul>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Varlık Türü</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                >
-                  {CATEGORY_OPTIONS.map((category) => (
-                    <option key={category} value={category} className="bg-slate-900 text-slate-100">
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {isManualInstitution ? (
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Banka veya Kurum Adı</label>
-                <input
-                  type="text"
-                  placeholder="Örn: Garanti BBVA, Akbank"
-                  value={formData.bank}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFormData((prev) => ({ ...prev, bank: value }));
-                    setInstitutionQuery(value);
-                    setIsManualInstitutionSelected(true);
-                  }}
-                  required
-                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-              </div>
-            ) : null}
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-black/15 p-4 space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <h4 className="text-xs font-bold uppercase tracking-[0.1em] text-slate-300">Dinamik Kurum Akışı</h4>
-              <span className="text-[11px] text-blue-200 font-medium">{formData.bank || 'Genel Kural Seti'}</span>
-            </div>
-
-            {isCommodityCategory ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs font-semibold text-slate-400 mb-2">Saklama Türü</p>
-                  <div className="flex flex-wrap gap-2">
-                    {institutionRule.saklamaTurleri.map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => setFormData((prev) => ({ ...prev, saklamaTuru: option }))}
-                        className={`px-2.5 py-1.5 rounded-md text-[11px] font-semibold border transition-colors ${formData.saklamaTuru === option ? 'border-cyan-400/50 bg-cyan-500/15 text-cyan-200' : 'border-white/10 bg-white/5 text-slate-400 hover:text-slate-200'}`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold text-slate-400 mb-2">Hesap Türü</p>
-                  <div className="flex flex-wrap gap-2">
-                    {institutionRule.hesapTurleri.map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => setFormData((prev) => ({ ...prev, hesapTuru: option }))}
-                        className={`px-2.5 py-1.5 rounded-md text-[11px] font-semibold border transition-colors ${formData.hesapTuru === option ? 'border-blue-400/50 bg-blue-500/15 text-blue-200' : 'border-white/10 bg-white/5 text-slate-400 hover:text-slate-200'}`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {isCashCategory ? (
-              <div>
-                <p className="text-xs font-semibold text-slate-400 mb-2">Hesap Türü</p>
-                <div className="flex flex-wrap gap-2">
-                  {institutionRule.hesapTurleri.map((hesapTuru) => (
-                    <button
-                      key={hesapTuru}
-                      type="button"
-                      onClick={() => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          hesapTuru,
-                          vadeSonuTarihi: hesapTuru === 'Vadeli (Mevduat)' ? prev.vadeSonuTarihi : '',
-                          faizOrani: hesapTuru === 'Vadeli (Mevduat)' ? prev.faizOrani : '',
-                        }));
-                      }}
-                      className={`px-2.5 py-1.5 rounded-md text-[11px] font-semibold border transition-colors ${formData.hesapTuru === hesapTuru ? 'border-blue-400/50 bg-blue-500/15 text-blue-200' : 'border-white/10 bg-white/5 text-slate-400 hover:text-slate-200'}`}
-                    >
-                      {hesapTuru}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {!isCommodityCategory && !isCashCategory ? (
-              <p className="text-xs text-slate-500">Bu varlık türünde ek hesap/saklama adımı uygulanmaz.</p>
-            ) : null}
-          </div>
-
-          {isCashCategory && formData.hesapTuru === 'Vadeli (Mevduat)' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Vade Sonu Tarihi (Opsiyonel)</label>
-                <input
-                  type="date"
-                  value={formData.vadeSonuTarihi}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, vadeSonuTarihi: e.target.value }))}
-                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Yıllık Brüt Faiz/Kar Payı (%)</label>
-                <NumericFormat
-                  valueIsNumericString
-                  decimalScale={2}
-                  fixedDecimalScale={false}
-                  allowNegative={false}
-                  thousandSeparator="."
-                  decimalSeparator="," 
-                  value={formData.faizOrani}
-                  onValueChange={({ value }) => setFormData((prev) => ({ ...prev, faizOrani: value }))}
-                  placeholder="Örn: 45"
-                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-              </div>
-            </div>
-          ) : null}
-
-          <div className="rounded-xl border border-white/10 bg-black/15 p-4 space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-[0.1em] text-slate-300">Varlık Detayı</h4>
-
-            <div>
-              <div className="relative">
-                <Input
-                  id="portfolio-name"
-                  label="Portföy Adı"
-                  type="text"
-                  value={portfolioQuery}
-                  placeholder="Portföy adı ara veya yeni ad yaz"
-                  onFocus={() => {
-                    setIsPortfolioOpen(true);
-                    setActivePortfolioIndex(filteredPortfolioNames.length ? 0 : -1);
-                  }}
-                  onBlur={handlePortfolioInputBlur}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setPortfolioQuery(value);
-                    setFormData((prev) => ({ ...prev, portfolioName: value }));
-                    setIsPortfolioOpen(true);
-                    setActivePortfolioIndex(0);
-                  }}
-                  onKeyDown={handlePortfolioKeyDown}
-                  inputClassName="w-full"
-                />
-
-                {isPortfolioOpen ? (
-                  <div className="absolute z-20 mt-1 w-full rounded-lg border border-white/10 bg-[#0b1220] shadow-2xl overflow-hidden">
-                    <ul role="listbox" className="max-h-48 overflow-y-auto py-1">
-                      {filteredPortfolioNames.length === 0 ? (
-                        <li className="px-3 py-2 text-sm text-slate-400">Eşleşen portföy bulunamadı. Enter ile yeni isim ekleyebilirsin.</li>
-                      ) : filteredPortfolioNames.map((portfolioName, index) => (
-                        <li
-                          key={`${portfolioName}-${index}`}
-                          role="option"
-                          aria-selected={activePortfolioIndex === index}
-                          onMouseDown={(event) => {
-                            event.preventDefault();
-                            applyPortfolioSelection(portfolioName);
-                          }}
-                          className={`px-3 py-2 text-sm cursor-pointer transition-colors ${activePortfolioIndex === index ? 'bg-blue-500/20 text-blue-200' : 'text-slate-200 hover:bg-white/10'}`}
-                        >
-                          {portfolioName}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </div>
-              <p className="mt-1 text-[11px] text-slate-500">Mevcut bir portföy seçebilir veya yeni bir isim yazarak Enter ile ekleyebilirsin.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">
-                  {isCommodityCategory ? 'Değerli Maden Seçimi' : (isStockLikeCategory ? 'Hisse/Fon Sembolü' : 'Sembol')}
-                </label>
-
-                {isCommodityCategory ? (
-                  <select
-                    required
-                    value={formData.symbol || COMMODITY_OPTIONS[0].symbol}
-                    onChange={(e) => {
-                      const selectedCommodity = COMMODITY_OPTIONS.find((option) => option.symbol === e.target.value);
-                      const resolvedSymbol = selectedCommodity?.symbol || '';
-                      const nextUnitOptions = getAllowedUnitTypes({ category: formData.category, symbol: resolvedSymbol });
-                      setFormData((prev) => ({
-                        ...prev,
-                        symbol: resolvedSymbol,
-                        name: selectedCommodity?.name || prev.name,
-                        unitType: normalizeUnitType(
-                          selectedCommodity?.defaultUnitType,
-                          nextUnitOptions[0]
-                        ),
-                      }));
-                    }}
-                    className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                  >
-                    {COMMODITY_OPTIONS.map((option) => (
-                      <option key={option.symbol} value={option.symbol} className="bg-slate-900 text-slate-100">
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="relative">
-                    <input
-                      type="text"
-                      required
-                      placeholder={isStockLikeCategory ? 'Örn: THYAO.IS veya MAC yazıp seçin' : 'Örn: BTCUSD'}
-                      value={formData.symbol}
-                      autoComplete="off"
-                      onChange={(e) => {
-                        const value = e.target.value.toUpperCase();
-                        setFormData((prev) => ({ ...prev, symbol: value }));
-                        setSymbolValidationError('');
-                        if (selectedSuggestion?.symbol?.toUpperCase() !== value.trim()) {
-                          setSelectedSuggestion(null);
-                        }
-                        if (!isStockLikeCategory || value.trim().length < MIN_SYMBOL_QUERY_LENGTH) {
-                          setSymbolSuggestions([]);
-                          setIsSuggestionOpen(false);
-                          setActiveSuggestionIndex(-1);
-                        }
-                      }}
-                      onFocus={() => {
-                        if (isStockLikeCategory && symbolSuggestions.length > 0) {
-                          setIsSuggestionOpen(true);
-                        }
-                      }}
-                      onBlur={() => {
-                        window.setTimeout(() => setIsSuggestionOpen(false), 120);
-                      }}
-                      onKeyDown={handleSymbolKeyDown}
-                      className="w-full uppercase bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                    />
-
-                    {isStockLikeCategory && isSuggestionOpen && (isSearchingSymbol || symbolSuggestions.length > 0) ? (
-                      <div className="absolute z-20 mt-1 w-full rounded-lg border border-white/10 bg-[#0b1220] shadow-2xl overflow-hidden">
-                        <ul role="listbox" className="max-h-56 overflow-y-auto py-1">
-                          {isSearchingSymbol ? (
-                            <li className="px-3 py-2 text-sm text-slate-400">Aranıyor...</li>
-                          ) : symbolSuggestions.map((suggestion, index) => (
-                            <li
-                              key={`${suggestion.symbol}-${index}`}
-                              role="option"
-                              aria-selected={activeSuggestionIndex === index}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                applySuggestion(suggestion);
-                              }}
-                              className={`px-3 py-2 text-sm cursor-pointer transition-colors ${activeSuggestionIndex === index ? 'bg-blue-500/20 text-blue-200' : 'text-slate-200 hover:bg-white/10'}`}
-                            >
-                              <span className="font-medium">{suggestion.symbol}</span>
-                              <span className="text-slate-400"> - {suggestion.name}</span>
-                              {suggestion.assetType === 'fund' ? (
-                                <span className="ml-2 inline-flex text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300">Fon</span>
-                              ) : null}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-
-                {symbolValidationError ? (
-                  <p className="text-xs text-rose-400 mt-1">{symbolValidationError}</p>
-                ) : null}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">İsim</label>
-                <input
-                  type="text"
-                  placeholder="Örn: Türk Hava Yolları"
-                  value={formData.name}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Miktar</label>
-                <div className="relative">
-                  <NumericFormat
-                    valueIsNumericString
-                    required
-                    decimalScale={6}
-                    fixedDecimalScale={false}
-                    allowNegative={false}
-                    thousandSeparator="."
-                    decimalSeparator="," 
-                    value={formData.amount}
-                    onValueChange={({ value }) => setFormData((prev) => ({ ...prev, amount: value }))}
-                    className="w-full bg-black/20 border border-white/10 rounded-lg p-3 pr-14 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-                    {amountUnit}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Birim Tipi</label>
-                <select
-                  value={normalizedUnitType}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, unitType: e.target.value }))}
-                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                >
-                  {unitTypeOptions.map((unitTypeOption) => (
-                    <option key={unitTypeOption} value={unitTypeOption} className="bg-slate-900 text-slate-100">
-                      {unitTypeToLabel(unitTypeOption)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Ort. Maliyet (TL)</label>
-                <NumericFormat
-                  valueIsNumericString
-                  required
-                  decimalScale={4}
-                  fixedDecimalScale={false}
-                  allowNegative={false}
-                  thousandSeparator="."
-                  decimalSeparator="," 
-                  value={formData.avgPrice}
-                  onValueChange={({ value }) => setFormData((prev) => ({ ...prev, avgPrice: value }))}
-                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-              </div>
-            </div>
-          </div>
+          <AssetFormFields
+            categoryOptions={CATEGORY_OPTIONS}
+            commodityOptions={COMMODITY_OPTIONS}
+            minSymbolQueryLength={MIN_SYMBOL_QUERY_LENGTH}
+            formData={formData}
+            setFormData={setFormData}
+            institution={institutionFieldState}
+            portfolio={portfolioFieldState}
+            symbol={symbolFieldState}
+            uiState={formUiState}
+            institutionRule={institutionRule}
+            unitTypeOptions={unitTypeOptions}
+            normalizedUnitType={normalizedUnitType}
+            amountUnit={amountUnit}
+            handleCategoryChange={handleCategoryChange}
+          />
 
           <div className="pt-2 flex gap-3">
             <button
