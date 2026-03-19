@@ -132,7 +132,7 @@ export default function EnflasyonAnaliziPage({
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 backdrop-blur-2xl p-8 md:p-10 shadow-[0_30px_90px_rgba(15,23,42,0.4)]">
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/10 backdrop-blur-2xl p-8 md:p-10 shadow-[0_30px_90px_rgba(15,23,42,0.4)]">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-rose-400/10 blur-3xl" />
         <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-indigo-400/10 blur-3xl" />
 
@@ -144,7 +144,7 @@ export default function EnflasyonAnaliziPage({
 
           {analysis ? (
             <>
-              <p className={`text-4xl md:text-5xl font-extrabold tracking-tight ${isLoss ? 'text-[#FF4D6D]' : 'text-[#2BFF88]'}`}>
+              <p className={`text-4xl md:text-5xl font-extrabold tracking-tight ${isLoss ? 'text-[#FF4D6D]' : 'text-emerald-400'}`}>
                 {isLoss
                   ? `${TRY_FORMATTER.format(Math.abs(purchasingPowerAmount))} Kayıptasınız`
                   : `${TRY_FORMATTER.format(Math.abs(purchasingPowerAmount))} Avantajdasınız`}
@@ -182,7 +182,7 @@ export default function EnflasyonAnaliziPage({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 md:p-6">
+      <div className="rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xl p-6 md:p-8">
         <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-300 mb-4">Getiri vs Enflasyon</h3>
         <div className="h-[300px] w-full min-w-0 min-h-[300px] relative">
           {chartReady ? (

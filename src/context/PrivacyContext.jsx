@@ -41,7 +41,7 @@ export function PrivacyProvider({ children }) {
       ? ''
       : (typeof value === 'number' ? value.toLocaleString('tr-TR') : String(value));
 
-    return text.replace(/\d/g, '•');
+    return text.replace(/\d/g, '*');
   }, [isPrivacyActive]);
 
   const contextValue = useMemo(() => ({

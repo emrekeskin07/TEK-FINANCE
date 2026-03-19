@@ -20,7 +20,7 @@ export default function Button({
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-all duration-200 ${variantClass} ${className}`.trim()}
+      className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-all duration-200 ${variantClass} ${className}`.trim()}
       {...props}
     >
       {children}

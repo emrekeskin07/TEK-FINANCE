@@ -5,15 +5,14 @@ import { TrendingUp } from 'lucide-react';
 import { usePrivacy } from '../context/PrivacyContext';
 import { useDashboardData } from '../context/DashboardContext';
 import Button from './common/Button';
-import { formatCurrencyParts } from '../utils/helpers';
+import { convertCurrency, formatCurrencyParts } from '../utils/helpers';
 
 const RANGE_OPTIONS = [
   { key: '1G', label: '1G', days: 1 },
-  { key: '5G', label: '5G', days: 5 },
+  { key: '1H', label: '1H', days: 7 },
   { key: '1A', label: '1A', days: 30 },
   { key: '3A', label: '3A', days: 90 },
   { key: '1Y', label: '1Y', days: 365 },
-  { key: '5Y', label: '5Y', days: 1825 },
   { key: 'TUMU', label: 'TÜMÜ', days: null },
 ];
 
@@ -33,10 +32,11 @@ function TooltipContent({ active, payload, formatter }) {
 }
 
 export default function GrowthChart() {
-  const { lineChartData, rates } = useDashboardData();
+  const { lineChartData, rates, baseCurrency } = useDashboardData();
   const { isPrivacyActive, maskValue } = usePrivacy();
   const containerRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
+  const [isCompactScreen, setIsCompactScreen] = useState(false);
   const [selectedRange, setSelectedRange] = useState('TUMU');
 
   const safeLineChartData = useMemo(
@@ -74,6 +74,28 @@ export default function GrowthChart() {
     return safeLineChartData.slice(-Math.max(2, Math.min(selectedOption.days, safeLineChartData.length)));
   }, [safeLineChartData, selectedRange]);
 
+  const convertedLineChartData = useMemo(
+    () => filteredLineChartData.map((point) => ({
+      ...point,
+      value: convertCurrency(point?.value, baseCurrency, rates),
+    })),
+    [filteredLineChartData, baseCurrency, rates]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 639px)');
+    const applyMediaState = () => setIsCompactScreen(Boolean(mediaQuery.matches));
+
+    applyMediaState();
+    mediaQuery.addEventListener('change', applyMediaState);
+
+    return () => mediaQuery.removeEventListener('change', applyMediaState);
+  }, []);
+
   useEffect(() => {
     const container = containerRef.current;
 
@@ -100,7 +122,7 @@ export default function GrowthChart() {
   }, []);
 
   const formatTryValue = (value) => {
-    const rawText = formatCurrencyParts(Number(value || 0), 'TRY', rates)
+    const rawText = formatCurrencyParts(Number(value || 0), baseCurrency, rates)
       .map((part) => part.value)
       .join('');
 
@@ -116,7 +138,7 @@ export default function GrowthChart() {
   };
 
   const getAreaDomainMin = (dataMin) => {
-    const dataMax = filteredLineChartData.reduce((maxValue, point) => {
+    const dataMax = convertedLineChartData.reduce((maxValue, point) => {
       const value = Number(point?.value);
       return Number.isFinite(value) ? Math.max(maxValue, value) : maxValue;
     }, Number(dataMin || 0));
@@ -125,7 +147,7 @@ export default function GrowthChart() {
   };
 
   const getAreaDomainMax = (dataMax) => {
-    const dataMin = filteredLineChartData.reduce((minValue, point) => {
+    const dataMin = convertedLineChartData.reduce((minValue, point) => {
       const value = Number(point?.value);
       return Number.isFinite(value) ? Math.min(minValue, value) : minValue;
     }, Number(dataMax || 0));
@@ -145,7 +167,7 @@ export default function GrowthChart() {
           Portföy Gelişimi
         </h3>
 
-        <div className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-black/20 p-1">
+        <div className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-black/20 p-1">
           {RANGE_OPTIONS.map((option) => {
             const isActive = selectedRange === option.key;
             return (
@@ -154,13 +176,16 @@ export default function GrowthChart() {
                 type="button"
                 variant="ghost"
                 onClick={() => setSelectedRange(option.key)}
-                className={`min-h-0 rounded-md px-2.5 py-1 text-[11px] ${
+                className={`relative min-h-[44px] rounded-md px-3 py-2 text-[11px] ${
                   isActive
-                    ? 'bg-cyan-400/25 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.3)]'
+                    ? 'bg-emerald-500/18 text-emerald-100'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                {option.label}
+                <span>{option.label}</span>
+                {isActive ? (
+                  <span className="absolute bottom-1 left-2 right-2 h-0.5 rounded-full bg-emerald-400" aria-hidden="true" />
+                ) : null}
               </Button>
             );
           })}
@@ -168,13 +193,13 @@ export default function GrowthChart() {
       </div>
 
       <div ref={containerRef} className="relative h-[260px] min-h-[260px] w-full min-w-0 sm:h-[320px] md:h-[360px]">
-        {isReady && filteredLineChartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={filteredLineChartData}>
+        {isReady && convertedLineChartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%" aspect={isCompactScreen ? 1 : undefined}>
+            <AreaChart data={convertedLineChartData}>
               <defs>
                 <linearGradient id="growthChartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.05} />
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.06} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" vertical={false} />
@@ -199,11 +224,11 @@ export default function GrowthChart() {
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="#22d3ee"
+                stroke="#10b981"
                 strokeWidth={3}
                 fillOpacity={1}
                 fill="url(#growthChartGradient)"
-                activeDot={{ r: 4, stroke: '#0f172a', strokeWidth: 2, fill: '#22d3ee' }}
+                activeDot={{ r: 4, stroke: '#0f172a', strokeWidth: 2, fill: '#10b981' }}
               />
             </AreaChart>
           </ResponsiveContainer>

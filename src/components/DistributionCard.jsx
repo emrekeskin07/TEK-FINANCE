@@ -6,8 +6,11 @@ import BankTotals from './BankTotals';
 export default function DistributionCard() {
   const {
     bankTotals,
+    baseCurrency,
     rates,
     totalValue,
+    selectedInstitution,
+    handleInstitutionSelect,
     selectedBank,
     handleBankSelect,
   } = useDashboardData();
@@ -20,10 +23,11 @@ export default function DistributionCard() {
     >
       <BankTotals
         bankTotals={bankTotals}
+        baseCurrency={baseCurrency}
         rates={rates}
         totalValue={totalValue}
-        selectedBank={selectedBank}
-        onSelectBank={handleBankSelect}
+        selectedBank={selectedInstitution || selectedBank}
+        onSelectBank={handleInstitutionSelect || handleBankSelect}
       />
     </motion.section>
   );

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 export default function Card({ className = '', children }) {
   return (
-    <div className={`rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xl shadow-2xl ${className}`.trim()}>
+    <div className={`rounded-2xl border border-white/5 bg-white/5 p-6 backdrop-blur-xl shadow-2xl md:p-8 ${className}`.trim()}>
       {children}
     </div>
   );

@@ -257,11 +257,13 @@ export default function App() {
     rates,
     totalValue,
     bankTotals,
+    selectedInstitution: selectedBank,
     selectedBank,
     selectedCategory,
     sortConfig,
     setSortConfig,
     lineChartData,
+    handleInstitutionSelect: handleBankSelect,
     handleBankSelect,
     handleCategorySelect,
     clearDashboardFilters: clearFilters,
@@ -371,7 +373,7 @@ export default function App() {
         {activePage === 'dashboard' ? (
           <>
             <DashboardProvider value={dashboardContextValue}>
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-4 md:p-8">
+              <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
                 <Stats
                   greetingName={dashboardGreetingName}
                   totalProfit={totalProfit}

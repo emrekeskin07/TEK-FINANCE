@@ -1,13 +1,14 @@
 import React, { useMemo } from 'react';
-import { Building2 } from 'lucide-react';
+import PropTypes from 'prop-types';
+import { Building2, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { usePrivacy } from '../context/PrivacyContext';
-import { formatCurrencyParts } from '../utils/helpers';
+import { formatCurrency, formatCurrencyParts } from '../utils/helpers';
 
 const OTHER_THRESHOLD_PERCENT = 1;
-const PIE_COLORS = ['#14b8a6', '#34d399', '#2dd4bf', '#22d3ee', '#38bdf8', '#60a5fa', '#818cf8', '#a78bfa'];
+const PIE_COLORS = ['#0f766e', '#14b8a6', '#0d9488', '#10b981', '#34d399', '#2dd4bf', '#0ea5a4', '#6ee7b7'];
 
-export default function BankTotals({ bankTotals, rates, totalValue, selectedBank, onSelectBank }) {
+export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue, selectedBank, onSelectBank }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
 
   const { rows: bankGroups, distributionTotal } = useMemo(() => {
@@ -67,9 +68,7 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
   const centerTotalValue = Number(totalValue || 0) > 0 ? Number(totalValue) : distributionTotal;
 
   const renderTryCurrencyWithMutedSymbol = (value) => {
-    const plainCurrencyText = formatCurrencyParts(value, 'TRY', rates)
-      .map((part) => part.value)
-      .join('');
+    const plainCurrencyText = formatCurrency(value, baseCurrency, rates);
 
     if (isPrivacyActive) {
       return <span>{maskValue(plainCurrencyText)}</span>;
@@ -77,7 +76,7 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
 
     return (
       <>
-        {formatCurrencyParts(value, 'TRY', rates).map((part, index) => (
+        {formatCurrencyParts(value, baseCurrency, rates).map((part, index) => (
           part.type === 'currency'
             ? <span key={`${part.type}-${index}`} className="text-slate-400/75">{part.value}</span>
             : <span key={`${part.type}-${index}`}>{part.value}</span>
@@ -87,9 +86,7 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
   };
 
   const formatTryCurrencyText = (value) => {
-    const rawText = formatCurrencyParts(value, 'TRY', rates)
-      .map((part) => part.value)
-      .join('');
+    const rawText = formatCurrency(value, baseCurrency, rates);
 
     return isPrivacyActive ? maskValue(rawText) : rawText;
   };
@@ -142,9 +139,10 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={92}
-                  paddingAngle={2}
+                  innerRadius={54}
+                  outerRadius={98}
+                  minAngle={5}
+                  paddingAngle={1}
                   activeIndex={activePieIndex >= 0 ? activePieIndex : undefined}
                 >
                   {chartData.map((entry) => {
@@ -176,10 +174,11 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
                   <button
                     type="button"
                     onClick={() => onSelectBank?.(selectedBank)}
-                    className="mt-2 inline-flex items-center rounded-full border border-sky-300/35 bg-sky-500/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-sky-100 transition-all duration-200 hover:bg-sky-500/25 hover:shadow-[0_0_18px_rgba(56,189,248,0.35)]"
+                    className="mt-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-sky-300/35 bg-sky-500/15 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-sky-100 transition-all duration-200 hover:bg-sky-500/25 hover:shadow-[0_0_18px_rgba(56,189,248,0.35)]"
                     title="Kurum filtresini temizle"
                   >
-                    Filtreyi Temizle
+                    <X className="h-3.5 w-3.5" />
+                    Filtreyi Temizle (X)
                   </button>
                 ) : (
                   <p className="mt-2 text-[10px] font-medium text-slate-500">Bir dilime tıklayarak filtrele</p>
@@ -199,7 +198,7 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
                     onClick={() => !entry.isOther && onSelectBank?.(entry.name)}
                     disabled={entry.isOther}
                     aria-pressed={entry.isOther ? undefined : isSelected}
-                    className={`w-full rounded-lg border px-2.5 py-2 transition-all duration-200 ${
+                    className={`w-full min-h-[44px] rounded-lg border px-2.5 py-2 transition-all duration-200 ${
                       entry.isOther
                         ? 'cursor-default border-white/10 bg-white/[0.03]'
                         : 'cursor-pointer border-white/10 bg-white/[0.03] hover:border-sky-300/40 hover:bg-sky-500/10'
@@ -222,3 +221,12 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
     </div>
   );
 }
+
+BankTotals.propTypes = {
+  bankTotals: PropTypes.object,
+  baseCurrency: PropTypes.string,
+  rates: PropTypes.object,
+  totalValue: PropTypes.number,
+  selectedBank: PropTypes.string,
+  onSelectBank: PropTypes.func,
+};
