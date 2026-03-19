@@ -53,6 +53,7 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAssetId, setEditingAssetId] = useState(null);
   const [editingAssetData, setEditingAssetData] = useState(null);
+  const [prefilledPortfolioName, setPrefilledPortfolioName] = useState('');
   const [isAlertDrawerOpen, setIsAlertDrawerOpen] = useState(false);
 
   const { portfolio, addAsset, updateAsset, removeAsset, sellAsset } = usePortfolio(authUser?.id, (updatedPort) => {
@@ -85,7 +86,26 @@ export default function App() {
     setSelectedCategory((prevSelected) => (prevSelected === categoryName ? null : categoryName));
   };
 
-  const openAddModal = () => {
+  const resolvePortfolioNameFromUrl = () => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    return (params.get('portfolioName') || params.get('portfolio') || '').trim();
+  };
+
+  const openAddModal = (context = {}) => {
+    const explicitPortfolioName = typeof context === 'string'
+      ? context
+      : (context?.portfolioName || '');
+
+    // Dashboard acilisinda alan bos gelsin; detay sayfasi veya URL'den acilis senaryosunda prefill kullan.
+    const resolvedPrefill = activePage === 'dashboard'
+      ? ''
+      : (String(explicitPortfolioName || resolvePortfolioNameFromUrl()).trim());
+
+    setPrefilledPortfolioName(resolvedPrefill);
     setEditingAssetData(null);
     setEditingAssetId(null);
     setIsModalOpen(true);
@@ -101,6 +121,7 @@ export default function App() {
     setIsModalOpen(false);
     setEditingAssetData(null);
     setEditingAssetId(null);
+    setPrefilledPortfolioName('');
   };
 
   const handleManualRefresh = () => {
@@ -166,6 +187,18 @@ export default function App() {
   ), [alerts]);
 
   const previewAlerts = useMemo(() => alerts.slice(0, 3), [alerts]);
+  const portfolioNameOptions = useMemo(() => {
+    const uniqueNames = new Set();
+
+    portfolio.forEach((item) => {
+      const name = String(item?.portfolioName || item?.portfolio_name || '').trim();
+      if (name) {
+        uniqueNames.add(name);
+      }
+    });
+
+    return Array.from(uniqueNames);
+  }, [portfolio]);
 
   const handleToggleAlertDrawer = () => {
     setIsAlertDrawerOpen((prev) => !prev);
@@ -504,6 +537,8 @@ export default function App() {
           initialData={editingAssetData}
           onAdd={addAsset}
           onUpdate={updateAsset}
+          portfolioNameOptions={portfolioNameOptions}
+          prefilledPortfolioName={prefilledPortfolioName}
         />
       ) : null}
     </div>

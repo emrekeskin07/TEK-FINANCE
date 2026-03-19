@@ -50,3 +50,37 @@ export const formatMaskedCurrency = (baseCurrency) => {
 };
 
 export const formatMaskedPercent = () => '•••%';
+
+export const groupAssetsByPortfolio = (assets = []) => {
+  const groups = new Map();
+
+  assets.forEach((assetEntry) => {
+    const sourceAsset = assetEntry?.item || assetEntry;
+    const rawPortfolioName = sourceAsset?.portfolioName || sourceAsset?.portfolio_name || 'Genel Portföy';
+    const portfolioName = String(rawPortfolioName || '').trim() || 'Genel Portföy';
+
+    if (!groups.has(portfolioName)) {
+      groups.set(portfolioName, {
+        portfolioName,
+        items: [],
+        totalValue: 0,
+        totalCost: 0,
+        totalProfit: 0,
+      });
+    }
+
+    const group = groups.get(portfolioName);
+    const amount = Number(sourceAsset?.amount || 0);
+    const avgPrice = Number(sourceAsset?.avgPrice || sourceAsset?.cost || 0);
+    const itemTotalValue = Number(assetEntry?.itemTotalValue || (amount * avgPrice));
+    const itemCost = Number(assetEntry?.itemCost || (amount * avgPrice));
+    const itemProfit = Number(assetEntry?.itemProfit || (itemTotalValue - itemCost));
+
+    group.items.push(assetEntry);
+    group.totalValue += Number.isFinite(itemTotalValue) ? itemTotalValue : 0;
+    group.totalCost += Number.isFinite(itemCost) ? itemCost : 0;
+    group.totalProfit += Number.isFinite(itemProfit) ? itemProfit : 0;
+  });
+
+  return Array.from(groups.values());
+};

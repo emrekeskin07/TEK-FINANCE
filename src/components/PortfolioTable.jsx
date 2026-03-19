@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Coins, AlertCircle, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, ShoppingCart, ArrowUpRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
-import { formatCurrencyParts } from '../utils/helpers';
+import { formatCurrencyParts, groupAssetsByPortfolio } from '../utils/helpers';
 import { resolveAssetLivePrice, unitTypeToLabel } from '../utils/assetPricing';
 import { getCategoryBadgeStyle } from '../utils/categoryStyles';
 import { calculateRealReturnPercent, getLatestAnnualInflationRate } from '../utils/financeMath';
@@ -120,6 +120,11 @@ export default function PortfolioTable({
       const directionFactor = sortConfig.direction === 'asc' ? 1 : -1;
       return (aValue - bValue) * directionFactor;
     });
+
+  const groupedDisplayedPortfolio = useMemo(
+    () => groupAssetsByPortfolio(displayedPortfolio),
+    [displayedPortfolio]
+  );
 
   const renderCurrencyWithMutedSymbol = (value) => {
     const plainCurrencyText = formatCurrencyParts(value, baseCurrency, rates)
@@ -330,17 +335,39 @@ export default function PortfolioTable({
               ? 'Henüz bir varlık eklemediniz.'
               : 'Seçili filtreler için varlık bulunamadı.'}
           </div>
-        ) : displayedPortfolio.map(({ item, livePrice, activePrice, itemTotalValue, itemCost, itemProfit }) => {
-          const categoryName = item.category || 'Diğer';
-          const isCategorySelected = selectedCategory === categoryName;
-          const isCashAsset = categoryName === 'Nakit' || categoryName === 'Nakit/Banka';
-          const isApiFailed = !loading && !(Number.isFinite(livePrice) && livePrice > 0);
-          const itemWeightPercent = totalValue > 0 ? ((itemTotalValue / totalValue) * 100).toFixed(1) : '0.0';
-          const itemProfitPercent = itemCost > 0 ? ((itemProfit / itemCost) * 100).toFixed(2) : '0.00';
-          const inflationScore = getInflationScore(itemCost, itemProfit);
-          const isExpanded = expandedAssetId === item.id;
+        ) : groupedDisplayedPortfolio.map((group) => {
+          const groupProfitPercent = group.totalCost > 0 ? ((group.totalProfit / group.totalCost) * 100).toFixed(2) : '0.00';
 
           return (
+            <section key={`portfolio-group-${group.portfolioName}`} className="space-y-3">
+              <div className="rounded-xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 md:px-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Portföy</p>
+                    <h4 className="text-base font-semibold text-slate-100">{group.portfolioName}</h4>
+                    <p className="mt-0.5 text-xs text-slate-400">{group.items.length} varlık</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Toplam Değer</p>
+                    <p className="text-sm font-semibold text-slate-100">{renderCurrencyWithMutedSymbol(group.totalValue)}</p>
+                    <p className={`text-[11px] ${group.totalProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                      {isPrivacyActive ? maskValue(`%${groupProfitPercent}`) : `%${groupProfitPercent}`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {group.items.map(({ item, livePrice, activePrice, itemTotalValue, itemCost, itemProfit }) => {
+                const categoryName = item.category || 'Diğer';
+                const isCategorySelected = selectedCategory === categoryName;
+                const isCashAsset = categoryName === 'Nakit' || categoryName === 'Nakit/Banka';
+                const isApiFailed = !loading && !(Number.isFinite(livePrice) && livePrice > 0);
+                const itemWeightPercent = totalValue > 0 ? ((itemTotalValue / totalValue) * 100).toFixed(1) : '0.0';
+                const itemProfitPercent = itemCost > 0 ? ((itemProfit / itemCost) * 100).toFixed(2) : '0.00';
+                const inflationScore = getInflationScore(itemCost, itemProfit);
+                const isExpanded = expandedAssetId === item.id;
+
+                return (
             <article key={item.id} className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
               <button
                 type="button"
@@ -486,6 +513,9 @@ export default function PortfolioTable({
                 ) : null}
               </AnimatePresence>
             </article>
+                );
+              })}
+            </section>
           );
         })}
       </div>

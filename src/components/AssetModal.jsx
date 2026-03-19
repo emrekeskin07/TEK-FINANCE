@@ -14,6 +14,8 @@ const HESAP_TURU_OPTIONS = ['Vadesiz', 'Vadeli (Mevduat)', 'Faizsiz Katılım'];
 const SAKLAMA_TURU_OPTIONS = ['Banka', 'Fiziksel/Evde'];
 const MIN_SYMBOL_QUERY_LENGTH = 2;
 const MANUAL_INSTITUTION_LABEL = 'Diğer (Manuel)';
+const PORTFOLIO_NAME_STORAGE_KEY = 'tek-finance:portfolio-name-options';
+const DEFAULT_PORTFOLIO_NAME_OPTIONS = ['Genel Portföy', 'Uzun Vadeli', 'Hisse Senedi Portföyüm'];
 
 const INSTITUTION_OPTIONS = [
   'Akbank',
@@ -86,6 +88,7 @@ const INITIAL_FORM = {
   category: 'Hisse Senedi',
   saklamaTuru: 'Banka',
   hesapTuru: 'Vadesiz',
+  portfolioName: '',
   vadeSonuTarihi: '',
   faizOrani: '',
   symbol: '',
@@ -109,6 +112,42 @@ const getCommodityOption = (symbol) => {
 
 const getAmountUnit = (unitType) => unitTypeToLabel(unitType);
 const normalizeInstitutionForSearch = (value) => String(value || '').toLocaleLowerCase('tr-TR');
+const normalizePortfolioForSearch = (value) => String(value || '').toLocaleLowerCase('tr-TR');
+
+const dedupePortfolioNames = (names) => {
+  const unique = new Set();
+
+  names.forEach((name) => {
+    const trimmed = String(name || '').trim();
+    if (trimmed) {
+      unique.add(trimmed);
+    }
+  });
+
+  return Array.from(unique);
+};
+
+const readStoredPortfolioNames = () => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(PORTFOLIO_NAME_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return dedupePortfolioNames(parsed);
+  } catch {
+    return [];
+  }
+};
 
 export default function AssetModal({
   isOpen,
@@ -117,6 +156,8 @@ export default function AssetModal({
   initialData,
   onAdd,
   onUpdate,
+  portfolioNameOptions = [],
+  prefilledPortfolioName = '',
 }) {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [symbolSuggestions, setSymbolSuggestions] = useState([]);
@@ -129,6 +170,10 @@ export default function AssetModal({
   const [isInstitutionOpen, setIsInstitutionOpen] = useState(false);
   const [activeInstitutionIndex, setActiveInstitutionIndex] = useState(-1);
   const [isManualInstitutionSelected, setIsManualInstitutionSelected] = useState(false);
+  const [savedPortfolioNames, setSavedPortfolioNames] = useState(readStoredPortfolioNames);
+  const [portfolioQuery, setPortfolioQuery] = useState(INITIAL_FORM.portfolioName);
+  const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+  const [activePortfolioIndex, setActivePortfolioIndex] = useState(-1);
 
   const isStockCategory = formData.category === 'Hisse Senedi';
   const isFundCategory = formData.category === 'Yatırım Fonu';
@@ -159,12 +204,48 @@ export default function AssetModal({
 
     return [...startsWith, ...contains];
   }, [institutionQuery]);
+  const availablePortfolioNames = useMemo(() => (
+    dedupePortfolioNames([
+      ...DEFAULT_PORTFOLIO_NAME_OPTIONS,
+      ...portfolioNameOptions,
+      ...savedPortfolioNames,
+    ])
+  ), [portfolioNameOptions, savedPortfolioNames]);
+  const filteredPortfolioNames = useMemo(() => {
+    const normalizedQuery = normalizePortfolioForSearch(portfolioQuery.trim());
+
+    if (!normalizedQuery) {
+      return availablePortfolioNames;
+    }
+
+    const startsWith = [];
+    const contains = [];
+
+    availablePortfolioNames.forEach((option) => {
+      const normalizedOption = normalizePortfolioForSearch(option);
+      if (normalizedOption.startsWith(normalizedQuery)) {
+        startsWith.push(option);
+      } else if (normalizedOption.includes(normalizedQuery)) {
+        contains.push(option);
+      }
+    });
+
+    return [...startsWith, ...contains];
+  }, [availablePortfolioNames, portfolioQuery]);
   const unitTypeOptions = getAllowedUnitTypes({ category: formData.category, symbol: formData.symbol });
   const normalizedUnitType = normalizeUnitType(
     formData.unitType,
     inferDefaultUnitType({ category: formData.category, symbol: formData.symbol })
   );
   const amountUnit = getAmountUnit(normalizedUnitType);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(PORTFOLIO_NAME_STORAGE_KEY, JSON.stringify(savedPortfolioNames));
+  }, [savedPortfolioNames]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -183,6 +264,7 @@ export default function AssetModal({
         category: initialCategory,
         saklamaTuru: initialData.saklamaTuru || 'Banka',
         hesapTuru: initialData.hesapTuru || 'Vadesiz',
+        portfolioName: initialData.portfolioName || initialData.portfolio_name || 'Genel Portföy',
         vadeSonuTarihi: initialData.vadeSonuTarihi || '',
         faizOrani: initialData.faizOrani ?? '',
         symbol: initialIsCommodity ? initialCommodity.symbol : (initialData.symbol || ''),
@@ -209,11 +291,17 @@ export default function AssetModal({
       );
       setInstitutionQuery(initialData.bank || '');
       setIsManualInstitutionSelected(Boolean(initialData.bank) && !INSTITUTION_OPTIONS.includes(initialData.bank));
+      setPortfolioQuery(initialData.portfolioName || initialData.portfolio_name || 'Genel Portföy');
     } else {
-      setFormData(INITIAL_FORM);
+      const resolvedPrefill = String(prefilledPortfolioName || '').trim();
+      setFormData({
+        ...INITIAL_FORM,
+        portfolioName: resolvedPrefill,
+      });
       setSelectedSuggestion(null);
       setInstitutionQuery('');
       setIsManualInstitutionSelected(false);
+      setPortfolioQuery(resolvedPrefill);
     }
 
     setSymbolSuggestions([]);
@@ -223,7 +311,9 @@ export default function AssetModal({
     setIsSearchingSymbol(false);
     setIsInstitutionOpen(false);
     setActiveInstitutionIndex(-1);
-  }, [isOpen, initialData]);
+    setIsPortfolioOpen(false);
+    setActivePortfolioIndex(-1);
+  }, [isOpen, initialData, prefilledPortfolioName]);
 
   useEffect(() => {
     if (!isOpen || !isStockLikeCategory) {
@@ -357,6 +447,73 @@ export default function AssetModal({
     }
   };
 
+  const applyPortfolioSelection = (portfolioName) => {
+    const resolved = String(portfolioName || '').trim() || 'Genel Portföy';
+
+    setFormData((prev) => ({
+      ...prev,
+      portfolioName: resolved,
+    }));
+    setPortfolioQuery(resolved);
+    setIsPortfolioOpen(false);
+    setActivePortfolioIndex(-1);
+
+    setSavedPortfolioNames((prev) => (
+      prev.includes(resolved) ? prev : dedupePortfolioNames([...prev, resolved])
+    ));
+  };
+
+  const handlePortfolioInputBlur = () => {
+    window.setTimeout(() => {
+      const resolved = String(portfolioQuery || '').trim() || 'Genel Portföy';
+      setPortfolioQuery(resolved);
+      setFormData((prev) => ({ ...prev, portfolioName: resolved }));
+      setSavedPortfolioNames((prev) => (
+        prev.includes(resolved) ? prev : dedupePortfolioNames([...prev, resolved])
+      ));
+      setIsPortfolioOpen(false);
+      setActivePortfolioIndex(-1);
+    }, 120);
+  };
+
+  const handlePortfolioKeyDown = (event) => {
+    if (!isPortfolioOpen && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+      setIsPortfolioOpen(true);
+      setActivePortfolioIndex(0);
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActivePortfolioIndex((prev) => Math.min(prev + 1, filteredPortfolioNames.length - 1));
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActivePortfolioIndex((prev) => Math.max(prev - 1, 0));
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+
+      if (isPortfolioOpen && activePortfolioIndex >= 0 && filteredPortfolioNames[activePortfolioIndex]) {
+        applyPortfolioSelection(filteredPortfolioNames[activePortfolioIndex]);
+        return;
+      }
+
+      const resolved = String(portfolioQuery || '').trim() || 'Genel Portföy';
+      applyPortfolioSelection(resolved);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      setIsPortfolioOpen(false);
+      setActivePortfolioIndex(-1);
+    }
+  };
+
   const applySuggestion = (suggestion) => {
     const isFundSuggestion = suggestion?.assetType === 'fund';
     setFormData((prev) => ({
@@ -436,12 +593,20 @@ export default function AssetModal({
       symbol: normalizedSymbol,
     });
     const normalizedPayloadUnitType = normalizeUnitType(formData.unitType, availableUnitTypes[0]);
+    const resolvedPortfolioName = String(formData.portfolioName || portfolioQuery || 'Genel Portföy').trim() || 'Genel Portföy';
 
     const payload = {
       ...formData,
       symbol: normalizedSymbol,
       unitType: normalizedPayloadUnitType,
+      portfolioName: resolvedPortfolioName,
     };
+
+    setSavedPortfolioNames((prev) => (
+      prev.includes(resolvedPortfolioName)
+        ? prev
+        : dedupePortfolioNames([...prev, resolvedPortfolioName])
+    ));
 
     if (editingAssetId) {
       onUpdate(editingAssetId, payload);
@@ -672,6 +837,55 @@ export default function AssetModal({
 
           <div className="rounded-xl border border-white/10 bg-black/15 p-4 space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-[0.1em] text-slate-300">Varlık Detayı</h4>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1">Portföy Adı</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={portfolioQuery}
+                  placeholder="Portföy adı ara veya yeni ad yaz"
+                  onFocus={() => {
+                    setIsPortfolioOpen(true);
+                    setActivePortfolioIndex(filteredPortfolioNames.length ? 0 : -1);
+                  }}
+                  onBlur={handlePortfolioInputBlur}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setPortfolioQuery(value);
+                    setFormData((prev) => ({ ...prev, portfolioName: value }));
+                    setIsPortfolioOpen(true);
+                    setActivePortfolioIndex(0);
+                  }}
+                  onKeyDown={handlePortfolioKeyDown}
+                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
+                />
+
+                {isPortfolioOpen ? (
+                  <div className="absolute z-20 mt-1 w-full rounded-lg border border-white/10 bg-[#0b1220] shadow-2xl overflow-hidden">
+                    <ul role="listbox" className="max-h-48 overflow-y-auto py-1">
+                      {filteredPortfolioNames.length === 0 ? (
+                        <li className="px-3 py-2 text-sm text-slate-400">Eşleşen portföy bulunamadı. Enter ile yeni isim ekleyebilirsin.</li>
+                      ) : filteredPortfolioNames.map((portfolioName, index) => (
+                        <li
+                          key={`${portfolioName}-${index}`}
+                          role="option"
+                          aria-selected={activePortfolioIndex === index}
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            applyPortfolioSelection(portfolioName);
+                          }}
+                          className={`px-3 py-2 text-sm cursor-pointer transition-colors ${activePortfolioIndex === index ? 'bg-blue-500/20 text-blue-200' : 'text-slate-200 hover:bg-white/10'}`}
+                        >
+                          {portfolioName}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+              <p className="mt-1 text-[11px] text-slate-500">Mevcut bir portföy seçebilir veya yeni bir isim yazarak Enter ile ekleyebilirsin.</p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

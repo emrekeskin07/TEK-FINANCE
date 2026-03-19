@@ -118,6 +118,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     const avgPrice = toFiniteNumber(asset.cost);
     const bankName = asset.bank_name || asset.bank || 'Banka Belirtilmedi';
     const hesapTuru = asset.hesap_turu || asset.hesapTuru || null;
+    const portfolioName = asset.portfolio_name || asset.portfolioName || 'Genel Portföy';
     const unitType = normalizeUnitType(
       asset.unit_type || asset.unitType,
       inferDefaultUnitType({ category, symbol })
@@ -132,12 +133,14 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       avgPrice,
       bank: bankName,
       hesapTuru,
+      portfolioName,
       unitType,
       type: category === 'Yatırım Fonu' ? 'fund' : 'custom',
       // Supabase schema key aliases kept for update/inspect compatibility.
       cost: avgPrice,
       bank_name: bankName,
       hesap_turu: hesapTuru,
+      portfolio_name: portfolioName,
       unit_type: unitType,
     };
   }, []);
@@ -283,7 +286,10 @@ export const usePortfolio = (userId, onPortfolioChange) => {
         return;
       }
 
-      const normalizedAsset = normalizeAsset(data || { ...existingAssetRow, ...mergedPayload, id: existingAssetRow.id });
+      const normalizedAsset = normalizeAsset({
+        ...(data || { ...existingAssetRow, ...mergedPayload, id: existingAssetRow.id }),
+        portfolioName: formData.portfolioName,
+      });
 
       setPortfolio((prev) => {
         const index = prev.findIndex((item) => item.id === existingAssetRow.id);
@@ -326,7 +332,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       return;
     }
 
-    const normalizedAsset = normalizeAsset(data || dbPayload);
+    const normalizedAsset = normalizeAsset({ ...(data || dbPayload), portfolioName: formData.portfolioName });
 
     setPortfolio((prev) => {
       const updated = [...prev, normalizedAsset];
@@ -390,7 +396,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       return;
     }
 
-    const normalizedAsset = normalizeAsset(data || { ...dbPayload, id });
+    const normalizedAsset = normalizeAsset({ ...(data || { ...dbPayload, id }), portfolioName: formData.portfolioName });
 
     setPortfolio((prev) => {
       const updated = prev.map((item) => (item.id === id ? normalizedAsset : item));
