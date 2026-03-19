@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, Eye, EyeOff, LogOut, Menu, Palette, Plus, RefreshCcw } from 'lucide-react';
+import { Bell, Eye, EyeOff, LogOut, Menu, Plus, RefreshCcw } from 'lucide-react';
 import { useSyncState } from '../context/SyncContext';
 import { usePrivacy } from '../context/PrivacyContext';
 import SplitText from './ui/SplitText';
@@ -7,9 +7,6 @@ import SplitText from './ui/SplitText';
 export default function Header({
   activePage,
   onToggleSidebar = () => {},
-  activeTheme = 'deep-ocean',
-  themeOptions = [],
-  onThemeChange,
   baseCurrency,
   setBaseCurrency,
   openAddModal,
@@ -99,29 +96,6 @@ export default function Header({
           {isPrivacyActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           <span className="text-xs font-semibold">{isPrivacyActive ? 'Gizlilik Açık' : 'Gizlilik Kapalı'}</span>
         </button>
-
-        <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/5 bg-slate-900/45 px-2 py-1.5 backdrop-blur-xl">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/5 bg-slate-950/70 text-slate-100" title="Tema Seçici">
-            <Palette className="h-4 w-4" />
-          </span>
-          <div className="flex items-center gap-1">
-            {themeOptions.map((option) => {
-              const isActiveTheme = activeTheme === option.id;
-
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => onThemeChange?.(option.id)}
-                  className={`h-6 w-6 rounded-full border transition-all duration-300 hover:scale-110 ${isActiveTheme ? 'border-white ring-2 ring-white/40' : 'border-white/20'}`}
-                  title={option.label}
-                  aria-label={`${option.label} temasini sec`}
-                  style={{ background: option.swatch }}
-                />
-              );
-            })}
-          </div>
-        </div>
 
         {activePage === 'dashboard' ? (
           <>

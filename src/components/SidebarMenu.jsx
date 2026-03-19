@@ -10,7 +10,15 @@ const MENU_ITEMS = [
   { key: 'hedeflerim', label: 'Hedeflerim', icon: Target },
 ];
 
-export default function SidebarMenu({ isOpen, activePage, onClose, onNavigate }) {
+export default function SidebarMenu({
+  isOpen,
+  activePage,
+  activeTheme = 'deep-ocean',
+  themeOptions = [],
+  onThemeChange,
+  onClose,
+  onNavigate,
+}) {
   return (
     <AnimatePresence>
       {isOpen ? (
@@ -84,6 +92,27 @@ export default function SidebarMenu({ isOpen, activePage, onClose, onNavigate })
                 );
               })}
             </nav>
+
+            <div className="mt-5 rounded-xl border border-white/5 bg-slate-950/70 p-3">
+              <p className="text-xs font-semibold uppercase tracking-tight text-slate-400">Tema Seçimi</p>
+              <div className="mt-2 flex items-center gap-2">
+                {themeOptions.map((option) => {
+                  const isActiveTheme = activeTheme === option.id;
+
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => onThemeChange?.(option.id)}
+                      className={`h-7 w-7 rounded-full border transition-all duration-300 hover:scale-110 ${isActiveTheme ? 'border-white ring-2 ring-fuchsia-300/60' : 'border-white/25'}`}
+                      title={option.label}
+                      aria-label={`${option.label} temasini sec`}
+                      style={{ background: option.swatch }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           </motion.aside>
         </>
       ) : null}
@@ -94,6 +123,9 @@ export default function SidebarMenu({ isOpen, activePage, onClose, onNavigate })
 SidebarMenu.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   activePage: PropTypes.string.isRequired,
+  activeTheme: PropTypes.string,
+  themeOptions: PropTypes.array,
+  onThemeChange: PropTypes.func,
   onClose: PropTypes.func.isRequired,
   onNavigate: PropTypes.func.isRequired,
 };

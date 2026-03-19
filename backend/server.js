@@ -11,6 +11,7 @@ const {
 } = require("./services/priceService");
 const {
   parseAssetCommand,
+  normalizeParsedInput,
   autoAddParsedAsset,
 } = require("./services/aiParseService");
 
@@ -161,10 +162,9 @@ app.get("/api/fon-fiyati/:kod", async (req, res) => {
   }
 });
 
-// Example: POST /api/ai-parse { text: "Ziraat bankasina 50.000 TL ekle", userId: "..." }
-app.post("/api/ai-parse", async (req, res) => {
+// Example: POST /api/ai-add-asset { text: "Garanti'ye 20 bin ekle" }
+app.post("/api/ai-add-asset", async (req, res) => {
   const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
-  const userId = typeof req.body?.userId === "string" ? req.body.userId.trim() : "";
 
   if (!text || text.length < 4) {
     return res.status(400).json({
@@ -173,11 +173,69 @@ app.post("/api/ai-parse", async (req, res) => {
     });
   }
 
+  try {
+    const parsed = await parseAssetCommand(text);
+
+    return res.json({
+      ok: true,
+      message: "AI komutu çözümlendi.",
+      data: { parsed },
+    });
+  } catch (error) {
+    console.error("AI parse hata detayi:", error.message);
+
+    return res.status(422).json({
+      ok: false,
+      error: error.message || "Metin cozumlenemedi.",
+    });
+  }
+});
+
+// Example: POST /api/ai-add-asset/confirm { userId: "...", parsed: { ... } }
+app.post("/api/ai-add-asset/confirm", async (req, res) => {
+  const userId = typeof req.body?.userId === "string" ? req.body.userId.trim() : "";
+  const parsedInput = req.body?.parsed;
+
   if (!userId) {
     return res.status(400).json({
       ok: false,
       error: "Body param required: userId",
     });
+  }
+
+  try {
+    const parsed = normalizeParsedInput(parsedInput);
+    const result = await autoAddParsedAsset({ parsed, userId });
+
+    return res.json({
+      ok: true,
+      message: "Başarıyla eklendi!",
+      data: {
+        parsed,
+        insertedAsset: result.insertedAsset,
+      },
+    });
+  } catch (error) {
+    console.error("AI confirm/add hata detayi:", error.message);
+
+    return res.status(422).json({
+      ok: false,
+      error: error.message || "AI sonucu kaydedilemedi.",
+    });
+  }
+});
+
+// Legacy compatibility endpoint
+app.post("/api/ai-parse", async (req, res) => {
+  const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+  const userId = typeof req.body?.userId === "string" ? req.body.userId.trim() : "";
+
+  if (!text || text.length < 4) {
+    return res.status(400).json({ ok: false, error: "Body param required: text (min 4 chars)" });
+  }
+
+  if (!userId) {
+    return res.status(400).json({ ok: false, error: "Body param required: userId" });
   }
 
   try {
@@ -193,8 +251,6 @@ app.post("/api/ai-parse", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("AI parse/add hata detayi:", error.message);
-
     return res.status(422).json({
       ok: false,
       error: error.message || "Metin cozumlenemedi.",

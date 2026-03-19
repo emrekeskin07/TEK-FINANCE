@@ -553,6 +553,9 @@ export default function App() {
       <SidebarMenu
         isOpen={isSidebarOpen}
         activePage={activePage}
+        activeTheme={activeTheme}
+        themeOptions={THEME_OPTIONS}
+        onThemeChange={setActiveTheme}
         onClose={() => setIsSidebarOpen(false)}
         onNavigate={handleSidebarNavigate}
       />
@@ -561,9 +564,6 @@ export default function App() {
         <Header 
           activePage={activePage}
           onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
-          activeTheme={activeTheme}
-          themeOptions={THEME_OPTIONS}
-          onThemeChange={setActiveTheme}
           baseCurrency={baseCurrency}
           setBaseCurrency={setBaseCurrency}
           openAddModal={openAddModal}
@@ -660,7 +660,7 @@ export default function App() {
             </div>
           </DashboardProvider>
         ) : activePage === 'net-worth' ? (
-          <div>
+          <div className="w-full max-w-7xl mx-auto">
             <MalVarligiPage
               portfolioCashTotal={portfolioCashTotal}
               manualAssets={manualAssets}

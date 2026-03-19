@@ -104,8 +104,12 @@ function detectCurrencyFromText(text) {
 function detectAssetCategory(text) {
   const normalized = String(text || "").toLocaleLowerCase("tr-TR");
 
+  if (normalized.includes("gümüş") || normalized.includes("gumus") || normalized.includes("silver")) {
+    return "Gümüş";
+  }
+
   if (normalized.includes("altın") || normalized.includes("altin") || normalized.includes("gram") || normalized.includes("ons")) {
-    return "Değerli Madenler";
+    return "Altın";
   }
 
   if (
@@ -121,13 +125,13 @@ function detectAssetCategory(text) {
     return "Döviz";
   }
 
-  return "Nakit/Banka";
+  return "Nakit";
 }
 
 function detectUnitFromText(text, category) {
   const normalized = String(text || "").toLocaleLowerCase("tr-TR");
 
-  if (category === "Değerli Madenler") {
+  if (category === "Değerli Madenler" || category === "Altın" || category === "Gümüş") {
     if (normalized.includes("ons")) {
       return "ons";
     }
@@ -178,15 +182,19 @@ function extractJsonBlock(text) {
 function normalizeAssetType(value) {
   const normalized = String(value || "").toLocaleLowerCase("tr-TR");
 
+  if (normalized.includes("gümüş") || normalized.includes("gumus") || normalized.includes("silver")) {
+    return "Gümüş";
+  }
+
   if (normalized.includes("maden") || normalized.includes("altın") || normalized.includes("altin") || normalized.includes("gold")) {
-    return "Değerli Madenler";
+    return "Altın";
   }
 
   if (normalized.includes("döviz") || normalized.includes("doviz") || normalized.includes("fx") || normalized.includes("currency")) {
     return "Döviz";
   }
 
-  return "Nakit/Banka";
+  return "Nakit";
 }
 
 function normalizeCurrency(value) {
@@ -206,7 +214,7 @@ function normalizeCurrency(value) {
 function normalizeUnit(value, category, text) {
   const normalized = String(value || "").trim().toLowerCase();
 
-  if (category === "Değerli Madenler") {
+  if (category === "Altın" || category === "Gümüş") {
     if (normalized === "ons" || normalized === "ounce") {
       return "ons";
     }
@@ -229,12 +237,12 @@ async function callGemini(text) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
 
   const systemPrompt = [
-    "Aşağıdaki Türkçe finans cümlesinden sadece JSON üret.",
-    "Alanlar: institution, assetType, amount, currency, unit.",
-    "assetType değerleri: Nakit/Banka, Döviz, Değerli Madenler.",
+    "Bu Türkçe metindeki finansal varlık girişini JSON olarak parçala:",
+    "Kurum (institution), Tür (assetType), Tutar (amount), Para Birimi (currency), Birim (unit).",
+    "assetType değerleri: Nakit, Altın, Gümüş, Döviz.",
     "currency: TRY, USD, EUR, GBP.",
     "unit: adet, gram, ons.",
-    "Sadece geçerli bir JSON nesnesi döndür. Açıklama yazma.",
+    "Sadece geçerli bir JSON nesnesi döndür. Açıklama ekleme.",
   ].join(" ");
 
   const payload = {
@@ -328,6 +336,27 @@ async function parseAssetCommand(text) {
   };
 }
 
+function normalizeParsedInput(parsedInput = {}) {
+  const institution = String(parsedInput?.institution || "").trim() || "Banka Belirtilmedi";
+  const assetType = normalizeAssetType(parsedInput?.assetType);
+  const amount = parseTrNumber(parsedInput?.amount);
+  const currency = normalizeCurrency(parsedInput?.currency);
+  const unit = normalizeUnit(parsedInput?.unit, assetType, "");
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("Onaylanan AI verisindeki tutar gecersiz.");
+  }
+
+  return {
+    institution,
+    assetType,
+    amount,
+    currency,
+    unit,
+    source: "confirmed",
+  };
+}
+
 async function resolveQuotePrice(symbol, fallback = 1) {
   try {
     const result = await getQuoteData(symbol);
@@ -361,21 +390,45 @@ async function resolveGoldGramTryPrice() {
   return 1;
 }
 
+async function resolveSilverGramTryPrice() {
+  try {
+    const ounceResult = await getQuoteData("SI=F");
+    const usdTryResult = await getQuoteData("TRY=X");
+
+    const ounceUsd = Number(ounceResult?.data?.regularMarketPrice);
+    const usdTry = Number(usdTryResult?.data?.regularMarketPrice);
+
+    if (Number.isFinite(ounceUsd) && ounceUsd > 0 && Number.isFinite(usdTry) && usdTry > 0) {
+      return (ounceUsd * usdTry) / OUNCE_TO_GRAM;
+    }
+  } catch {
+    // Fallback below.
+  }
+
+  return 1;
+}
+
 async function buildAssetPayload({ parsed, userId }) {
   const bankName = parsed.institution || "Banka Belirtilmedi";
 
-  if (parsed.assetType === "Değerli Madenler") {
+  if (parsed.assetType === "Altın" || parsed.assetType === "Gümüş" || parsed.assetType === "Değerli Madenler") {
+    const isSilver = parsed.assetType === "Gümüş";
     const isOunce = parsed.unit === "ons";
+    const symbol = isSilver ? "SI=F" : (isOunce ? "GC=F" : "GRAM_ALTIN");
+    const name = isSilver
+      ? (isOunce ? "Ons Gümüş" : "Gram Gümüş")
+      : (isOunce ? "Ons Altın" : "Gram Altın");
+    const cost = isSilver
+      ? (isOunce ? await resolveQuotePrice("SI=F", 1) : await resolveSilverGramTryPrice())
+      : (isOunce ? await resolveQuotePrice("GC=F", 1) : await resolveGoldGramTryPrice());
 
     return {
       user_id: userId,
-      symbol: isOunce ? "GC=F" : "GRAM_ALTIN",
-      name: isOunce ? "Ons Altın" : "Gram Altın",
+      symbol,
+      name,
       category: "Değerli Madenler",
       amount: parsed.amount,
-      cost: isOunce
-        ? await resolveQuotePrice("GC=F", 1)
-        : await resolveGoldGramTryPrice(),
+      cost,
       bank_name: bankName,
       hesap_turu: "Vadesiz",
       unit_type: isOunce ? "ons" : "gram",
@@ -440,5 +493,6 @@ async function autoAddParsedAsset({ parsed, userId }) {
 
 module.exports = {
   parseAssetCommand,
+  normalizeParsedInput,
   autoAddParsedAsset,
 };

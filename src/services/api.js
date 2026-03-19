@@ -310,23 +310,18 @@ export const fetchSymbolSuggestions = async (query) => {
   }
 };
 
-export const parseAiAndAutoAddAsset = async ({ text, userId }) => {
+export const parseAiAssetInput = async ({ text }) => {
   const normalizedText = String(text || '').trim();
-  const normalizedUserId = String(userId || '').trim();
 
   if (!normalizedText) {
     throw new ApiError('Lutfen bir komut metni yazin.', { code: 'EMPTY_TEXT' });
-  }
-
-  if (!normalizedUserId) {
-    throw new ApiError('Kullanici bilgisi bulunamadi. Tekrar giris yapin.', { code: 'MISSING_USER' });
   }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), BATCH_REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/ai-parse`, {
+    const response = await fetch(`${API_BASE_URL}/api/ai-add-asset`, {
       method: 'POST',
       signal: controller.signal,
       headers: {
@@ -335,7 +330,6 @@ export const parseAiAndAutoAddAsset = async ({ text, userId }) => {
       },
       body: JSON.stringify({
         text: normalizedText,
-        userId: normalizedUserId,
       }),
     });
 
@@ -373,4 +367,73 @@ export const parseAiAndAutoAddAsset = async ({ text, userId }) => {
   } finally {
     clearTimeout(timeoutId);
   }
+};
+
+export const confirmAiAddAsset = async ({ parsed, userId }) => {
+  const normalizedUserId = String(userId || '').trim();
+  if (!normalizedUserId) {
+    throw new ApiError('Kullanici bilgisi bulunamadi. Tekrar giris yapin.', { code: 'MISSING_USER' });
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new ApiError('Onaylanacak AI verisi bulunamadi.', { code: 'MISSING_PARSED_DATA' });
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), BATCH_REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/ai-add-asset/confirm`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        parsed,
+        userId: normalizedUserId,
+      }),
+    });
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new ApiError('AI onay servisi gecersiz cevap dondu.', {
+        status: response.status,
+        code: 'INVALID_JSON',
+      });
+    }
+
+    if (!response.ok || payload?.ok === false) {
+      throw new ApiError(payload?.error || 'AI sonucu kaydedilemedi.', {
+        status: response.status,
+        body: payload,
+      });
+    }
+
+    return payload?.data || null;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new ApiError('Onay islemi zaman asimina ugradi. Tekrar deneyin.', { code: 'TIMEOUT' });
+    }
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError('AI onay servisine ulasilamadi.', {
+      code: 'NETWORK_ERROR',
+      body: error,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+export const parseAiAndAutoAddAsset = async ({ text, userId }) => {
+  const parsedData = await parseAiAssetInput({ text });
+  const parsed = parsedData?.parsed || parsedData;
+  return confirmAiAddAsset({ parsed, userId });
 };

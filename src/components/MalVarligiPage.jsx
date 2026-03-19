@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Building2,
   CarFront,
-  Coins,
   Gem,
   Globe,
   Landmark,
@@ -21,7 +20,7 @@ const NET_WORTH_TYPE_OPTIONS = [
 ];
 
 const VEHICLE_TYPE_OPTIONS = ['Araba', 'SUV', 'Motosiklet', 'Diğer'];
-const VEHICLE_BRAND_OPTIONS = ['Honda', 'Toyota', 'BMW', 'Mercedes-Benz', 'Volkswagen', 'Ford', 'Renault', 'Hyundai', 'Diğer'];
+const VEHICLE_BRAND_OPTIONS = ['Honda', 'Toyota', 'BMW', 'Mercedes', 'Diğer'];
 const PROPERTY_TYPE_OPTIONS = ['Konut', 'Arsa', 'Dükkan', 'Ofis', 'Yazlık', 'Diğer'];
 const FX_CURRENCY_OPTIONS = ['USD', 'EUR'];
 
@@ -64,17 +63,11 @@ const CATEGORY_META = {
     icon: Building2,
     gradient: 'from-sky-500/20 to-cyan-500/20',
   },
-  gold: {
-    title: 'Altın (Gram)',
-    subtitle: 'Gram bazlı altın varlıklarının',
+  precious: {
+    title: 'Kıymetli Madenler',
+    subtitle: 'Altın ve gümüş varlıklarının toplam değeri',
     icon: Gem,
-    gradient: 'from-amber-500/24 to-yellow-500/20',
-  },
-  silver: {
-    title: 'Gümüş (Gram)',
-    subtitle: 'Gram bazlı gümüş varlıklarının',
-    icon: Coins,
-    gradient: 'from-slate-400/28 to-zinc-400/20',
+    gradient: 'from-amber-500/24 to-zinc-300/18',
   },
   fx: {
     title: 'Döviz (USD/EUR)',
@@ -87,9 +80,8 @@ const CATEGORY_META = {
 const BENTO_LAYOUT = [
   { key: 'vehicle', className: 'xl:col-span-6' },
   { key: 'realEstate', className: 'xl:col-span-6' },
-  { key: 'gold', className: 'xl:col-span-4' },
-  { key: 'silver', className: 'xl:col-span-4' },
-  { key: 'fx', className: 'xl:col-span-4' },
+  { key: 'precious', className: 'xl:col-span-6' },
+  { key: 'fx', className: 'xl:col-span-6' },
 ];
 
 const formatTl = (value) => new Intl.NumberFormat('tr-TR', {
@@ -262,6 +254,14 @@ const buildAssetPresentation = (asset, resolved) => {
   };
 };
 
+const resolveGroupKey = (category) => {
+  if (category === 'gold' || category === 'silver') {
+    return 'precious';
+  }
+
+  return category;
+};
+
 export default function MalVarligiPage({
   portfolioCashTotal = 0,
   manualAssets = [],
@@ -337,13 +337,12 @@ export default function MalVarligiPage({
     const seed = {
       vehicle: [],
       realEstate: [],
-      gold: [],
-      silver: [],
+      precious: [],
       fx: [],
     };
 
     resolvedRecords.forEach((asset) => {
-      const key = asset?.resolvedMeta?.category;
+      const key = resolveGroupKey(asset?.resolvedMeta?.category);
       if (seed[key]) {
         seed[key].push(asset);
       }
@@ -531,14 +530,14 @@ export default function MalVarligiPage({
   };
 
   return (
-    <section className="space-y-8">
-      <div className="surface-card relative overflow-hidden rounded-3xl p-8 md:p-10">
+    <section className="space-y-6">
+      <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-md shadow-[0_22px_70px_rgba(2,6,23,0.58)] md:p-10">
         <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-fuchsia-500/20 blur-3xl" />
         <div className="pointer-events-none absolute -left-16 -bottom-20 h-52 w-52 rounded-full bg-violet-500/20 blur-3xl" />
 
         <div className="relative z-10 flex flex-wrap items-start justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-black text-slate-50">Net Servetim</h1>
+            <h1 className="text-3xl font-black text-slate-50">Net Servetim</h1>
             <p className="mt-2 text-sm text-slate-400">Tüm varlık kategorileri tek ekranda, tam kontrol sende.</p>
           </div>
 
@@ -565,7 +564,7 @@ export default function MalVarligiPage({
         </div>
       </div>
 
-      <div className="surface-card rounded-3xl p-6 md:p-8">
+      <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-md shadow-[0_22px_70px_rgba(2,6,23,0.58)] md:p-8">
         <div className="mb-4">
           <h2 className="text-xl font-black text-slate-50">Net Servet Kalemi Ekle</h2>
           <p className="mt-1 text-xs text-slate-400">Yıl ve tutar alanları mobil sayısal klavye için optimize edildi.</p>
@@ -654,7 +653,7 @@ export default function MalVarligiPage({
 
               <input
                 type="number"
-                inputMode="numeric"
+                inputMode="decimal"
                 min="1900"
                 max={String(new Date().getFullYear() + 1)}
                 step="1"
@@ -667,7 +666,7 @@ export default function MalVarligiPage({
 
               <input
                 type="number"
-                inputMode="numeric"
+                inputMode="decimal"
                 min="1900"
                 max={String(new Date().getFullYear() + 1)}
                 step="1"
@@ -703,7 +702,7 @@ export default function MalVarligiPage({
 
               <input
                 type="number"
-                inputMode="numeric"
+                inputMode="decimal"
                 min="1900"
                 max={String(new Date().getFullYear() + 1)}
                 step="1"
@@ -724,7 +723,7 @@ export default function MalVarligiPage({
                 step="0.001"
                 value={metalDetay.gramAmount}
                 onChange={(event) => setMetalDetay((prev) => ({ ...prev, gramAmount: event.target.value }))}
-                placeholder="Gram Miktarı"
+                placeholder="Miktar (Gram)"
                 className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
                 required
               />
@@ -736,7 +735,7 @@ export default function MalVarligiPage({
                 step="0.01"
                 value={metalDetay.manualUnitPriceTry}
                 onChange={(event) => setMetalDetay((prev) => ({ ...prev, manualUnitPriceTry: event.target.value }))}
-                placeholder="Canlı fiyat yoksa 1gr TRY (opsiyonel)"
+                placeholder="Birim Fiyat (TRY)"
                 className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
               />
 
@@ -767,7 +766,7 @@ export default function MalVarligiPage({
                 step="0.01"
                 value={dovizDetay.foreignAmount}
                 onChange={(event) => setDovizDetay((prev) => ({ ...prev, foreignAmount: event.target.value }))}
-                placeholder="Döviz Miktarı"
+                placeholder="Miktar"
                 className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
                 required
               />
@@ -779,7 +778,7 @@ export default function MalVarligiPage({
                 step="0.0001"
                 value={dovizDetay.manualRate}
                 onChange={(event) => setDovizDetay((prev) => ({ ...prev, manualRate: event.target.value }))}
-                placeholder="Canlı kur yoksa manuel kur (opsiyonel)"
+                placeholder="Birim Fiyat / Kur"
                 className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
               />
 
@@ -801,9 +800,9 @@ export default function MalVarligiPage({
       </div>
 
       {manualAssetsLoading ? (
-        <div className="surface-card rounded-3xl p-8 text-slate-400">Net servet kayıtları yükleniyor...</div>
+        <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 text-slate-400 backdrop-blur-md shadow-[0_22px_70px_rgba(2,6,23,0.58)]">Net servet kayıtları yükleniyor...</div>
       ) : (
-        <div className="grid grid-cols-1 gap-8 xl:grid-cols-12">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
           {BENTO_LAYOUT.map((layout) => {
             const meta = CATEGORY_META[layout.key];
             const Icon = meta.icon;
@@ -813,7 +812,7 @@ export default function MalVarligiPage({
             return (
               <article
                 key={layout.key}
-                className={`surface-card relative overflow-hidden rounded-3xl p-7 ${layout.className}`}
+                className={`relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-7 backdrop-blur-md shadow-[0_22px_70px_rgba(2,6,23,0.58)] ${layout.className}`}
               >
                 <div className={`pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-gradient-to-br ${meta.gradient} blur-3xl`} />
                 <div className="relative z-10">
