@@ -338,7 +338,7 @@ export default function PortfolioTable({
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-slate-950/55 p-1">
+        <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl p-1">
           <button
             type="button"
             onClick={() => handleSortChange('totalValue')}
@@ -418,7 +418,7 @@ export default function PortfolioTable({
 
       <div className="p-6 md:p-8 space-y-3">
         {displayedPortfolio.length === 0 ? (
-          <div className="p-6 rounded-xl border border-white/5 bg-white/5 text-center text-sm text-slate-500 shadow-2xl">
+          <div className="p-6 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl text-center text-sm text-slate-500 shadow-2xl">
             {portfolio.length === 0
               ? 'Henüz bir varlık eklemediniz.'
               : 'Seçili filtreler için varlık bulunamadı.'}
@@ -479,7 +479,7 @@ export default function PortfolioTable({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="rounded-xl border border-white/10 bg-white/5 overflow-hidden"
+              className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl overflow-hidden"
             >
               <button
                 type="button"
@@ -506,7 +506,7 @@ export default function PortfolioTable({
                     </div>
                   </div>
                   <div className="md:col-span-1 flex md:justify-end">
-                    <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/20 transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
+                    <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/5 bg-slate-900/40 backdrop-blur-xl transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
                       <ChevronDown className="h-4 w-4 text-slate-300" />
                     </span>
                   </div>
@@ -523,13 +523,13 @@ export default function PortfolioTable({
                     transition={{ duration: 0.26, ease: 'easeOut' }}
                     className="overflow-hidden"
                   >
-                    <div className="border-t border-white/10 px-4 py-4 md:px-5 md:py-5 space-y-4 bg-black/10">
+                    <div className="border-t border-white/10 px-4 py-4 md:px-5 md:py-5 space-y-4 bg-slate-900/35 backdrop-blur-xl">
                       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                        <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
+                        <div className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5">
                           <p className="text-[11px] text-slate-500">Miktar</p>
                           <p className="text-sm font-semibold text-slate-200">{renderQuantity(item.amount)} {unitTypeToLabel(item.unitType || item.unit_type)}</p>
                         </div>
-                        <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
+                        <div className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5">
                           <p className="text-[11px] text-slate-500">Güncel Fiyat</p>
                           <p className={`text-sm font-semibold ${hasLivePrice ? 'text-blue-300' : (isCachedPrice ? 'text-amber-200' : 'text-slate-300')}`}>
                             {renderCurrencyWithMutedSymbol(activePrice)}
@@ -541,11 +541,11 @@ export default function PortfolioTable({
                             <p className="text-[11px] text-slate-500 mt-1">Maliyet fiyatı</p>
                           ) : null}
                         </div>
-                        <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
+                        <div className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5">
                           <p className="text-[11px] text-slate-500">Ortalama Maliyet</p>
                           <p className="text-sm font-semibold text-slate-200">{renderCurrencyWithMutedSymbol(item.avgPrice)}</p>
                         </div>
-                        <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2.5" title={inflationScore.tooltip}>
+                        <div className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5" title={inflationScore.tooltip}>
                           <p className="text-[11px] text-slate-500">Enflasyon Karnesi</p>
                           <div className="mt-1 inline-flex items-center gap-2">
                             <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full border ${inflationScore.isProtected ? 'border-emerald-300/50 bg-emerald-400/10' : 'border-rose-300/55 bg-rose-400/10'}`}>
@@ -563,7 +563,7 @@ export default function PortfolioTable({
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+                        <div className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2">
                           <p className="text-[11px] text-slate-500">Kâr / Zarar</p>
                           <p className={`text-sm font-semibold ${itemProfit >= 0 ? 'text-emerald-400' : 'text-[#FF3B6B]'}`}>
                             {itemProfit > 0 ? '+' : ''}{renderCurrencyWithMutedSymbol(itemProfit)}
@@ -572,14 +572,14 @@ export default function PortfolioTable({
                             {isPrivacyActive ? maskValue(`${itemProfit > 0 ? '+' : ''}${itemProfitPercent}%`) : `${itemProfit > 0 ? '+' : ''}${itemProfitPercent}%`}
                           </p>
                         </div>
-                        <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+                        <div className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2">
                           <p className="text-[11px] text-slate-500">Portföy Payı</p>
                           <p className="text-sm font-semibold text-blue-300">{isPrivacyActive ? maskValue(`%${itemWeightPercent}`) : `%${itemWeightPercent}`}</p>
                           {isCashAsset ? (
                             <p className="text-[11px] text-cyan-200 mt-1">{getHesapDetayi(item)}</p>
                           ) : null}
                         </div>
-                        <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+                        <div className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2">
                           <p className="text-[11px] text-slate-500">Kategori</p>
                           <button
                             type="button"
@@ -661,7 +661,7 @@ export default function PortfolioTable({
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 8, opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#161b22] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.55)]"
+            className="w-full max-w-md rounded-2xl border border-white/5 bg-slate-900/40 backdrop-blur-xl p-5 shadow-[0_24px_70px_rgba(0,0,0,0.55)]"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -703,7 +703,7 @@ export default function PortfolioTable({
                   onChange={(e) => setSellAmount(e.target.value)}
                   placeholder={renderMaskedText(`Maks: ${formatNumericText(sellTarget.amount || 0)}`)}
                   required
-                  className="w-full rounded-lg border border-white/10 bg-black/25 p-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400"
+                  className="w-full rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl p-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400"
                 />
               </div>
 
@@ -717,7 +717,7 @@ export default function PortfolioTable({
                   onChange={(e) => setSellPrice(e.target.value)}
                   placeholder="Örn: 125.45"
                   required
-                  className="w-full rounded-lg border border-white/10 bg-black/25 p-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400"
+                  className="w-full rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl p-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400"
                 />
               </div>
 
@@ -735,7 +735,7 @@ export default function PortfolioTable({
                 <button
                   type="button"
                   onClick={closeSellModal}
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
+                  className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
                   disabled={sellSubmitting}
                 >
                   Vazgeç

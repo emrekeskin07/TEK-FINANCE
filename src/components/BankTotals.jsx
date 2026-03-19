@@ -86,7 +86,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
     }
 
     return (
-      <div className="rounded-lg border border-white/10 bg-[#10141d]/95 px-3 py-2 text-xs backdrop-blur-sm">
+      <div className="rounded-lg border border-white/5 bg-slate-900/80 px-3 py-2 text-xs backdrop-blur-xl">
         <p className="font-semibold text-slate-100">{point.name}</p>
         <p className="mt-1 text-slate-300">{formatTryCurrencyText(point.value)}</p>
         <p className="text-slate-400">{isPrivacyActive ? maskValue(`%${point.share.toFixed(1)}`) : `%${point.share.toFixed(1)}`}</p>
@@ -116,7 +116,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
             <button
               type="button"
               onClick={() => onSelectBank?.(null)}
-              className="absolute right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-slate-950/70 text-slate-300 transition-all duration-200 hover:scale-105 hover:border-fuchsia-300/40 hover:text-slate-100"
+              className="absolute right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/5 bg-slate-900/40 text-slate-300 backdrop-blur-xl transition-all duration-200 hover:scale-105 hover:border-fuchsia-300/40 hover:text-slate-100"
               title="Filtreyi temizle"
               aria-label="Filtreyi temizle"
             >
@@ -166,7 +166,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
                 <div className="relative px-3 text-center">
                   <span className="pointer-events-none absolute inset-x-6 top-1/2 h-12 -translate-y-1/2 rounded-full bg-fuchsia-500/10 blur-2xl" aria-hidden="true" />
                   <p className="relative text-sm font-medium text-slate-400">Toplam Portföy</p>
-                  <p className="relative mt-1 text-4xl font-black tracking-tight text-slate-50 drop-shadow-[0_0_16px_rgba(236,72,153,0.2)]">
+                  <p className="relative mt-1 text-4xl font-black tracking-tight text-slate-50 drop-shadow-[0_0_20px_rgba(236,72,153,0.28)]">
                     {formatTryCurrencyText(centerTotalValue)}
                   </p>
                 </div>

@@ -575,7 +575,7 @@ export default function MalVarligiPage({
             <select
               value={varlikTuru}
               onChange={(event) => handleTypeChange(event.target.value)}
-              className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 outline-none transition-colors focus:border-violet-400/60"
+              className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 outline-none transition-colors focus:border-violet-400/60"
             >
               {NET_WORTH_TYPE_OPTIONS.map((option) => (
                 <option key={option} value={option} className="bg-slate-900">
@@ -592,7 +592,7 @@ export default function MalVarligiPage({
               value={toplamDeger}
               onChange={(event) => setToplamDeger(event.target.value)}
               placeholder={estimatedFormValue > 0 ? 'Gerekirse manuel toplam değer (opsiyonel)' : 'Toplam Değer (TRY)'}
-              className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
+              className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
             />
           </div>
 
@@ -601,7 +601,7 @@ export default function MalVarligiPage({
               <select
                 value={aracDetay.vehicleType}
                 onChange={(event) => setAracDetay((prev) => ({ ...prev, vehicleType: event.target.value }))}
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 outline-none transition-colors focus:border-violet-400/60"
               >
                 {VEHICLE_TYPE_OPTIONS.map((option) => (
                   <option key={option} value={option} className="bg-slate-900">
@@ -620,7 +620,7 @@ export default function MalVarligiPage({
                     customBrand: nextBrand === 'Diğer' ? prev.customBrand : '',
                   }));
                 }}
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 outline-none transition-colors focus:border-violet-400/60"
                 required
               >
                 <option value="" className="bg-slate-900">Marka Seç</option>
@@ -637,7 +637,7 @@ export default function MalVarligiPage({
                   value={aracDetay.customBrand}
                   onChange={(event) => setAracDetay((prev) => ({ ...prev, customBrand: event.target.value }))}
                   placeholder="Marka yaz"
-                  className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
+                  className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
                   required
                 />
               ) : null}
@@ -647,7 +647,7 @@ export default function MalVarligiPage({
                 value={aracDetay.model}
                 onChange={(event) => setAracDetay((prev) => ({ ...prev, model: event.target.value }))}
                 placeholder="Model"
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
                 required
               />
 
@@ -660,7 +660,7 @@ export default function MalVarligiPage({
                 value={aracDetay.year}
                 onChange={(event) => setAracDetay((prev) => ({ ...prev, year: event.target.value }))}
                 placeholder="Model Yılı"
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
                 required
               />
 
@@ -673,7 +673,7 @@ export default function MalVarligiPage({
                 value={aracDetay.purchaseYear}
                 onChange={(event) => setAracDetay((prev) => ({ ...prev, purchaseYear: event.target.value }))}
                 placeholder="Satın Alma Yılı"
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
               />
             </div>
           ) : null}
@@ -683,7 +683,7 @@ export default function MalVarligiPage({
               <select
                 value={gayrimenkulDetay.propertyType}
                 onChange={(event) => setGayrimenkulDetay((prev) => ({ ...prev, propertyType: event.target.value }))}
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 outline-none transition-colors focus:border-violet-400/60"
               >
                 {PROPERTY_TYPE_OPTIONS.map((option) => (
                   <option key={option} value={option} className="bg-slate-900">
@@ -697,7 +697,7 @@ export default function MalVarligiPage({
                 value={gayrimenkulDetay.location}
                 onChange={(event) => setGayrimenkulDetay((prev) => ({ ...prev, location: event.target.value }))}
                 placeholder="Konum / Şehir"
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
               />
 
               <input
@@ -709,7 +709,7 @@ export default function MalVarligiPage({
                 value={gayrimenkulDetay.year}
                 onChange={(event) => setGayrimenkulDetay((prev) => ({ ...prev, year: event.target.value }))}
                 placeholder="Yapım Yılı"
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
               />
             </div>
           ) : null}
@@ -724,7 +724,7 @@ export default function MalVarligiPage({
                 value={metalDetay.gramAmount}
                 onChange={(event) => setMetalDetay((prev) => ({ ...prev, gramAmount: event.target.value }))}
                 placeholder="Miktar (Gram)"
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
                 required
               />
 
@@ -736,10 +736,10 @@ export default function MalVarligiPage({
                 value={metalDetay.manualUnitPriceTry}
                 onChange={(event) => setMetalDetay((prev) => ({ ...prev, manualUnitPriceTry: event.target.value }))}
                 placeholder="Birim Fiyat (TRY)"
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
               />
 
-              <div className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2.5 text-xs text-slate-400">
+              <div className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-xs text-slate-400">
                 Tahmini canlı değer: <span className="font-semibold text-slate-100">{estimatedFormValue > 0 ? formatTl(estimatedFormValue) : '-'}</span>
               </div>
             </div>
@@ -750,7 +750,7 @@ export default function MalVarligiPage({
               <select
                 value={dovizDetay.currency}
                 onChange={(event) => setDovizDetay((prev) => ({ ...prev, currency: event.target.value }))}
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 outline-none transition-colors focus:border-violet-400/60"
               >
                 {FX_CURRENCY_OPTIONS.map((option) => (
                   <option key={option} value={option} className="bg-slate-900">
@@ -767,7 +767,7 @@ export default function MalVarligiPage({
                 value={dovizDetay.foreignAmount}
                 onChange={(event) => setDovizDetay((prev) => ({ ...prev, foreignAmount: event.target.value }))}
                 placeholder="Miktar"
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
                 required
               />
 
@@ -779,10 +779,10 @@ export default function MalVarligiPage({
                 value={dovizDetay.manualRate}
                 onChange={(event) => setDovizDetay((prev) => ({ ...prev, manualRate: event.target.value }))}
                 placeholder="Birim Fiyat / Kur"
-                className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
+                className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-violet-400/60"
               />
 
-              <div className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2.5 text-xs text-slate-400">
+              <div className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5 text-xs text-slate-400">
                 Tahmini canlı değer: <span className="font-semibold text-slate-100">{estimatedFormValue > 0 ? formatTl(estimatedFormValue) : '-'}</span>
               </div>
             </div>
@@ -821,7 +821,7 @@ export default function MalVarligiPage({
                       <p className="text-xs uppercase tracking-tight text-slate-400">{meta.subtitle}</p>
                       <h3 className="mt-1 text-2xl font-black text-slate-50">{meta.title}</h3>
                     </div>
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-slate-950/60 text-slate-200">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl text-slate-200">
                       <Icon className="h-5 w-5" />
                     </span>
                   </div>
@@ -829,7 +829,7 @@ export default function MalVarligiPage({
                   <p className="mt-5 text-3xl font-black text-emerald-300">{formatTl(categoryTotal)}</p>
 
                   {records.length === 0 ? (
-                    <p className="mt-5 rounded-2xl border border-dashed border-white/10 bg-slate-950/40 p-4 text-sm text-slate-500">
+                    <p className="mt-5 rounded-2xl border border-dashed border-white/5 bg-slate-900/40 backdrop-blur-xl p-4 text-sm text-slate-500">
                       Henüz bu kategoride kayıt yok.
                     </p>
                   ) : (
@@ -873,3 +873,4 @@ export default function MalVarligiPage({
     </section>
   );
 }
+

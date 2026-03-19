@@ -197,7 +197,7 @@ export default function GrowthChart() {
           </span>
         </div>
 
-        <div className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-slate-950/55 p-1 backdrop-blur-xl">
+        <div className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-slate-900/40 p-1 backdrop-blur-xl">
           {RANGE_OPTIONS.map((option) => {
             const isActive = selectedRange === option.key;
             return (

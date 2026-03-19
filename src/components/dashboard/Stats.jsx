@@ -100,7 +100,7 @@ export default function Stats({
           </div>
 
           <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-[380px] lg:grid-cols-1">
-            <div className="rounded-2xl border border-white/5 bg-slate-950/55 p-5 backdrop-blur-xl">
+            <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-5 backdrop-blur-xl">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-bold uppercase tracking-tight text-slate-400">Portföy Gücü</p>
                 <Wallet className="h-4 w-4 text-primary" />
@@ -111,7 +111,7 @@ export default function Stats({
               <p className="mt-1 text-xs text-slate-400">Anlık portföy büyüklüğüne göre otomatik güç seviyesi.</p>
             </div>
 
-            <div className="rounded-2xl border border-white/5 bg-slate-950/55 p-5 backdrop-blur-xl">
+            <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-5 backdrop-blur-xl">
               <p className="text-xs font-bold uppercase tracking-tight text-slate-400">Veri Güveni</p>
               <p className="mt-3 text-xl font-black tracking-tight text-slate-50 drop-shadow-[0_0_12px_rgba(217,70,239,0.35)]">
                 Canlı + Senkron

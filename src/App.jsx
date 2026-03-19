@@ -635,7 +635,7 @@ export default function App() {
                   {previewAlerts.length > 0 ? (
                     <ul className="mt-4 space-y-2">
                       {previewAlerts.map((item) => (
-                        <li key={item.id} className="rounded-3xl border border-white/5 bg-slate-950/60 px-3 py-2.5 backdrop-blur-xl">
+                        <li key={item.id} className="rounded-3xl border border-white/5 bg-slate-900/40 px-3 py-2.5 backdrop-blur-xl">
                           <p className="text-sm font-semibold text-slate-100 flex items-center gap-2">
                             <span aria-hidden="true">{getAlertVisual(item).icon}</span>
                             <span>{item.title}</span>
