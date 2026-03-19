@@ -13,6 +13,9 @@ const CATEGORY_BY_TYPE = {
 };
 const DB_SELECT_COLUMNS_WITH_UNIT = 'id,symbol,name,category,amount,cost,bank_name,hesap_turu,unit_type';
 const DB_SELECT_COLUMNS_LEGACY = 'id,symbol,name,category,amount,cost,bank_name,hesap_turu';
+const CASH_SYMBOL = 'CASH_TRY';
+const CASH_CATEGORY = 'Nakit/Banka';
+const CASH_ACCOUNT_TYPE = 'Vadesiz';
 
 const isUnitTypeSchemaError = (error) => {
   const message = String(error?.message || '').toLowerCase();
@@ -26,6 +29,23 @@ const toFiniteNumber = (value, fallback = 0) => {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : fallback;
 };
+
+const calculateWeightedAverageCost = ({ existingAmount, existingCost, newAmount, newCost }) => {
+  const safeExistingAmount = toFiniteNumber(existingAmount);
+  const safeExistingCost = toFiniteNumber(existingCost);
+  const safeNewAmount = toFiniteNumber(newAmount);
+  const safeNewCost = toFiniteNumber(newCost);
+  const totalAmount = safeExistingAmount + safeNewAmount;
+
+  if (totalAmount <= 0) {
+    return safeNewCost;
+  }
+
+  const weightedCost = ((safeExistingAmount * safeExistingCost) + (safeNewAmount * safeNewCost)) / totalAmount;
+  return Number(weightedCost.toFixed(8));
+};
+
+const roundToEight = (value) => Number(toFiniteNumber(value).toFixed(8));
 
 const normalizeCategoryLabel = (category) => {
   if (category === 'Emtia/Altın' || category === 'Emtia') {
@@ -199,6 +219,85 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       isCashAsset
     );
 
+    const existingAssetQuery = await supabase
+      .from('assets')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('bank_name', resolvedBank)
+      .eq('symbol', symbol);
+
+    if (existingAssetQuery.error) {
+      console.error('Supabase assets existing kontrol hatasi:', existingAssetQuery.error);
+      toast.error('Varlik kontrolu yapilamadi.');
+      return;
+    }
+
+    const existingAssetRow = sortAssetsClientSide(existingAssetQuery.data || [])[0] || null;
+
+    if (existingAssetRow) {
+      const existingAmount = toFiniteNumber(existingAssetRow.amount);
+      const newAmount = toFiniteNumber(dbPayload.amount);
+      const mergedAmount = existingAmount + newAmount;
+      const mergedCost = calculateWeightedAverageCost({
+        existingAmount,
+        existingCost: existingAssetRow.cost,
+        newAmount,
+        newCost: dbPayload.cost,
+      });
+
+      const mergedPayload = {
+        ...dbPayload,
+        amount: mergedAmount,
+        cost: mergedCost,
+      };
+
+      let { data, error } = await supabase
+        .from('assets')
+        .update(mergedPayload)
+        .eq('id', existingAssetRow.id)
+        .eq('user_id', userId)
+        .select(supportsUnitTypeRef.current ? DB_SELECT_COLUMNS_WITH_UNIT : DB_SELECT_COLUMNS_LEGACY)
+        .single();
+
+      if (error && supportsUnitTypeRef.current && isUnitTypeSchemaError(error)) {
+        supportsUnitTypeRef.current = false;
+
+        const legacyPayload = { ...mergedPayload };
+        delete legacyPayload.unit_type;
+
+        const fallbackResult = await supabase
+          .from('assets')
+          .update(legacyPayload)
+          .eq('id', existingAssetRow.id)
+          .eq('user_id', userId)
+          .select(DB_SELECT_COLUMNS_LEGACY)
+          .single();
+
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
+
+      if (error) {
+        console.error('Supabase assets merge update hatasi:', error);
+        toast.error('Mevcut varlik guncellenemedi.');
+        return;
+      }
+
+      const normalizedAsset = normalizeAsset(data || { ...existingAssetRow, ...mergedPayload, id: existingAssetRow.id });
+
+      setPortfolio((prev) => {
+        const index = prev.findIndex((item) => item.id === existingAssetRow.id);
+        const updated = index >= 0
+          ? prev.map((item) => (item.id === existingAssetRow.id ? normalizedAsset : item))
+          : [...prev, normalizedAsset];
+        onPortfolioChangeRef.current?.(updated);
+        return updated;
+      });
+
+      toast.success(`${resolvedBank} - ${symbol} mevcut kayitla birlestirildi.`);
+      return;
+    }
+
     let { data, error } = await supabase
       .from('assets')
       .insert([dbPayload])
@@ -335,5 +434,159 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     }
   };
 
-  return { portfolio, addAsset, updateAsset, removeAsset, refreshPortfolio: fetchPortfolio };
+  const sellAsset = useCallback(async ({ assetId, sellAmount, sellPrice }) => {
+    if (!supabase || !userId) {
+      toast.error('Supabase baglantisi hazir degil. .env degerlerini kontrol edin.');
+      return false;
+    }
+
+    const safeSellAmount = toFiniteNumber(sellAmount);
+    const safeSellPrice = toFiniteNumber(sellPrice);
+
+    if (safeSellAmount <= 0 || safeSellPrice <= 0) {
+      toast.error('Satis miktari ve satis fiyati sifirdan buyuk olmali.');
+      return false;
+    }
+
+    const { data: sourceAsset, error: sourceAssetError } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('id', assetId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (sourceAssetError || !sourceAsset) {
+      console.error('Supabase assets satis kaynak kaydi okunamadi:', sourceAssetError);
+      toast.error('Satilacak varlik bulunamadi.');
+      return false;
+    }
+
+    const sourceAmount = toFiniteNumber(sourceAsset.amount);
+    if (safeSellAmount > sourceAmount) {
+      toast.error('Satilacak lot miktari mevcut miktardan buyuk olamaz.');
+      return false;
+    }
+
+    const proceeds = roundToEight(safeSellAmount * safeSellPrice);
+    const remainingAmount = roundToEight(sourceAmount - safeSellAmount);
+
+    if (remainingAmount <= 0) {
+      const { error: deleteError } = await supabase
+        .from('assets')
+        .delete()
+        .match({ id: sourceAsset.id, user_id: userId });
+
+      if (deleteError) {
+        console.error('Supabase assets satis sonrasi silme hatasi:', deleteError);
+        toast.error('Satis tamamlanamadi.');
+        return false;
+      }
+    } else {
+      const { error: amountUpdateError } = await supabase
+        .from('assets')
+        .update({ amount: remainingAmount })
+        .eq('id', sourceAsset.id)
+        .eq('user_id', userId);
+
+      if (amountUpdateError) {
+        console.error('Supabase assets satis miktar guncelleme hatasi:', amountUpdateError);
+        toast.error('Satis miktari guncellenemedi.');
+        return false;
+      }
+    }
+
+    const bankName = sourceAsset.bank_name || 'Banka Belirtilmedi';
+    const { data: cashRows, error: cashSelectError } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('bank_name', bankName)
+      .in('category', ['Nakit/Banka', 'Nakit']);
+
+    if (cashSelectError) {
+      console.error('Supabase assets nakit hesap arama hatasi:', cashSelectError);
+      toast.error('Nakit hesaba aktarim yapilamadi.');
+      await fetchPortfolio();
+      return false;
+    }
+
+    const targetCashRow = sortAssetsClientSide(cashRows || [])[0] || null;
+
+    if (targetCashRow) {
+      const existingCashAmount = toFiniteNumber(targetCashRow.amount);
+      const mergedCashAmount = roundToEight(existingCashAmount + proceeds);
+      const mergedCashCost = calculateWeightedAverageCost({
+        existingAmount: existingCashAmount,
+        existingCost: targetCashRow.cost,
+        newAmount: proceeds,
+        newCost: 1,
+      });
+
+      const { error: cashUpdateError } = await supabase
+        .from('assets')
+        .update({
+          amount: mergedCashAmount,
+          cost: mergedCashCost,
+          hesap_turu: targetCashRow.hesap_turu || CASH_ACCOUNT_TYPE,
+        })
+        .eq('id', targetCashRow.id)
+        .eq('user_id', userId);
+
+      if (cashUpdateError) {
+        console.error('Supabase assets nakit hesap update hatasi:', cashUpdateError);
+        toast.error('Satis gerceklesti ancak nakit hesaba aktarim yapilamadi.');
+        await fetchPortfolio();
+        return false;
+      }
+    } else {
+      const cashPayload = {
+        user_id: userId,
+        symbol: CASH_SYMBOL,
+        name: 'Vadesiz Nakit',
+        category: CASH_CATEGORY,
+        amount: proceeds,
+        cost: 1,
+        bank_name: bankName,
+        hesap_turu: CASH_ACCOUNT_TYPE,
+        unit_type: 'adet',
+      };
+
+      let { error: cashInsertError } = await supabase
+        .from('assets')
+        .insert([
+          supportsUnitTypeRef.current
+            ? cashPayload
+            : (() => {
+                const legacyPayload = { ...cashPayload };
+                delete legacyPayload.unit_type;
+                return legacyPayload;
+              })()
+        ]);
+
+      if (cashInsertError && supportsUnitTypeRef.current && isUnitTypeSchemaError(cashInsertError)) {
+        supportsUnitTypeRef.current = false;
+        const legacyCashPayload = { ...cashPayload };
+        delete legacyCashPayload.unit_type;
+
+        const fallbackInsert = await supabase
+          .from('assets')
+          .insert([legacyCashPayload]);
+
+        cashInsertError = fallbackInsert.error;
+      }
+
+      if (cashInsertError) {
+        console.error('Supabase assets nakit hesap insert hatasi:', cashInsertError);
+        toast.error('Satis gerceklesti ancak nakit hesap olusturulamadi.');
+        await fetchPortfolio();
+        return false;
+      }
+    }
+
+    await fetchPortfolio();
+    toast.success(`${sourceAsset.symbol} satildi. Gelir ${bankName} nakit hesabina aktarildi.`);
+    return true;
+  }, [fetchPortfolio, userId]);
+
+  return { portfolio, addAsset, updateAsset, removeAsset, sellAsset, refreshPortfolio: fetchPortfolio };
 };

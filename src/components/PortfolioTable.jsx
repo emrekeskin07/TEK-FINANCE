@@ -45,6 +45,7 @@ export default function PortfolioTable({
   setSortConfig,
   onClearFilter,
   openEditModal,
+  handleSellAsset,
   handleRemoveAsset
 }) {
   const filteredPortfolio = portfolio.filter((item) => {
@@ -173,12 +174,67 @@ export default function PortfolioTable({
 
   const showSkeleton = loading && !(lastUpdated instanceof Date);
   const [expandedAssetId, setExpandedAssetId] = useState(null);
+  const [sellModalOpen, setSellModalOpen] = useState(false);
+  const [sellTarget, setSellTarget] = useState(null);
+  const [sellAmount, setSellAmount] = useState('');
+  const [sellPrice, setSellPrice] = useState('');
+  const [sellSubmitting, setSellSubmitting] = useState(false);
 
   const handleAccordionToggle = (assetId) => {
     setExpandedAssetId((prevId) => (prevId === assetId ? null : assetId));
   };
 
+  const openSellModal = (item, activePrice) => {
+    setSellTarget(item);
+    setSellAmount('');
+    setSellPrice(Number.isFinite(Number(activePrice)) && Number(activePrice) > 0 ? String(Number(activePrice)) : '');
+    setSellModalOpen(true);
+  };
+
+  const closeSellModal = () => {
+    if (sellSubmitting) {
+      return;
+    }
+
+    setSellModalOpen(false);
+    setSellTarget(null);
+    setSellAmount('');
+    setSellPrice('');
+  };
+
+  const handleSellSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!sellTarget || typeof handleSellAsset !== 'function') {
+      return;
+    }
+
+    const amountNumeric = Number(sellAmount);
+    const priceNumeric = Number(sellPrice);
+
+    if (!Number.isFinite(amountNumeric) || amountNumeric <= 0) {
+      return;
+    }
+
+    if (!Number.isFinite(priceNumeric) || priceNumeric <= 0) {
+      return;
+    }
+
+    setSellSubmitting(true);
+    const isSuccess = await handleSellAsset({
+      assetId: sellTarget.id,
+      sellAmount: amountNumeric,
+      sellPrice: priceNumeric,
+    });
+    setSellSubmitting(false);
+
+    if (isSuccess) {
+      closeSellModal();
+    }
+  };
+
   return (
+    <>
     <div className="bg-white/5 relative overflow-hidden backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/5 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/5 after:content-[''] flex flex-col">
       <div className="p-6 md:p-8 border-b border-white/10 flex flex-wrap justify-between items-center gap-4">
         <div className="flex items-center gap-3 flex-wrap">
@@ -365,6 +421,13 @@ export default function PortfolioTable({
                           </span>
                         ) : null}
                         <button
+                          onClick={() => openSellModal(item, activePrice)}
+                          className="p-2 rounded-lg text-slate-300 hover:text-emerald-300 hover:bg-emerald-400/10 transition-colors"
+                          title="Sat"
+                        >
+                          <DollarSign className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => openEditModal(item)}
                           className="p-2 rounded-lg text-slate-300 hover:text-blue-300 hover:bg-blue-400/10 transition-colors"
                           title="Düzenle"
@@ -388,5 +451,97 @@ export default function PortfolioTable({
         })}
       </div>
     </div>
+    <AnimatePresence>
+      {sellModalOpen && sellTarget ? (
+        <motion.div
+          key="sell-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        >
+          <motion.div
+            initial={{ y: 8, opacity: 0, scale: 0.98 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 8, opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f172a] p-5 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h4 className="text-lg font-semibold text-slate-100">Varlık Sat</h4>
+                <p className="mt-1 text-xs text-slate-400">{sellTarget.bank || 'Banka Belirtilmedi'} • {sellTarget.symbol}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeSellModal}
+                className="rounded-md p-1 text-slate-400 hover:bg-white/10 hover:text-slate-200"
+                title="Kapat"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSellSubmit} className="mt-4 space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Satılacak Lot</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.00000001"
+                  max={Number(sellTarget.amount || 0)}
+                  value={sellAmount}
+                  onChange={(e) => setSellAmount(e.target.value)}
+                  placeholder={`Maks: ${sellTarget.amount}`}
+                  required
+                  className="w-full rounded-lg border border-white/10 bg-black/20 p-3 text-slate-100 focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Satış Fiyatı (1 Lot)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.00000001"
+                  value={sellPrice}
+                  onChange={(e) => setSellPrice(e.target.value)}
+                  placeholder="Örn: 125.45"
+                  required
+                  className="w-full rounded-lg border border-white/10 bg-black/20 p-3 text-slate-100 focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              <div className="rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+                Tahmini Tutar: {
+                  Number.isFinite(Number(sellAmount)) && Number.isFinite(Number(sellPrice))
+                    ? renderCurrencyWithMutedSymbol(Number(sellAmount) * Number(sellPrice))
+                    : ' - '
+                }
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={closeSellModal}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
+                  disabled={sellSubmitting}
+                >
+                  Vazgeç
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-emerald-300/35 bg-emerald-500/20 px-3 py-2 text-sm font-semibold text-emerald-100 hover:bg-emerald-500/30 disabled:opacity-60"
+                  disabled={sellSubmitting}
+                >
+                  {sellSubmitting ? 'Satılıyor...' : 'Satışı Onayla'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+    </>
   );
 }

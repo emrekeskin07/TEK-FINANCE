@@ -24,6 +24,8 @@ import { SyncContext } from './context/SyncContext';
 import { formatCurrencyParts } from './utils/helpers';
 import { buildAlertInsights } from './utils/alertInsights';
 
+const PRIVACY_MODE_STORAGE_KEY = 'tek-finance:privacy-mode';
+
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
   const [baseCurrency, setBaseCurrency] = useState('TRY');
@@ -32,6 +34,13 @@ export default function App() {
   const [sortConfig, setSortConfig] = useState({ key: 'profit', direction: 'desc' });
   const [inflationSource, setInflationSource] = useState('enag');
   const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [isPrivate, setIsPrivate] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.localStorage.getItem(PRIVACY_MODE_STORAGE_KEY) === '1';
+  });
 
   const {
     authUser,
@@ -53,7 +62,7 @@ export default function App() {
   const [editingAssetData, setEditingAssetData] = useState(null);
   const [isAlertDrawerOpen, setIsAlertDrawerOpen] = useState(false);
 
-  const { portfolio, addAsset, updateAsset, removeAsset } = usePortfolio(authUser?.id, (updatedPort) => {
+  const { portfolio, addAsset, updateAsset, removeAsset, sellAsset } = usePortfolio(authUser?.id, (updatedPort) => {
     if (authUser) {
       updatePrices(updatedPort);
     }
@@ -74,6 +83,14 @@ export default function App() {
       setLastSyncTime(lastUpdated.getTime());
     }
   }, [lastUpdated]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(PRIVACY_MODE_STORAGE_KEY, isPrivate ? '1' : '0');
+  }, [isPrivate]);
 
   const handleBankSelect = (bankName) => {
     setSelectedBank((prevSelected) => (prevSelected === bankName ? null : bankName));
@@ -260,6 +277,8 @@ export default function App() {
           onToggleAlerts={handleToggleAlertDrawer}
           hasActiveAlerts={activeAlertCount > 0}
           alertCount={activeAlertCount}
+          isPrivate={isPrivate}
+          onTogglePrivacy={() => setIsPrivate((prev) => !prev)}
         />
       </div>
 
@@ -289,15 +308,15 @@ export default function App() {
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-300">Genel Portföy Toplamı</p>
                       <h2 className="mt-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-100">
-                        <ShinyText>
+                        <ShinyText className={isPrivate ? 'blur-sm select-none' : ''}>
                           {renderCurrencyWithMutedSymbol(dashboardTotalValue)}
                         </ShinyText>
                       </h2>
-                      <p className="mt-4 text-sm text-slate-400">
+                      <p className={`mt-4 text-sm text-slate-400 ${isPrivate ? 'blur-sm select-none' : ''}`}>
                         (Bankalardaki Toplam: {renderCurrencyWithMutedSymbol(totalValue)})
                       </p>
                       {malVarligiManuelToplam > 0 ? (
-                        <p className="mt-1 text-xs text-slate-300/85">
+                        <p className={`mt-1 text-xs text-slate-300/85 ${isPrivate ? 'blur-sm select-none' : ''}`}>
                           Mal Varlığı Katkısı (Araç/Gayrimenkul/Diğer): {renderCurrencyWithMutedSymbol(malVarligiManuelToplam)}
                         </p>
                       ) : (
@@ -318,12 +337,12 @@ export default function App() {
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-300">Kâr / Zarar</p>
                       <h2 className={`mt-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight ${totalProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'}`}>
-                        <ShinyText>
+                        <ShinyText className={isPrivate ? 'blur-sm select-none' : ''}>
                           {totalProfit > 0 ? '+' : ''}{renderCurrencyWithMutedSymbol(animatedProfit)}
                         </ShinyText>
                       </h2>
                       <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5">
-                        <span className={`text-sm font-bold ${totalProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'}`}>
+                        <span className={`text-sm font-bold ${totalProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'} ${isPrivate ? 'blur-sm select-none' : ''}`}>
                           {totalProfit > 0 ? '+' : ''}{animatedProfitPercent.toFixed(2)}%
                         </span>
                         <span className="text-xs text-slate-400">toplam performans</span>
@@ -349,7 +368,7 @@ export default function App() {
                   }`}
                 >
                   Reel Getiri ({selectedInflationSourceLabel})
-                  <span className="font-bold">
+                  <span className={`font-bold ${isPrivate ? 'blur-sm select-none' : ''}`}>
                     {portfolioRealReturnPercent >= 0 ? '+' : '-'}%{Math.abs(portfolioRealReturnPercent).toFixed(2)}
                   </span>
                 </span>
@@ -360,7 +379,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="mb-6 break-inside-avoid"
+                className={`mb-6 break-inside-avoid ${isPrivate ? 'blur-sm select-none' : ''}`}
               >
                 <BankTotals 
                   bankTotals={bankTotals} 
@@ -375,7 +394,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="mb-6 break-inside-avoid"
+                className={`mb-6 break-inside-avoid ${isPrivate ? 'blur-sm select-none' : ''}`}
               >
                 <SummaryCards 
                   totalValue={dashboardTotalValue}
@@ -429,7 +448,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="mb-6 break-inside-avoid"
+                className={`mb-6 break-inside-avoid ${isPrivate ? 'blur-sm select-none' : ''}`}
               >
                 <PortfolioTable 
                   portfolio={portfolio}
@@ -449,6 +468,7 @@ export default function App() {
                     setSelectedCategory(null);
                   }}
                   openEditModal={openEditModal}
+                  handleSellAsset={sellAsset}
                   handleRemoveAsset={removeAsset}
                 />
               </motion.section>

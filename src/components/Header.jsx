@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, LogOut, Plus, RefreshCcw } from 'lucide-react';
+import { Bell, Eye, EyeOff, LogOut, Plus, RefreshCcw } from 'lucide-react';
 import { useSyncState } from '../context/SyncContext';
 import SplitText from './ui/SplitText';
 
@@ -17,6 +17,8 @@ export default function Header({
   onToggleAlerts,
   hasActiveAlerts = false,
   alertCount = 0,
+  isPrivate = false,
+  onTogglePrivacy,
 }) {
   const { lastSyncTime } = useSyncState();
   const [now, setNow] = useState(Date.now());
@@ -95,6 +97,16 @@ export default function Header({
             Enflasyon Analizi
           </button>
         </div>
+
+        <button
+          type="button"
+          onClick={onTogglePrivacy}
+          className={`inline-flex items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-all duration-300 backdrop-blur-sm w-full md:w-auto ${isPrivate ? 'bg-amber-500/15 border-amber-300/35 text-amber-100 hover:bg-amber-500/25' : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'}`}
+          title={isPrivate ? 'Gizlilik modunu kapat' : 'Gizlilik modunu aç'}
+        >
+          {isPrivate ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          <span className="text-xs font-semibold">{isPrivate ? 'Gizlilik Açık' : 'Gizlilik Kapalı'}</span>
+        </button>
 
         {activePage === 'dashboard' ? (
           <>
