@@ -94,7 +94,8 @@ export default function SidebarMenu({
             </nav>
 
             <div className="mt-5 rounded-xl border border-white/5 bg-slate-950/70 p-3">
-              <p className="text-xs font-semibold uppercase tracking-tight text-slate-400">Tema Seçimi</p>
+              <p className="text-xs font-semibold uppercase tracking-tight text-slate-400">Kişiselleştirme</p>
+              <p className="mt-1 text-[11px] text-slate-500">Tema paletini buradan seçebilirsin.</p>
               <div className="mt-2 flex items-center gap-2">
                 {themeOptions.map((option) => {
                   const isActiveTheme = activeTheme === option.id;

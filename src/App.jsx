@@ -289,7 +289,6 @@ export default function App() {
     selectedInflationSourceLabel,
     alerts,
     activeAlertCount,
-    previewAlerts,
     portfolioNameOptions,
     selectedBank,
     selectedCategory,
@@ -406,18 +405,31 @@ export default function App() {
     return isPrivacyActive ? maskValue(percentText) : percentText;
   };
 
-  const getAlertVisual = (alertItem) => {
-    const level = String(alertItem?.level || '').toLowerCase();
-    if (level === 'critical') {
-      return { icon: '🚨', label: 'Risk' };
-    }
+  const alertSummary = useMemo(() => {
+    const seed = {
+      critical: 0,
+      warning: 0,
+      info: 0,
+      topTitle: '',
+    };
 
-    if (level === 'warning') {
-      return { icon: '⚠️', label: 'Uyarı' };
-    }
+    alerts.forEach((item, index) => {
+      const level = String(item?.level || 'info').toLowerCase();
+      if (level === 'critical') {
+        seed.critical += 1;
+      } else if (level === 'warning') {
+        seed.warning += 1;
+      } else {
+        seed.info += 1;
+      }
 
-    return { icon: '💡', label: 'Öneri' };
-  };
+      if (index === 0 && item?.title) {
+        seed.topTitle = item.title;
+      }
+    });
+
+    return seed;
+  }, [alerts]);
 
   const dashboardContextValue = useMemo(() => ({
     portfolio,
@@ -630,20 +642,28 @@ export default function App() {
                     </button>
                   </div>
 
-                  <p className="mt-2 text-xs text-slate-400">Risk ve öneriler artık Alert panelinde. Burada kısa bir önizleme görebilirsin.</p>
+                  <p className="mt-2 text-xs text-slate-400">Dağınık uyarılar tek bir yönetim kartında konsolide edildi.</p>
 
-                  {previewAlerts.length > 0 ? (
-                    <ul className="mt-4 space-y-2">
-                      {previewAlerts.map((item) => (
-                        <li key={item.id} className="rounded-3xl border border-white/5 bg-slate-900/40 px-3 py-2.5 backdrop-blur-xl">
-                          <p className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-                            <span aria-hidden="true">{getAlertVisual(item).icon}</span>
-                            <span>{item.title}</span>
-                          </p>
-                          <p className="mt-1 line-clamp-2 text-xs text-slate-400">{item.detail}</p>
-                        </li>
-                      ))}
-                    </ul>
+                  {activeAlertCount > 0 ? (
+                    <div className="mt-4 rounded-2xl border border-white/5 bg-slate-900/40 p-4 backdrop-blur-xl">
+                      <p className="text-sm font-black text-slate-50">Hatalar &amp; Bildirimler ({activeAlertCount} Alerts)</p>
+                      <p className="mt-1 text-xs text-slate-400">{alertSummary.topTitle || 'Panelde incelenmeyi bekleyen bildirimler var.'}</p>
+
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        <div className="rounded-xl border border-rose-300/30 bg-rose-500/10 px-2 py-2 text-center">
+                          <p className="text-[10px] uppercase tracking-[0.08em] text-rose-200">Kritik</p>
+                          <p className="text-sm font-black text-rose-100">{alertSummary.critical}</p>
+                        </div>
+                        <div className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-2 py-2 text-center">
+                          <p className="text-[10px] uppercase tracking-[0.08em] text-amber-200">Uyarı</p>
+                          <p className="text-sm font-black text-amber-100">{alertSummary.warning}</p>
+                        </div>
+                        <div className="rounded-xl border border-sky-300/30 bg-sky-500/10 px-2 py-2 text-center">
+                          <p className="text-[10px] uppercase tracking-[0.08em] text-sky-200">Bilgi</p>
+                          <p className="text-sm font-black text-sky-100">{alertSummary.info}</p>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
                     <p className="mt-4 text-sm text-emerald-200">Şu an aktif bir kritik uyarı görünmüyor.</p>
                   )}
