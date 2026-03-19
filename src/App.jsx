@@ -279,7 +279,7 @@ export default function App() {
 
   return (
     <SyncContext.Provider value={{ lastSyncTime, setLastSyncTime }}>
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-[#0a0f1c] to-black text-slate-100 font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10">
+    <div className="min-h-screen bg-[#0B1120] text-slate-100 font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10">
       <Toaster 
         position="top-right" 
         toastOptions={{ 
@@ -316,12 +316,13 @@ export default function App() {
       <main className="max-w-7xl mx-auto space-y-6 md:space-y-10">
         {activePage === 'dashboard' ? (
           <>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-4 md:p-8">
             <motion.section
               layout
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="space-y-4"
+              className="col-span-12 rounded-2xl border border-gray-800 bg-[#1A2232] shadow-2xl p-4 md:p-6 space-y-4"
             >
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 md:px-5 backdrop-blur-sm">
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-100">
@@ -406,11 +407,10 @@ export default function App() {
               </div>
             </motion.section>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="col-span-12 md:col-span-4 md:order-2"
+                className="col-span-12 md:col-span-4 md:order-3 rounded-2xl border border-gray-800 bg-[#1A2232] shadow-2xl p-4 md:p-6"
               >
                 <BankTotals 
                   bankTotals={bankTotals} 
@@ -425,7 +425,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="col-span-12 md:col-span-8 md:order-1"
+                className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-gray-800 bg-[#1A2232] shadow-2xl p-4 md:p-6"
               >
                 <SummaryCards 
                   totalValue={dashboardTotalValue}
@@ -449,7 +449,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="col-span-12 md:col-span-4 md:order-4 rounded-2xl border border-white/10 bg-white/5 p-5 md:p-6 shadow-2xl"
+                className="col-span-12 md:col-span-4 md:order-2 rounded-2xl border border-gray-800 bg-[#1A2232] p-5 md:p-6 shadow-2xl"
               >
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-200">Akıllı Öneriler</h3>
@@ -481,7 +481,7 @@ export default function App() {
               <motion.section
                 layout
                 transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="col-span-12 md:col-span-8 md:order-3"
+                className="col-span-12 md:col-span-8 md:order-4 rounded-2xl border border-gray-800 bg-[#1A2232] shadow-2xl p-4 md:p-6"
               >
                 <PortfolioTable 
                   portfolio={portfolio}
