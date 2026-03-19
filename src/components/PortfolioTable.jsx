@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Coins, AlertCircle, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame } from 'lucide-react';
+import { Coins, AlertCircle, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, DollarSign } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { formatCurrencyParts } from '../utils/helpers';
 import { resolveAssetLivePrice, unitTypeToLabel } from '../utils/assetPricing';
