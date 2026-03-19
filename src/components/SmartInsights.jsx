@@ -117,16 +117,16 @@ export default function SmartInsights({
   const hasWarnings = insights.some((insight) => insight.level !== 'good');
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 p-6 shadow-2xl backdrop-blur-xl md:p-8">
+    <section className="relative overflow-hidden rounded-2xl border border-white/15 bg-card/80 p-8 shadow-[0_20px_70px_rgba(7,10,16,0.56)] backdrop-blur-md">
       {hasWarnings ? (
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,63,94,0.16),transparent_55%)] animate-pulse" />
       ) : null}
       <div className="relative z-10">
       <div className="flex items-center gap-2 mb-1">
         <AlertTriangle className="w-4 h-4 text-amber-300" />
-        <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-200">Akilli Oneriler</h3>
+        <h3 className="text-sm font-bold uppercase tracking-tight text-slate-200">Akilli Oneriler</h3>
       </div>
-      <p className="text-xs text-slate-500 mb-4">24 saatlik sert dususler ve enflasyon referansina gore risk sinyalleri</p>
+      <p className="mb-4 text-xs text-gray-300">24 saatlik sert dususler ve enflasyon referansina gore risk sinyalleri</p>
 
       {insights.length === 0 ? (
         <div className="rounded-xl border border-emerald-300/30 bg-emerald-500/10 p-6 text-sm text-emerald-200 shadow-2xl">

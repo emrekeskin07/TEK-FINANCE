@@ -3,10 +3,10 @@ import PropTypes from 'prop-types';
 import { Building2, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { usePrivacy } from '../context/PrivacyContext';
-import { formatCurrency, formatCurrencyParts } from '../utils/helpers';
+import { formatCurrency } from '../utils/helpers';
 
 const OTHER_THRESHOLD_PERCENT = 1;
-const PIE_COLORS = ['#8B5CF6', '#F59E0B', '#06B6D4', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7'];
+const PIE_COLORS = ['#8B5CF6', '#F59E0B', '#06B6D4', '#EC4899', '#A78BFA', '#FBBF24', '#67E8F9', '#F9A8D4'];
 
 export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue, selectedBank, onSelectBank }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
@@ -75,23 +75,9 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
     : (Number(totalValue || 0) > 0 ? Number(totalValue) : distributionTotal);
   const centerTitle = selectedEntry ? selectedEntry.name : 'Toplam Varlik';
 
-  const renderTryCurrencyWithMutedSymbol = (value) => {
-    const plainCurrencyText = formatCurrency(value, baseCurrency, rates);
-
-    if (isPrivacyActive) {
-      return <span>{maskValue(plainCurrencyText)}</span>;
-    }
-
-    return (
-      <>
-        {formatCurrencyParts(value, baseCurrency, rates).map((part, index) => (
-          part.type === 'currency'
-            ? <span key={`${part.type}-${index}`} className="text-slate-400/75">{part.value}</span>
-            : <span key={`${part.type}-${index}`}>{part.value}</span>
-        ))}
-      </>
-    );
-  };
+  const centerStateKey = selectedEntry
+    ? `selected-${selectedEntry.name}-${Math.round(Number(selectedEntry.value || 0))}`
+    : 'selected-total';
 
   const formatTryCurrencyText = (value) => {
     const rawText = formatCurrency(value, baseCurrency, rates);
@@ -112,7 +98,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
     }
 
     return (
-      <div className="rounded-lg border border-white/10 bg-[#0f172a]/95 px-3 py-2 text-xs backdrop-blur-sm">
+      <div className="rounded-lg border border-white/10 bg-[#10141d]/95 px-3 py-2 text-xs backdrop-blur-sm">
         <p className="font-semibold text-slate-100">{point.name}</p>
         <p className="mt-1 text-slate-300">{formatTryCurrencyText(point.value)}</p>
         <p className="text-slate-400">{isPrivacyActive ? maskValue(`%${point.share.toFixed(1)}`) : `%${point.share.toFixed(1)}`}</p>
@@ -125,19 +111,19 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
   return (
     <div>
       <div className="mb-4">
-        <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-300/25 bg-sky-500/10">
-          <Building2 className="h-4 w-4 text-sky-200/90" />
+        <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-primary/30 bg-primary/18">
+          <Building2 className="h-4 w-4 text-primary" />
         </div>
         <h2 className="text-sm font-bold uppercase tracking-tight text-text-main">KURUMLARDAKI DAĞILIM</h2>
-        <p className="mt-1 text-xs font-medium text-text-muted">Portföyün kurumlara göre yüzdesel dağılımı</p>
+        <p className="mt-1 text-xs font-medium text-gray-300">Portföyün kurumlara göre yüzdesel dağılımı</p>
       </div>
 
       {!hasData ? (
-        <div className="rounded-xl border border-white/5 bg-white/5 p-6 text-sm text-slate-400 shadow-2xl">
+        <div className="rounded-xl border border-white/15 bg-card/80 p-6 text-sm text-gray-300 shadow-[0_16px_46px_rgba(7,10,16,0.55)] backdrop-blur-md">
           Kayıtlı kurum verisi bulunmuyor.
         </div>
       ) : (
-        <div className="rounded-2xl border border-white/10 bg-card/70 p-6 shadow-[0_16px_46px_rgba(15,23,42,0.45)] backdrop-blur-md md:p-8">
+        <div className="rounded-2xl border border-white/15 bg-card/80 p-6 shadow-[0_16px_46px_rgba(7,10,16,0.55)] backdrop-blur-md md:p-8">
           <div className="relative h-[250px] w-full min-h-[250px] min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -173,10 +159,10 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
             </ResponsiveContainer>
 
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div key={`center-${centerTitle}`} className="pointer-events-auto px-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-tight text-slate-300">{centerTitle}</p>
-                <p className="mt-1 text-2xl md:text-[28px] font-black leading-tight tracking-tight text-slate-100 drop-shadow-[0_0_12px_rgba(56,189,248,0.3)]">
-                  {renderTryCurrencyWithMutedSymbol(centerTotalValue)}
+              <div key={centerStateKey} className="pointer-events-auto px-3 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-tight text-gray-300">{centerTitle}</p>
+                <p className="mt-1 text-2xl font-black leading-tight tracking-tight text-emerald-200 drop-shadow-[0_0_16px_rgba(16,185,129,0.45)] md:text-[28px]">
+                  {formatTryCurrencyText(centerTotalValue)}
                 </p>
                 {selectedBank ? (
                   <button
@@ -189,7 +175,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
                     Filtreyi Temizle (X)
                   </button>
                 ) : (
-                  <p className="mt-2 text-[10px] font-medium text-slate-500">Bir dilime tıklayarak filtrele</p>
+                  <p className="mt-2 text-[10px] font-medium text-gray-300">Bir dilime tıklayarak filtrele</p>
                 )}
               </div>
             </div>
@@ -212,9 +198,9 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
                     <div className="flex items-center justify-between gap-3 text-xs">
                       <div className="min-w-0 flex items-center gap-2">
                         <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: entry.color }} />
-                        <span className="truncate font-semibold text-slate-200">{entry.name}</span>
+                        <span className="truncate font-semibold text-gray-300">{entry.name}</span>
                       </div>
-                      <span className="font-semibold text-slate-300">{isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}</span>
+                      <span className="font-semibold text-gray-300">{isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}</span>
                     </div>
                   </button>
                 </li>

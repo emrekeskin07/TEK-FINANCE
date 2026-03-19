@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 :root {
-	--primary: 14 165 233;
-	--secondary: 20 184 166;
+	--primary: 167 139 250;
+	--secondary: 236 72 153;
 	--accent: 16 185 129;
-	--bg-card: 15 23 42;
-	--bg-page: 11 17 32;
-	--text-main: 226 232 240;
-	--text-muted: 148 163 184;
+	--bg-card: 28 34 48;
+	--bg-page: 16 20 29;
+	--text-main: 241 245 249;
+	--text-muted: 209 213 219;
 }
 
 *,
@@ -33,7 +33,7 @@ body,
 }
 
 ::-webkit-scrollbar-track {
-	background: #0f172a;
+	background: #10141d;
 }
 
 ::-webkit-scrollbar-thumb {

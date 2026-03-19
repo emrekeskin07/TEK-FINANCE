@@ -420,8 +420,8 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
-        <div className="text-sm text-slate-300">Oturum kontrol ediliyor...</div>
+      <div className="flex min-h-screen items-center justify-center bg-page text-slate-100">
+        <div className="text-sm text-gray-300">Oturum kontrol ediliyor...</div>
       </div>
     );
   }
@@ -551,7 +551,7 @@ export default function App() {
                 <motion.section
                   layout
                   transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                  className="col-span-12 md:col-span-4 md:order-2 relative overflow-hidden rounded-3xl border border-white/10 bg-card/70 p-6 shadow-[0_20px_70px_rgba(8,47,73,0.35)] backdrop-blur-2xl transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45 md:p-8"
+                  className="col-span-12 md:col-span-4 md:order-2 relative overflow-hidden rounded-3xl border border-white/15 bg-card/80 p-8 shadow-[0_22px_74px_rgba(7,10,16,0.56)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45"
                 >
                   <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-accent/18 blur-3xl" />
                   <div className="pointer-events-none absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-secondary/18 blur-3xl" />
@@ -560,23 +560,23 @@ export default function App() {
                     <button
                       type="button"
                       onClick={handleToggleAlertDrawer}
-                      className="text-xs font-semibold rounded-md border border-violet-300/35 bg-violet-500/18 px-2.5 py-1 text-violet-100 hover:bg-violet-500/30 transition-colors min-h-[44px]"
+                      className="min-h-[44px] rounded-md border border-secondary/35 bg-secondary/20 px-2.5 py-1 text-xs font-semibold text-gray-100 transition-colors hover:bg-secondary/30"
                     >
                       Hepsini Gör
                     </button>
                   </div>
 
-                  <p className="mt-2 text-xs text-text-muted">Risk ve öneriler artık Alert panelinde. Burada kısa bir önizleme görebilirsin.</p>
+                  <p className="mt-2 text-xs text-gray-300">Risk ve öneriler artık Alert panelinde. Burada kısa bir önizleme görebilirsin.</p>
 
                   {previewAlerts.length > 0 ? (
                     <ul className="mt-4 space-y-2">
                       {previewAlerts.map((item) => (
-                        <li key={item.id} className="rounded-3xl border border-white/15 bg-slate-900/55 px-3 py-2.5 backdrop-blur-md">
+                        <li key={item.id} className="rounded-3xl border border-white/15 bg-black/25 px-3 py-2.5 backdrop-blur-md">
                           <p className="text-sm font-semibold text-slate-100 flex items-center gap-2">
                             <span aria-hidden="true">{getAlertVisual(item).icon}</span>
                             <span>{item.title}</span>
                           </p>
-                          <p className="text-xs text-slate-300 mt-1 line-clamp-2">{item.detail}</p>
+                          <p className="mt-1 line-clamp-2 text-xs text-gray-300">{item.detail}</p>
                         </li>
                       ))}
                     </ul>

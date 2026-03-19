@@ -222,6 +222,7 @@ export default function PortfolioTable({
   const [sellAmount, setSellAmount] = useState('');
   const [sellPrice, setSellPrice] = useState('');
   const [sellSubmitting, setSellSubmitting] = useState(false);
+  const [isReportMenuOpen, setIsReportMenuOpen] = useState(false);
 
   useEffect(() => {
     setOpenPortfolios((prev) => {
@@ -308,8 +309,8 @@ export default function PortfolioTable({
 
   return (
     <>
-    <div className="bg-white/5 relative overflow-hidden backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-[1.01] hover:border-white/10 before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/5 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/5 after:content-[''] flex flex-col">
-      <div className="p-6 md:p-8 border-b border-white/5 flex flex-wrap justify-between items-center gap-4">
+    <div className="relative flex flex-col overflow-hidden rounded-2xl border border-white/15 bg-card/80 shadow-[0_20px_68px_rgba(7,10,16,0.56)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-white/20 before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/10 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/10 after:content-['']">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 p-6 md:p-8">
         <div className="flex items-center gap-3 flex-wrap">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Coins className="w-5 h-5 text-blue-400" />
@@ -329,7 +330,7 @@ export default function PortfolioTable({
             <button
               type="button"
               onClick={() => onClearFilter?.()}
-              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-full border border-blue-300/40 bg-gradient-to-r from-blue-500/20 to-cyan-400/20 px-3 py-1.5 text-xs font-semibold text-blue-100 transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-[0_0_18px_rgba(59,130,246,0.28)]"
+              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-full border border-primary/40 bg-gradient-to-r from-primary/20 to-secondary/20 px-3 py-1.5 text-xs font-semibold text-gray-100 transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-[0_0_18px_rgba(167,139,250,0.32)]"
               title="Filtreleri temizle"
             >
               <X className="w-3.5 h-3.5" />
@@ -337,11 +338,11 @@ export default function PortfolioTable({
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 p-1">
+        <div className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 p-1">
           <button
             type="button"
             onClick={() => handleSortChange('totalValue')}
-            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'totalValue' ? 'bg-blue-500/20 text-blue-200' : 'text-slate-300 hover:bg-white/10'}`}
+            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'totalValue' ? 'bg-primary/22 text-gray-100' : 'text-gray-300 hover:bg-white/10'}`}
             title="Toplam değere göre sırala"
           >
             Toplam Değer
@@ -352,7 +353,7 @@ export default function PortfolioTable({
           <button
             type="button"
             onClick={() => handleSortChange('profit')}
-            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'profit' ? 'bg-emerald-500/20 text-emerald-200' : 'text-slate-300 hover:bg-white/10'}`}
+            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'profit' ? 'bg-emerald-500/20 text-emerald-100' : 'text-gray-300 hover:bg-white/10'}`}
             title="Kâr/zarara göre sırala"
           >
             Kâr/Zarar
@@ -362,25 +363,50 @@ export default function PortfolioTable({
           </button>
         </div>
 
-        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 p-1">
+        <div className="relative" onBlur={() => window.setTimeout(() => setIsReportMenuOpen(false), 120)}>
           <button
             type="button"
-            onClick={() => onExportPdfReport?.()}
-            className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md border border-emerald-300/30 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition-all duration-200 hover:scale-105 hover:bg-emerald-500/25 active:scale-95"
-            title="PDF raporu indir"
+            onClick={() => setIsReportMenuOpen((prev) => !prev)}
+            className="inline-flex min-h-[44px] transform-gpu items-center gap-2 rounded-md border border-emerald-300/35 bg-emerald-500/18 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition-all duration-200 hover:scale-105 hover:bg-emerald-500/28 active:scale-95"
+            title="Rapor seçeneklerini aç"
+            aria-haspopup="menu"
+            aria-expanded={isReportMenuOpen}
           >
             <FileText className="h-3.5 w-3.5" />
-            Rapor Al (PDF)
+            Rapor Al
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isReportMenuOpen ? 'rotate-180' : ''}`} />
           </button>
-          <button
-            type="button"
-            onClick={() => onExportExcelReport?.()}
-            className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md border border-sky-300/30 bg-sky-500/15 px-3 py-1.5 text-xs font-semibold text-sky-100 transition-all duration-200 hover:scale-105 hover:bg-sky-500/25 active:scale-95"
-            title="Excel uyumlu CSV raporu indir"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Excel (CSV)
-          </button>
+
+          {isReportMenuOpen ? (
+            <div className="absolute right-0 z-20 mt-1 min-w-[190px] overflow-hidden rounded-lg border border-white/15 bg-[#10141d]/95 p-1.5 shadow-2xl backdrop-blur-md" role="menu">
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setIsReportMenuOpen(false);
+                  onExportPdfReport?.();
+                }}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-slate-100 transition-colors hover:bg-white/10"
+                role="menuitem"
+              >
+                <FileText className="h-3.5 w-3.5 text-emerald-300" />
+                PDF (Profesyonel)
+              </button>
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setIsReportMenuOpen(false);
+                  onExportExcelReport?.();
+                }}
+                className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-slate-100 transition-colors hover:bg-white/10"
+                role="menuitem"
+              >
+                <Download className="h-3.5 w-3.5 text-sky-300" />
+                Excel (CSV)
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {lastUpdated ? (

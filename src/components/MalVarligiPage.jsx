@@ -1,11 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Trash2, Landmark } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { NumericFormat } from 'react-number-format';
 import { supabase } from '../supabaseClient';
 
 const MANUEL_VARLIK_TURLERI = ['Gayrimenkul', 'Araç', 'Diğer'];
 const ARAC_TURU_OPTIONS = ['Araba', 'Motosiklet', 'Diğer'];
+const ARAC_MARKA_OPTIONS = ['Honda', 'Toyota', 'Volkswagen', 'Ford', 'BMW', 'Mercedes-Benz', 'Renault', 'Hyundai', 'Diğer'];
+
+const createDefaultAracDetay = () => ({
+  tur: 'Araba',
+  marka: '',
+  customMarka: '',
+  model: '',
+  yil: '',
+  satinAlmaTarihi: '',
+});
 
 function formatTl(value) {
   return new Intl.NumberFormat('tr-TR', {
@@ -25,7 +34,7 @@ export default function MalVarligiPage({
 }) {
   const [varlikTuru, setVarlikTuru] = useState('Gayrimenkul');
   const [toplamDeger, setToplamDeger] = useState('');
-  const [aracDetay, setAracDetay] = useState({ tur: 'Araba', marka: '', model: '', yil: '' });
+  const [aracDetay, setAracDetay] = useState(createDefaultAracDetay);
   const [kayitlar, setKayitlar] = useState(() => manualAssets);
 
   const manuelToplam = useMemo(
@@ -45,7 +54,7 @@ export default function MalVarligiPage({
   const handleTypeChange = (nextType) => {
     setVarlikTuru(nextType);
     if (nextType !== 'Araç') {
-      setAracDetay({ tur: 'Araba', marka: '', model: '', yil: '' });
+      setAracDetay(createDefaultAracDetay());
     }
   };
 
@@ -84,8 +93,9 @@ export default function MalVarligiPage({
 
     if (varlikTuru === 'Araç') {
       const yearValue = Number(aracDetay.yil);
+      const resolvedBrand = (aracDetay.marka === 'Diğer' ? aracDetay.customMarka : aracDetay.marka).trim();
       const isYearValid = Number.isInteger(yearValue) && yearValue >= 1900 && yearValue <= new Date().getFullYear() + 1;
-      if (!aracDetay.marka.trim() || !aracDetay.model.trim() || !isYearValid) {
+      if (!resolvedBrand || !aracDetay.model.trim() || !isYearValid) {
         return;
       }
     }
@@ -102,9 +112,10 @@ export default function MalVarligiPage({
       details: varlikTuru === 'Araç'
         ? {
             vehicleType: aracDetay.tur,
-            brand: aracDetay.marka.trim(),
+            brand: (aracDetay.marka === 'Diğer' ? aracDetay.customMarka : aracDetay.marka).trim(),
             model: aracDetay.model.trim(),
             year: Number(aracDetay.yil),
+            purchaseDate: aracDetay.satinAlmaTarihi || null,
           }
         : null,
     };
@@ -135,7 +146,7 @@ export default function MalVarligiPage({
 
     setToplamDeger('');
     if (varlikTuru === 'Araç') {
-      setAracDetay({ tur: 'Araba', marka: '', model: '', yil: '' });
+      setAracDetay(createDefaultAracDetay());
     }
 
     toast.success('Manuel mal varligi kaydi eklendi.');
@@ -199,16 +210,13 @@ export default function MalVarligiPage({
               ))}
             </select>
 
-            <NumericFormat
-              valueIsNumericString
-              decimalScale={2}
-              fixedDecimalScale={false}
-              allowNegative={false}
-              thousandSeparator="."
-              decimalSeparator="," 
+            <input
+              type="number"
               inputMode="decimal"
+              min="0"
+              step="0.01"
               value={toplamDeger}
-              onValueChange={({ value }) => setToplamDeger(value)}
+              onChange={(event) => setToplamDeger(event.target.value)}
               placeholder="Toplam Değer (TL)"
               className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400 rounded-lg px-3 py-2.5 outline-none focus:border-blue-500/60"
               required
@@ -216,7 +224,7 @@ export default function MalVarligiPage({
           </div>
 
           {varlikTuru === 'Araç' && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
               <select
                 value={aracDetay.tur}
                 onChange={(event) => setAracDetay((prev) => ({ ...prev, tur: event.target.value }))}
@@ -229,14 +237,35 @@ export default function MalVarligiPage({
                 ))}
               </select>
 
-              <input
-                type="text"
+              <select
                 value={aracDetay.marka}
-                onChange={(event) => setAracDetay((prev) => ({ ...prev, marka: event.target.value }))}
-                placeholder="Marka (Örn: Honda)"
+                onChange={(event) => {
+                  const nextBrand = event.target.value;
+                  setAracDetay((prev) => ({
+                    ...prev,
+                    marka: nextBrand,
+                    customMarka: nextBrand === 'Diğer' ? prev.customMarka : '',
+                  }));
+                }}
                 className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400 rounded-lg px-3 py-2.5 outline-none focus:border-blue-500/60"
                 required
-              />
+              >
+                <option value="" className="bg-slate-900">Marka Seç</option>
+                {ARAC_MARKA_OPTIONS.map((option) => (
+                  <option key={option} value={option} className="bg-slate-900">{option}</option>
+                ))}
+              </select>
+
+              {aracDetay.marka === 'Diğer' ? (
+                <input
+                  type="text"
+                  value={aracDetay.customMarka}
+                  onChange={(event) => setAracDetay((prev) => ({ ...prev, customMarka: event.target.value }))}
+                  placeholder="Marka yaz (Örn: Togg)"
+                  className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400 rounded-lg px-3 py-2.5 outline-none focus:border-blue-500/60"
+                  required
+                />
+              ) : null}
 
               <input
                 type="text"
@@ -247,25 +276,25 @@ export default function MalVarligiPage({
                 required
               />
 
-              <NumericFormat
-                valueIsNumericString
-                allowNegative={false}
-                decimalScale={0}
-                thousandSeparator={false}
+              <input
+                type="number"
                 inputMode="numeric"
+                min="1900"
+                max={String(new Date().getFullYear() + 1)}
+                step="1"
                 value={aracDetay.yil}
-                onValueChange={({ value }) => setAracDetay((prev) => ({ ...prev, yil: value }))}
-                isAllowed={({ floatValue }) => {
-                  if (floatValue === undefined) {
-                    return true;
-                  }
-
-                  const maxYear = new Date().getFullYear() + 1;
-                  return floatValue >= 1900 && floatValue <= maxYear;
-                }}
+                onChange={(event) => setAracDetay((prev) => ({ ...prev, yil: event.target.value }))}
                 placeholder="Yıl"
                 className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400 rounded-lg px-3 py-2.5 outline-none focus:border-blue-500/60"
                 required
+              />
+
+              <input
+                type="date"
+                value={aracDetay.satinAlmaTarihi}
+                onChange={(event) => setAracDetay((prev) => ({ ...prev, satinAlmaTarihi: event.target.value }))}
+                className="bg-white/5 border border-white/10 text-slate-100 rounded-lg px-3 py-2.5 outline-none focus:border-blue-500/60"
+                aria-label="Satın alma tarihi"
               />
             </div>
           )}

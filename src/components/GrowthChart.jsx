@@ -178,7 +178,7 @@ export default function GrowthChart() {
     <motion.section
       layout
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-      className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-white/10 bg-card/75 p-6 shadow-[0_24px_72px_rgba(15,23,42,0.5)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45 md:p-8"
+      className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-white/15 bg-card/80 p-8 shadow-[0_26px_76px_rgba(7,10,16,0.58)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45"
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -188,16 +188,16 @@ export default function GrowthChart() {
           </h3>
           <span className={`inline-flex min-h-[28px] items-center rounded-full border px-2.5 text-[11px] font-semibold ${
             rangeChangePercent === null
-              ? 'border-white/15 bg-white/5 text-text-muted'
+              ? 'border-white/20 bg-white/10 text-gray-300'
               : (rangeChangePercent >= 0
-                ? 'border-emerald-300/35 bg-emerald-500/15 text-emerald-100'
-                : 'border-rose-300/35 bg-rose-500/15 text-rose-100')
+                ? 'border-emerald-300/40 bg-emerald-500/20 text-emerald-100 shadow-[0_0_14px_rgba(16,185,129,0.35)]'
+                : 'border-pink-300/40 bg-pink-500/20 text-pink-100 shadow-[0_0_14px_rgba(236,72,153,0.3)]')
           }`}>
             {displayedRangeChangeText}
           </span>
         </div>
 
-        <div className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-card/70 p-1 backdrop-blur-md">
+        <div className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-card/80 p-1 backdrop-blur-md">
           {RANGE_OPTIONS.map((option) => {
             const isActive = selectedRange === option.key;
             return (
@@ -208,8 +208,8 @@ export default function GrowthChart() {
                 onClick={() => setSelectedRange(option.key)}
                 className={`relative min-h-[44px] rounded-md px-3 py-2 text-[11px] ${
                   isActive
-                    ? 'bg-secondary/22 text-text-main'
-                    : 'text-text-muted hover:text-text-main'
+                    ? 'bg-secondary/24 text-text-main shadow-[0_0_12px_rgba(236,72,153,0.22)]'
+                    : 'text-gray-300 hover:text-text-main'
                 }`}
               >
                 <span>{option.label}</span>
@@ -228,27 +228,27 @@ export default function GrowthChart() {
             <AreaChart data={convertedLineChartData}>
               <defs>
                 <linearGradient id="growthChartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="rgb(var(--primary))" stopOpacity={0.28} />
-                  <stop offset="55%" stopColor="rgb(var(--secondary))" stopOpacity={0.18} />
-                  <stop offset="100%" stopColor="rgb(var(--accent))" stopOpacity={0.05} />
+                  <stop offset="0%" stopColor="#A78BFA" stopOpacity={0.34} />
+                  <stop offset="48%" stopColor="#EC4899" stopOpacity={0.2} />
+                  <stop offset="100%" stopColor="#10B981" stopOpacity={0.08} />
                 </linearGradient>
                 <linearGradient id="growthChartStroke" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="rgb(var(--primary))" />
-                  <stop offset="50%" stopColor="rgb(var(--secondary))" />
-                  <stop offset="100%" stopColor="rgb(var(--accent))" />
+                  <stop offset="0%" stopColor="#A78BFA" />
+                  <stop offset="50%" stopColor="#EC4899" />
+                  <stop offset="100%" stopColor="#10B981" />
                 </linearGradient>
                 <filter id="growthChartGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                  <feGaussianBlur stdDeviation="5" result="coloredBlur" />
                   <feMerge>
                     <feMergeNode in="coloredBlur" />
                     <feMergeNode in="SourceGraphic" />
                   </feMerge>
                 </filter>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(203,213,225,0.2)" vertical={false} />
               <XAxis
                 dataKey="date"
-                stroke="#94a3b8"
+                stroke="#cbd5e1"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
@@ -256,7 +256,7 @@ export default function GrowthChart() {
               <YAxis
                 domain={[getAreaDomainMin, getAreaDomainMax]}
                 allowDataOverflow
-                stroke="#94a3b8"
+                stroke="#cbd5e1"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
@@ -272,7 +272,7 @@ export default function GrowthChart() {
                 fillOpacity={1}
                 fill="url(#growthChartGradient)"
                 filter="url(#growthChartGlow)"
-                activeDot={{ r: 4, stroke: '#0f172a', strokeWidth: 2, fill: '#d946ef' }}
+                activeDot={{ r: 4, stroke: '#10141d', strokeWidth: 2, fill: '#10b981' }}
               />
             </AreaChart>
           </ResponsiveContainer>

@@ -125,7 +125,7 @@ export default function AssetList() {
     <motion.section
       layout
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-      className="col-span-12 md:col-span-9 md:order-4 rounded-2xl border border-white/10 bg-card/75 p-6 shadow-[0_24px_72px_rgba(15,23,42,0.5)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-secondary/40 md:p-8"
+      className="col-span-12 md:col-span-9 md:order-4 rounded-2xl border border-white/15 bg-card/80 p-8 shadow-[0_24px_72px_rgba(7,10,16,0.58)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45"
     >
       <PortfolioTable
         portfolio={portfolio}
