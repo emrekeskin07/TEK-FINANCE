@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { convertMetalQuoteToTryByUnit, fetchYahooData, METAL_TICKERS } from '../services/api';
+import { convertMetalQuoteToTryByUnit, fetchYahooQuotesBatch, METAL_TICKERS } from '../services/api';
 
 const PRICE_CACHE_KEY_PREFIX = 'son_basarili_fiyat_';
 const PRICE_CACHE_TIME_KEY_PREFIX = 'son_basarili_fiyat_zamani_';
@@ -127,8 +127,7 @@ export const useMarketData = (portfolio) => {
       const portfolioSymbols = currentPortfolio.map(p => p.symbol).filter(s => s !== 'GRAM_ALTIN');
       const allSymbols = [...new Set([...baseSymbols, ...portfolioSymbols])];
 
-      const fetchPromises = allSymbols.map(sym => fetchYahooData(sym).then(quote => ({ symbol: sym, quote })));
-      const results = await Promise.all(fetchPromises);
+      const results = await fetchYahooQuotesBatch(allSymbols);
 
       const newMarketData = {};
       const newMarketChanges = {};

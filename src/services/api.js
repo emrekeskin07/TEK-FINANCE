@@ -3,6 +3,8 @@ const isLocalDevHost = typeof window !== 'undefined'
 const DEFAULT_API_BASE_URL = isLocalDevHost ? 'http://localhost:5000' : '';
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '');
 const REQUEST_TIMEOUT_MS = 8000;
+const BATCH_REQUEST_TIMEOUT_MS = 20000;
+const SHOULD_LOG_API_ERRORS = Boolean(import.meta.env.DEV);
 export const OUNCE_TO_GRAM = 31.1035;
 export const METAL_TICKERS = ['GC=F', 'SI=F', 'PL=F', 'PA=F'];
 
@@ -104,6 +106,23 @@ function extractQuote(payload, symbol) {
   return null;
 }
 
+function extractQuoteFromItem(item, fallbackSymbol) {
+  if (typeof item?.regularMarketPrice === 'number') {
+    return {
+      symbol: item.symbol || fallbackSymbol,
+      price: item.regularMarketPrice,
+      currency: item.currency || null,
+      changePercent: typeof item.regularMarketChangePercent === 'number'
+        ? item.regularMarketChangePercent
+        : null,
+      exchange: item.exchange || null,
+      marketState: item.marketState || null,
+    };
+  }
+
+  return extractQuote({ data: [item] }, fallbackSymbol);
+}
+
 export const fetchYahooData = async (symbol) => {
   if (!symbol || typeof symbol !== 'string') {
     console.error('Geçersiz sembol parametresi:', symbol);
@@ -152,22 +171,94 @@ export const fetchYahooData = async (symbol) => {
     return quote;
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.error(`Fiyat isteği zaman aşımına uğradı (${symbol}).`);
+      if (SHOULD_LOG_API_ERRORS) {
+        console.error(`Fiyat isteği zaman aşımına uğradı (${symbol}).`);
+      }
       return null;
     }
 
     if (error instanceof ApiError) {
-      console.error(`API hatası (${symbol}):`, {
-        message: error.message,
-        status: error.status,
-        code: error.code,
-        body: error.body
-      });
+      if (SHOULD_LOG_API_ERRORS) {
+        console.error(`API hatası (${symbol}):`, {
+          message: error.message,
+          status: error.status,
+          code: error.code,
+          body: error.body
+        });
+      }
       return null;
     }
 
-    console.error(`Beklenmeyen istek hatası (${symbol}):`, error);
+    if (SHOULD_LOG_API_ERRORS) {
+      console.error(`Beklenmeyen istek hatası (${symbol}):`, error);
+    }
     return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+export const fetchYahooQuotesBatch = async (symbols) => {
+  const normalizedSymbols = [...new Set(
+    (Array.isArray(symbols) ? symbols : [])
+      .map((symbol) => String(symbol || '').trim().toUpperCase())
+      .filter(Boolean)
+  )];
+
+  if (!normalizedSymbols.length) {
+    return [];
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), BATCH_REQUEST_TIMEOUT_MS);
+  const endpoint = `${API_BASE_URL}/api/quotes?symbols=${encodeURIComponent(normalizedSymbols.join(','))}`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json'
+      }
+    });
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch {
+      return normalizedSymbols.map((symbol) => ({ symbol, quote: null }));
+    }
+
+    if (!response.ok || payload?.ok === false) {
+      return normalizedSymbols.map((symbol) => ({ symbol, quote: null }));
+    }
+
+    const bySymbol = new Map();
+    const quoteList = Array.isArray(payload?.data) ? payload.data : [];
+    quoteList.forEach((item) => {
+      const itemSymbol = String(item?.symbol || '').trim().toUpperCase();
+      if (itemSymbol) {
+        bySymbol.set(itemSymbol, item);
+      }
+    });
+
+    return normalizedSymbols.map((symbol) => {
+      const rawItem = bySymbol.get(symbol);
+      if (!rawItem || rawItem.error) {
+        return { symbol, quote: null };
+      }
+
+      return {
+        symbol,
+        quote: extractQuoteFromItem(rawItem, symbol),
+      };
+    });
+  } catch (error) {
+    if (SHOULD_LOG_API_ERRORS && error?.name !== 'AbortError') {
+      console.error('Toplu fiyat isteği hatası:', error);
+    }
+
+    return normalizedSymbols.map((symbol) => ({ symbol, quote: null }));
   } finally {
     clearTimeout(timeoutId);
   }

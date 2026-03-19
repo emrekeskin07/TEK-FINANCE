@@ -8,8 +8,10 @@ const YahooFinance = require("yahoo-finance2").default;
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 const CACHE_TTL_MS = 60 * 1000;
+const STALE_CACHE_MAX_AGE_MS = Number(process.env.YF_STALE_CACHE_MS) || 6 * 60 * 60 * 1000;
 const TEFAS_HISTORY_URL = "https://www.tefas.gov.tr/api/DB/BindHistoryInfo";
-const YAHOO_MIN_INTERVAL_MS = Number(process.env.YF_INTERVAL_MS) || 2000;
+const YAHOO_MIN_INTERVAL_MS = Number(process.env.YF_INTERVAL_MS) || 800;
+const YAHOO_TIMEOUT_MS = Number(process.env.YF_TIMEOUT_MS) || 12000;
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36";
 const yahooFinance = new YahooFinance({
@@ -56,7 +58,7 @@ function parseSymbols(symbolsParam) {
   const uniqueSymbols = new Set(
     symbolsParam
       .split(",")
-      .map((symbol) => symbol.trim())
+      .map((symbol) => String(symbol || "").trim().toUpperCase())
       .filter(Boolean)
   );
 
@@ -64,13 +66,28 @@ function parseSymbols(symbolsParam) {
 }
 
 function getCachedQuote(symbol) {
-  const cached = quoteCache.get(symbol);
+  const key = String(symbol || "").trim().toUpperCase();
+  const cached = quoteCache.get(key);
   if (!cached) {
     return null;
   }
 
   if (Date.now() > cached.expiresAt) {
-    quoteCache.delete(symbol);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function getStaleCachedQuote(symbol) {
+  const key = String(symbol || "").trim().toUpperCase();
+  const cached = quoteCache.get(key);
+  if (!cached) {
+    return null;
+  }
+
+  if (Date.now() - cached.updatedAt > STALE_CACHE_MAX_AGE_MS) {
+    quoteCache.delete(key);
     return null;
   }
 
@@ -78,8 +95,10 @@ function getCachedQuote(symbol) {
 }
 
 function setCachedQuote(symbol, data) {
-  quoteCache.set(symbol, {
+  const key = String(symbol || "").trim().toUpperCase();
+  quoteCache.set(key, {
     data,
+    updatedAt: Date.now(),
     expiresAt: Date.now() + CACHE_TTL_MS,
   });
 }
@@ -123,6 +142,136 @@ function cleanQuote(quote) {
     regularMarketTime: toIsoDate(quote.regularMarketTime),
     fetchedAt: new Date().toISOString(),
   };
+}
+
+function getLastFiniteNumber(values) {
+  if (!Array.isArray(values)) {
+    return null;
+  }
+
+  for (let i = values.length - 1; i >= 0; i -= 1) {
+    const numericValue = Number(values[i]);
+    if (Number.isFinite(numericValue)) {
+      return numericValue;
+    }
+  }
+
+  return null;
+}
+
+function toIsoDateFromEpochSeconds(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return null;
+  }
+
+  return new Date(numeric * 1000).toISOString();
+}
+
+function buildQuoteFromChart(symbol, payload) {
+  const chartResult = payload?.chart?.result?.[0];
+  const chartError = payload?.chart?.error;
+
+  if (chartError) {
+    const error = new Error(chartError.description || chartError.code || "Yahoo chart response error");
+    error.status = 502;
+    throw error;
+  }
+
+  if (!chartResult) {
+    const error = new Error("Yahoo chart response is empty.");
+    error.status = 502;
+    throw error;
+  }
+
+  const meta = chartResult.meta || {};
+  const indicators = chartResult.indicators || {};
+  const quoteIndicator = Array.isArray(indicators.quote) ? indicators.quote[0] : null;
+
+  const close = getLastFiniteNumber(quoteIndicator?.close);
+  const open = getLastFiniteNumber(quoteIndicator?.open);
+  const high = getLastFiniteNumber(quoteIndicator?.high);
+  const low = getLastFiniteNumber(quoteIndicator?.low);
+  const volume = getLastFiniteNumber(quoteIndicator?.volume);
+
+  const regularMarketPrice = Number.isFinite(Number(meta.regularMarketPrice))
+    ? Number(meta.regularMarketPrice)
+    : close;
+
+  if (!Number.isFinite(regularMarketPrice) || regularMarketPrice <= 0) {
+    const error = new Error("Yahoo chart payload does not include a valid market price.");
+    error.status = 502;
+    throw error;
+  }
+
+  const previousClose = Number.isFinite(Number(meta.previousClose))
+    ? Number(meta.previousClose)
+    : (Number.isFinite(Number(meta.chartPreviousClose)) ? Number(meta.chartPreviousClose) : null);
+
+  const regularMarketChange = Number.isFinite(Number(meta.regularMarketChange))
+    ? Number(meta.regularMarketChange)
+    : (Number.isFinite(previousClose) ? regularMarketPrice - previousClose : null);
+
+  const regularMarketChangePercent = Number.isFinite(Number(meta.regularMarketChangePercent))
+    ? Number(meta.regularMarketChangePercent)
+    : (
+      Number.isFinite(previousClose) && previousClose > 0
+        ? ((regularMarketPrice - previousClose) / previousClose) * 100
+        : null
+    );
+
+  return {
+    symbol: meta.symbol || symbol,
+    shortName: meta.shortName || meta.longName || symbol,
+    currency: meta.currency || null,
+    fullExchangeName: meta.exchangeName || null,
+    marketState: meta.marketState || null,
+    regularMarketPrice,
+    regularMarketChange,
+    regularMarketChangePercent,
+    regularMarketPreviousClose: previousClose,
+    regularMarketOpen: open,
+    regularMarketDayHigh: high,
+    regularMarketDayLow: low,
+    regularMarketVolume: volume,
+    regularMarketTime: toIsoDateFromEpochSeconds(meta.regularMarketTime),
+  };
+}
+
+async function fetchYahooChartQuote(symbol) {
+  const endpoint = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
+
+  const response = await axios.get(endpoint, {
+    params: {
+      interval: "1d",
+      range: "1d",
+      includePrePost: "false",
+      events: "div,splits",
+    },
+    headers: {
+      "User-Agent": BROWSER_USER_AGENT,
+      Accept: "application/json, text/plain, */*",
+      "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+      Referer: "https://finance.yahoo.com/",
+      Origin: "https://finance.yahoo.com",
+    },
+    timeout: YAHOO_TIMEOUT_MS,
+    validateStatus: () => true,
+  });
+
+  if (response.status === 429) {
+    const error = new Error("Yahoo rate limit (429) nedeniyle fiyat alınamadı.");
+    error.status = 429;
+    throw error;
+  }
+
+  if (response.status < 200 || response.status >= 300) {
+    const error = new Error(`Yahoo chart request failed. HTTP ${response.status}`);
+    error.status = 502;
+    throw error;
+  }
+
+  return buildQuoteFromChart(symbol, response.data);
 }
 
 function formatTefasDate(date) {
@@ -359,16 +508,34 @@ async function fetchTefasFundSuggestion(query) {
 }
 
 async function getQuoteData(symbol) {
-  const cached = getCachedQuote(symbol);
+  const normalizedSymbol = String(symbol || "").trim().toUpperCase();
+  const cached = getCachedQuote(normalizedSymbol);
   if (cached) {
-    return { data: { ...cached, cached: true } };
+    return { data: { ...cached, cached: true, source: "cache" } };
   }
 
-  const quote = await runYahooRequest(() => yahooFinance.quote(symbol));
-  const cleaned = cleanQuote(quote);
-  setCachedQuote(symbol, cleaned);
+  try {
+    const quote = await runYahooRequest(() => fetchYahooChartQuote(normalizedSymbol));
+    const cleaned = cleanQuote(quote);
+    setCachedQuote(normalizedSymbol, cleaned);
 
-  return { data: { ...cleaned, cached: false } };
+    return { data: { ...cleaned, cached: false, source: "live" } };
+  } catch (error) {
+    const staleCached = getStaleCachedQuote(normalizedSymbol);
+    if (staleCached) {
+      return {
+        data: {
+          ...staleCached,
+          cached: true,
+          stale: true,
+          source: "stale-cache",
+        },
+        warning: error.message || "Live data unavailable, stale cache used.",
+      };
+    }
+
+    throw error;
+  }
 }
 
 app.get("/api/health", (req, res) => {
@@ -485,11 +652,14 @@ app.get("/api/finance", async (req, res) => {
     return res.json({
       ok: true,
       data: result.data,
+      ...(result.warning ? { warning: result.warning } : {}),
     });
   } catch (error) {
     console.error("Hata Detayı:", error.message);
 
-    return res.status(502).json({
+    const status = Number.isFinite(Number(error?.status)) ? Number(error.status) : 502;
+
+    return res.status(status).json({
       ok: false,
       error: error.message || "Failed to fetch quote",
       errorMessage: error.message,
@@ -513,7 +683,10 @@ app.get("/api/quotes", async (req, res) => {
       symbols.map(async (symbol) => {
         try {
           const result = await getQuoteData(symbol);
-          return result.data;
+          return {
+            ...result.data,
+            ...(result.warning ? { warning: result.warning } : {}),
+          };
         } catch (error) {
           console.error("Hata Detayı:", error.message);
 
