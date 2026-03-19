@@ -310,6 +310,10 @@ function isLikelyFundCodeQuery(query) {
   return /^[A-Z]{3}$/.test(query);
 }
 
+function isBistSymbol(symbol) {
+  return typeof symbol === "string" && symbol.trim().toUpperCase().endsWith(".IS");
+}
+
 async function fetchTefasFundSuggestion(query) {
   const fundData = await fetchTefasFundPrice(query, { timeoutMs: 6000 });
 
@@ -401,6 +405,17 @@ app.get("/api/search", async (req, res) => {
         break;
       }
     }
+
+    data.sort((a, b) => {
+      const aIsBist = isBistSymbol(a?.symbol);
+      const bIsBist = isBistSymbol(b?.symbol);
+
+      if (aIsBist === bIsBist) {
+        return 0;
+      }
+
+      return aIsBist ? -1 : 1;
+    });
 
     return res.json({
       ok: true,

@@ -585,10 +585,10 @@ export default function AssetModal({
                       value={formData.symbol}
                       autoComplete="off"
                       onChange={(e) => {
-                        const value = e.target.value;
+                        const value = e.target.value.toUpperCase();
                         setFormData((prev) => ({ ...prev, symbol: value }));
                         setSymbolValidationError('');
-                        if (selectedSuggestion?.symbol !== value.trim()) {
+                        if (selectedSuggestion?.symbol?.toUpperCase() !== value.trim()) {
                           setSelectedSuggestion(null);
                         }
                         if (!isStockLikeCategory || value.trim().length < MIN_SYMBOL_QUERY_LENGTH) {
@@ -606,7 +606,7 @@ export default function AssetModal({
                         window.setTimeout(() => setIsSuggestionOpen(false), 120);
                       }}
                       onKeyDown={handleSymbolKeyDown}
-                      className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
+                      className="w-full uppercase bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
                     />
 
                     {isStockLikeCategory && isSuggestionOpen && (isSearchingSymbol || symbolSuggestions.length > 0) ? (

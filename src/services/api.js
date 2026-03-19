@@ -1,4 +1,7 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
+const isLocalDevHost = typeof window !== 'undefined'
+  && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const DEFAULT_API_BASE_URL = isLocalDevHost ? 'http://localhost:5000' : '';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '');
 const REQUEST_TIMEOUT_MS = 8000;
 export const OUNCE_TO_GRAM = 31.1035;
 export const METAL_TICKERS = ['GC=F', 'SI=F', 'PL=F', 'PA=F'];
