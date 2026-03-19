@@ -302,8 +302,8 @@ export default function PortfolioTable({
 
   return (
     <>
-    <div className="bg-white/5 relative overflow-hidden backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/5 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/5 after:content-[''] flex flex-col">
-      <div className="p-6 md:p-8 border-b border-white/10 flex flex-wrap justify-between items-center gap-4">
+    <div className="bg-white/5 relative overflow-hidden backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/5 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/5 after:content-[''] flex flex-col">
+      <div className="p-6 md:p-8 border-b border-white/5 flex flex-wrap justify-between items-center gap-4">
         <div className="flex items-center gap-3 flex-wrap">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Coins className="w-5 h-5 text-blue-400" />
@@ -353,9 +353,9 @@ export default function PortfolioTable({
         ) : null}
       </div>
 
-      <div className="p-4 md:p-6 space-y-3">
+      <div className="p-6 md:p-8 space-y-3">
         {displayedPortfolio.length === 0 ? (
-          <div className="p-6 rounded-xl border border-white/10 bg-white/5 text-center text-sm text-slate-500">
+          <div className="p-6 rounded-xl border border-white/5 bg-white/5 text-center text-sm text-slate-500 shadow-2xl">
             {portfolio.length === 0
               ? 'Henüz bir varlık eklemediniz.'
               : 'Seçili filtreler için varlık bulunamadı.'}

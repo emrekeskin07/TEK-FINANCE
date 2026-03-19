@@ -137,7 +137,7 @@ export default function GrowthChart() {
     <motion.section
       layout
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-      className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-gray-800 bg-[#1A2232] p-4 shadow-2xl md:p-6"
+      className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl md:p-8"
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.12em] text-slate-300">

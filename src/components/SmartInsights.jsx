@@ -117,7 +117,7 @@ export default function SmartInsights({
   const hasWarnings = insights.some((insight) => insight.level !== 'good');
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 md:p-8 shadow-2xl">
+    <section className="relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 p-6 shadow-2xl backdrop-blur-xl md:p-8">
       {hasWarnings ? (
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,63,94,0.16),transparent_55%)] animate-pulse" />
       ) : null}
@@ -129,7 +129,7 @@ export default function SmartInsights({
       <p className="text-xs text-slate-500 mb-4">24 saatlik sert dususler ve enflasyon referansina gore risk sinyalleri</p>
 
       {insights.length === 0 ? (
-        <div className="rounded-xl border border-emerald-300/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+        <div className="rounded-xl border border-emerald-300/30 bg-emerald-500/10 p-6 text-sm text-emerald-200 shadow-2xl">
           Su an kritik bir uyari yok. Portfoy dagilimi dengeli gorunuyor.
         </div>
       ) : (
@@ -152,7 +152,7 @@ export default function SmartInsights({
                     onOpenInflationAnalysis();
                   }
                 } : undefined}
-                className={`min-w-[280px] md:min-w-[330px] snap-start rounded-xl border px-4 py-3 ${
+                className={`min-w-[280px] md:min-w-[330px] snap-start rounded-xl border p-6 shadow-2xl ${
                   isCritical
                     ? 'border-rose-300/45 bg-rose-500/10'
                     : isGood

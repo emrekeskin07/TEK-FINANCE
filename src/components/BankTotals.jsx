@@ -5,7 +5,7 @@ import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts } from '../utils/helpers';
 
 const OTHER_THRESHOLD_PERCENT = 1;
-const PIE_COLORS = ['#38bdf8', '#818cf8', '#22d3ee', '#34d399', '#f59e0b', '#f472b6', '#a78bfa', '#94a3b8'];
+const PIE_COLORS = ['#14b8a6', '#34d399', '#2dd4bf', '#22d3ee', '#38bdf8', '#60a5fa', '#818cf8', '#a78bfa'];
 
 export default function BankTotals({ bankTotals, rates, totalValue, selectedBank, onSelectBank }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
@@ -128,11 +128,11 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
       </div>
 
       {!hasData ? (
-        <div className="p-4 rounded-xl border border-white/10 bg-white/5 text-sm text-slate-400">
+        <div className="rounded-xl border border-white/5 bg-white/5 p-6 text-sm text-slate-400 shadow-2xl">
           Kayıtlı kurum verisi bulunmuyor.
         </div>
       ) : (
-        <div className="rounded-2xl border border-white/10 bg-black/15 p-3 md:p-4">
+        <div className="rounded-2xl border border-white/5 bg-black/15 p-6 shadow-2xl md:p-8">
           <div className="relative h-[250px] w-full min-h-[250px] min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

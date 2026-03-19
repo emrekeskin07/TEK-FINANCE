@@ -30,7 +30,7 @@ export default function AssetList() {
     <motion.section
       layout
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-      className="col-span-12 md:col-span-9 md:order-4 rounded-2xl border border-gray-800 bg-[#1A2232] p-4 shadow-2xl md:p-6"
+      className="col-span-12 md:col-span-9 md:order-4 rounded-2xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl md:p-8"
     >
       <PortfolioTable
         portfolio={portfolio}

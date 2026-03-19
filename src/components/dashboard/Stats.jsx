@@ -25,9 +25,9 @@ export default function Stats({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="col-span-12 space-y-4 rounded-2xl border border-gray-800 bg-[#1A2232] p-4 shadow-2xl md:p-6"
+      className="col-span-12 space-y-4 rounded-2xl border border-white/5 bg-[#1A2232] p-6 shadow-2xl md:p-8"
     >
-      <Card className="border-white/10 bg-white/5 px-4 py-4 md:px-5">
+      <Card className="border-white/5 bg-white/5 p-6 md:p-8">
         <h2 className="text-lg font-bold text-slate-100 sm:text-xl md:text-2xl">
           <SplitText text={`Hoş Geldin ${greetingName}`} by="chars" stagger={0.025} />
         </h2>
@@ -36,7 +36,7 @@ export default function Stats({
 
       <SpotlightCard
         spotlightColor="rgba(99, 102, 241, 0.18)"
-        className="relative overflow-hidden rounded-3xl border border-indigo-500/25 bg-gradient-to-br from-indigo-900/35 via-[#16233d] to-[#0b1120] p-5 shadow-[0_28px_80px_rgba(8,15,32,0.6)] sm:p-6 md:p-8 lg:p-10"
+        className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-indigo-900/35 via-[#16233d] to-[#0b1120] p-6 shadow-2xl md:p-8 lg:p-10"
       >
         <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
