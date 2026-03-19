@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, ShoppingCart, ArrowUpRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
@@ -204,6 +204,7 @@ export default function PortfolioTable({
   };
 
   const showSkeleton = loading && !(lastUpdated instanceof Date);
+  const [openPortfolios, setOpenPortfolios] = useState({});
   const [expandedAssetId, setExpandedAssetId] = useState(null);
   const [sellModalOpen, setSellModalOpen] = useState(false);
   const [sellTarget, setSellTarget] = useState(null);
@@ -211,8 +212,28 @@ export default function PortfolioTable({
   const [sellPrice, setSellPrice] = useState('');
   const [sellSubmitting, setSellSubmitting] = useState(false);
 
+  useEffect(() => {
+    setOpenPortfolios((prev) => {
+      const nextState = {};
+      groupedDisplayedPortfolio.forEach((group) => {
+        const key = String(group.portfolioName || 'Genel Portföy');
+        nextState[key] = prev[key] ?? true;
+      });
+
+      return nextState;
+    });
+  }, [groupedDisplayedPortfolio]);
+
   const handleAccordionToggle = (assetId) => {
     setExpandedAssetId((prevId) => (prevId === assetId ? null : assetId));
+  };
+
+  const togglePortfolioAccordion = (portfolioName) => {
+    const key = String(portfolioName || 'Genel Portföy');
+    setOpenPortfolios((prev) => ({
+      ...prev,
+      [key]: !(prev[key] ?? true),
+    }));
   };
 
   const openSellModal = (item, activePrice) => {
@@ -337,25 +358,49 @@ export default function PortfolioTable({
         ) : groupedDisplayedPortfolio.map((group) => {
           const groupProfitPercent = group.totalCost > 0 ? ((group.totalProfit / group.totalCost) * 100).toFixed(2) : '0.00';
 
+          const portfolioKey = String(group.portfolioName || 'Genel Portföy');
+          const isPortfolioOpen = openPortfolios[portfolioKey] ?? true;
+
           return (
-            <section key={`portfolio-group-${group.portfolioName}`} className="space-y-3">
-              <div className="rounded-xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 md:px-5">
+            <section key={`portfolio-group-${group.portfolioName}`} className="space-y-2">
+              <button
+                type="button"
+                onClick={() => togglePortfolioAccordion(portfolioKey)}
+                aria-expanded={isPortfolioOpen}
+                className="w-full rounded-xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 text-left transition-colors hover:bg-blue-500/15 md:px-5"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Portföy</p>
                     <h4 className="text-base font-semibold text-slate-100">{group.portfolioName}</h4>
                     <p className="mt-0.5 text-xs text-slate-400">{group.items.length} varlık</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Toplam Değer</p>
-                    <p className="text-sm font-semibold text-slate-100">{renderCurrencyWithMutedSymbol(group.totalValue)}</p>
-                    <p className={`text-[11px] ${group.totalProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
-                      {isPrivacyActive ? maskValue(`%${groupProfitPercent}`) : `%${groupProfitPercent}`}
-                    </p>
+                  <div className="flex items-start gap-3">
+                    <div className="text-right">
+                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Toplam Değer</p>
+                      <p className="text-sm font-semibold text-slate-100">{renderCurrencyWithMutedSymbol(group.totalValue)}</p>
+                      <p className={`text-[11px] ${group.totalProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                        {isPrivacyActive ? maskValue(`%${groupProfitPercent}`) : `%${groupProfitPercent}`}
+                      </p>
+                    </div>
+                    <span className={`mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/20 transition-transform ${isPortfolioOpen ? 'rotate-180' : 'rotate-0'}`}>
+                      <ChevronDown className="h-4 w-4 text-slate-300" />
+                    </span>
                   </div>
                 </div>
-              </div>
+              </button>
 
+              <AnimatePresence initial={false}>
+                {isPortfolioOpen ? (
+                  <motion.div
+                    key={`portfolio-items-${portfolioKey}`}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.24, ease: 'easeOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="ml-3 space-y-2 border-l border-white/10 pl-3 md:ml-4 md:pl-4">
               {group.items.map(({ item, livePrice, activePrice, itemTotalValue, itemCost, itemProfit }) => {
                 const categoryName = item.category || 'Diğer';
                 const isCategorySelected = selectedCategory === categoryName;
@@ -524,6 +569,10 @@ export default function PortfolioTable({
             </article>
                 );
               })}
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </section>
           );
         })}
