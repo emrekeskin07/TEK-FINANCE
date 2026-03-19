@@ -449,6 +449,8 @@ app.get("/api/finance", async (req, res) => {
       data: result.data,
     });
   } catch (error) {
+    console.error("!!! Yahoo API Hatasi:", error.message);
+
     return res.status(502).json({
       ok: false,
       error: error.message || "Failed to fetch quote",
