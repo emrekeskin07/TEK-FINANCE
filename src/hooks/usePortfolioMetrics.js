@@ -96,14 +96,23 @@ export function usePortfolioMetrics({
   const lineChartData = useMemo(() => {
     const total = Number(totalValue) || 0;
     const dayCount = 7;
-    const labels = Array.from({ length: dayCount }, (_, index) => {
+    const points = Array.from({ length: dayCount }, (_, index) => {
       const date = new Date();
+      date.setHours(0, 0, 0, 0);
       date.setDate(date.getDate() - (dayCount - 1 - index));
-      return date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' });
+
+      return {
+        label: date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }),
+        timestamp: date.getTime(),
+      };
     });
 
     const series = new Array(dayCount);
-    series[dayCount - 1] = { date: labels[dayCount - 1], value: total };
+    series[dayCount - 1] = {
+      date: points[dayCount - 1].label,
+      timestamp: points[dayCount - 1].timestamp,
+      value: total,
+    };
 
     let nextValue = total;
     for (let index = dayCount - 2; index >= 0; index -= 1) {
@@ -112,7 +121,8 @@ export function usePortfolioMetrics({
       const previousValue = Math.max(0, nextValue / safeDivisor);
 
       series[index] = {
-        date: labels[index],
+        date: points[index].label,
+        timestamp: points[index].timestamp,
         value: Number(previousValue.toFixed(2)),
       };
 

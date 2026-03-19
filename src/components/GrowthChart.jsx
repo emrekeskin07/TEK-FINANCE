@@ -6,6 +6,16 @@ import { usePrivacy } from '../context/PrivacyContext';
 import { useDashboardData } from '../context/DashboardContext';
 import { formatCurrencyParts } from '../utils/helpers';
 
+const RANGE_OPTIONS = [
+  { key: '1G', label: '1G', days: 1 },
+  { key: '5G', label: '5G', days: 5 },
+  { key: '1A', label: '1A', days: 30 },
+  { key: '3A', label: '3A', days: 90 },
+  { key: '1Y', label: '1Y', days: 365 },
+  { key: '5Y', label: '5Y', days: 1825 },
+  { key: 'TUMU', label: 'TÜMÜ', days: null },
+];
+
 function TooltipContent({ active, payload, formatter }) {
   if (!active || !payload || payload.length === 0) {
     return null;
@@ -26,11 +36,42 @@ export default function GrowthChart() {
   const { isPrivacyActive, maskValue } = usePrivacy();
   const containerRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
+  const [selectedRange, setSelectedRange] = useState('TUMU');
 
   const safeLineChartData = useMemo(
     () => (Array.isArray(lineChartData) ? lineChartData : []),
     [lineChartData]
   );
+
+  const filteredLineChartData = useMemo(() => {
+    if (!safeLineChartData.length) {
+      return [];
+    }
+
+    const selectedOption = RANGE_OPTIONS.find((option) => option.key === selectedRange);
+    if (!selectedOption || selectedOption.days === null) {
+      return safeLineChartData;
+    }
+
+    const latestTimestamp = safeLineChartData.reduce((maxValue, point) => {
+      const timestamp = Number(point?.timestamp || 0);
+      return Number.isFinite(timestamp) ? Math.max(maxValue, timestamp) : maxValue;
+    }, 0);
+
+    if (!latestTimestamp) {
+      return safeLineChartData.slice(-Math.max(2, Math.min(selectedOption.days, safeLineChartData.length)));
+    }
+
+    const rangeMs = selectedOption.days * 24 * 60 * 60 * 1000;
+    const threshold = latestTimestamp - rangeMs;
+
+    const timeFiltered = safeLineChartData.filter((point) => Number(point?.timestamp || 0) >= threshold);
+    if (timeFiltered.length >= 2) {
+      return timeFiltered;
+    }
+
+    return safeLineChartData.slice(-Math.max(2, Math.min(selectedOption.days, safeLineChartData.length)));
+  }, [safeLineChartData, selectedRange]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -74,7 +115,7 @@ export default function GrowthChart() {
   };
 
   const getAreaDomainMin = (dataMin) => {
-    const dataMax = safeLineChartData.reduce((maxValue, point) => {
+    const dataMax = filteredLineChartData.reduce((maxValue, point) => {
       const value = Number(point?.value);
       return Number.isFinite(value) ? Math.max(maxValue, value) : maxValue;
     }, Number(dataMin || 0));
@@ -83,7 +124,7 @@ export default function GrowthChart() {
   };
 
   const getAreaDomainMax = (dataMax) => {
-    const dataMin = safeLineChartData.reduce((minValue, point) => {
+    const dataMin = filteredLineChartData.reduce((minValue, point) => {
       const value = Number(point?.value);
       return Number.isFinite(value) ? Math.min(minValue, value) : minValue;
     }, Number(dataMax || 0));
@@ -97,15 +138,37 @@ export default function GrowthChart() {
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
       className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-gray-800 bg-[#1A2232] p-4 shadow-2xl md:p-6"
     >
-      <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.12em] text-slate-300">
-        <TrendingUp className="h-4 w-4 text-emerald-400" />
-        Portföy Gelişimi (Son 7 Gün)
-      </h3>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.12em] text-slate-300">
+          <TrendingUp className="h-4 w-4 text-emerald-400" />
+          Portföy Gelişimi
+        </h3>
+
+        <div className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-black/20 p-1">
+          {RANGE_OPTIONS.map((option) => {
+            const isActive = selectedRange === option.key;
+            return (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => setSelectedRange(option.key)}
+                className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all duration-200 ${
+                  isActive
+                    ? 'bg-cyan-400/25 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.3)]'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div ref={containerRef} className="relative h-[260px] min-h-[260px] w-full min-w-0 sm:h-[320px] md:h-[360px]">
-        {isReady && safeLineChartData.length > 0 ? (
+        {isReady && filteredLineChartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={safeLineChartData}>
+            <AreaChart data={filteredLineChartData}>
               <defs>
                 <linearGradient id="growthChartGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.28} />

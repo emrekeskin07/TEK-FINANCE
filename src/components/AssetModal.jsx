@@ -208,6 +208,7 @@ export default function AssetModal({
   closeModal,
   editingAssetId,
   initialData,
+  mode = 'buy',
   onAdd,
   onUpdate,
   portfolioNameOptions = [],
@@ -724,14 +725,21 @@ export default function AssetModal({
 
   const isStep2Active = Boolean(formData.bank || formData.category);
   const isStep3Active = Boolean(formData.symbol || isCommodityCategory);
+  const isEditMode = Boolean(editingAssetId);
+  const isSellMode = !isEditMode && mode === 'sell';
+  const modalTitle = isEditMode ? 'Düzenleme Modu' : (isSellMode ? 'Satış Modu' : 'Alış Modu');
+  const modalSubtitle = isEditMode
+    ? 'Mevcut varlığı güncelle'
+    : (isSellMode ? 'Varlık satışı için düzenleme' : 'Yeni varlık alımı için ekleme');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-[#0f172a] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-2xl overflow-y-auto hide-scrollbar animate-in fade-in zoom-in duration-200">
         <div className="flex justify-between items-center p-6 border-b border-white/10">
-          <h3 className="text-xl font-semibold text-slate-100">
-            {editingAssetId ? 'Varlığı Düzenle' : 'Yeni Varlık Ekle'}
-          </h3>
+          <div>
+            <h3 className="text-xl font-semibold text-slate-100">{modalTitle}</h3>
+            <p className="mt-0.5 text-xs text-slate-400">{modalSubtitle}</p>
+          </div>
           <button onClick={closeModal} className="text-slate-400 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>

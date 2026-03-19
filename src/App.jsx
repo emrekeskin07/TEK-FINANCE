@@ -54,6 +54,7 @@ export default function App() {
   const [editingAssetId, setEditingAssetId] = useState(null);
   const [editingAssetData, setEditingAssetData] = useState(null);
   const [initialPortfolioName, setInitialPortfolioName] = useState('');
+  const [assetModalMode, setAssetModalMode] = useState('buy');
   const [isAlertDrawerOpen, setIsAlertDrawerOpen] = useState(false);
 
   const { portfolio, addAsset, updateAsset, removeAsset, sellAsset } = usePortfolio(authUser?.id, (updatedPort) => {
@@ -102,6 +103,15 @@ export default function App() {
     const forcePrefill = typeof context === 'object' && context !== null
       ? Boolean(context.forcePrefill)
       : false;
+    const prefillData = typeof context === 'object' && context !== null
+      ? (context.prefillData || null)
+      : null;
+    const requestedMode = typeof context === 'object' && context !== null
+      ? context.mode
+      : 'buy';
+    const resolvedMode = requestedMode === 'sell'
+      ? 'sell'
+      : (requestedMode === 'edit' ? 'edit' : 'buy');
 
     // Dashboard acilisinda alan bos gelsin; detay sayfasi veya URL'den acilis senaryosunda prefill kullan.
     const resolvedPrefill = String(
@@ -110,13 +120,15 @@ export default function App() {
     ).trim();
     const shouldUsePrefill = Boolean(resolvedPrefill) && (activePage !== 'dashboard' || forcePrefill);
 
+    setAssetModalMode(resolvedMode);
     setInitialPortfolioName(shouldUsePrefill ? resolvedPrefill : '');
-    setEditingAssetData(null);
+    setEditingAssetData(prefillData);
     setEditingAssetId(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (item) => {
+    setAssetModalMode('edit');
     setEditingAssetData(item);
     setEditingAssetId(item.id);
     setIsModalOpen(true);
@@ -127,6 +139,25 @@ export default function App() {
     setEditingAssetData(null);
     setEditingAssetId(null);
     setInitialPortfolioName('');
+    setAssetModalMode('buy');
+  };
+
+  const handleQuickBuyAsset = (item) => {
+    if (!item) {
+      return;
+    }
+
+    const portfolioName = String(item.portfolioName || item.portfolio_name || '').trim();
+
+    openAddModal({
+      mode: 'buy',
+      portfolioName,
+      forcePrefill: true,
+      prefillData: {
+        ...item,
+        amount: '',
+      },
+    });
   };
 
   const handleManualRefresh = () => {
@@ -250,6 +281,7 @@ export default function App() {
     clearDashboardFilters,
     openEditModal,
     openAddModal,
+    onQuickBuyAsset: handleQuickBuyAsset,
     sellAsset,
     removeAsset,
   }), [
@@ -272,6 +304,7 @@ export default function App() {
     clearDashboardFilters,
     openEditModal,
     openAddModal,
+    handleQuickBuyAsset,
     sellAsset,
     removeAsset,
   ]);
@@ -502,6 +535,7 @@ export default function App() {
           closeModal={closeModal}
           editingAssetId={editingAssetId}
           initialData={editingAssetData}
+          mode={assetModalMode}
           onAdd={addAsset}
           onUpdate={updateAsset}
           portfolioNameOptions={portfolioNameOptions}

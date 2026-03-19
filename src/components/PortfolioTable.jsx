@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, ShoppingCart, ArrowUpRight, Plus } from 'lucide-react';
+import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, TrendingUp, TrendingDown, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts, formatTickerName, groupAssetsByPortfolio } from '../utils/helpers';
@@ -47,6 +47,7 @@ export default function PortfolioTable({
   setSortConfig,
   onClearFilter,
   openEditModal,
+  onQuickBuyAsset,
   onQuickAddPortfolio,
   handleSellAsset,
   handleRemoveAsset,
@@ -547,15 +548,25 @@ export default function PortfolioTable({
 
                       <div className="flex items-center justify-end gap-2 pt-1">
                         <button
-                          onClick={() => openSellModal(item, activePrice)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/20 transition-colors"
-                          title="Sat"
+                          type="button"
+                          onClick={() => onQuickBuyAsset?.(item)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-400/30 bg-emerald-500 px-2.5 py-1.5 text-xs font-semibold text-emerald-50 transform-gpu transition-all duration-200 hover:scale-105 hover:shadow-[0_0_24px_rgba(16,185,129,0.45)]"
+                          title="Al"
                         >
-                          <ShoppingCart className="w-3.5 h-3.5" />
-                          <span>Sat</span>
-                          <ArrowUpRight className="w-3.5 h-3.5 opacity-85" />
+                          <TrendingUp className="w-3.5 h-3.5" />
+                          <span>Al</span>
                         </button>
                         <button
+                          type="button"
+                          onClick={() => openSellModal(item, activePrice)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-rose-400/30 bg-rose-500 px-2.5 py-1.5 text-xs font-semibold text-rose-50 transform-gpu transition-all duration-200 hover:scale-105 hover:shadow-[0_0_24px_rgba(244,63,94,0.45)]"
+                          title="Sat"
+                        >
+                          <TrendingDown className="w-3.5 h-3.5" />
+                          <span>Sat</span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => openEditModal(item)}
                           className="p-2 rounded-lg text-slate-300 hover:text-blue-300 hover:bg-blue-400/10 transition-colors"
                           title="Düzenle"
@@ -563,6 +574,7 @@ export default function PortfolioTable({
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleRemoveAsset(item.id)}
                           className="p-2 rounded-lg text-slate-300 hover:text-rose-300 hover:bg-rose-400/10 transition-colors"
                           title="Sil"
@@ -604,9 +616,10 @@ export default function PortfolioTable({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h4 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4 text-emerald-300" />
-                  Parçalı Satış
+                  <TrendingDown className="h-4 w-4 text-rose-300" />
+                  Satış Modu
                 </h4>
+                <p className="mt-0.5 text-[11px] text-slate-500">Parçalı satış işlemi</p>
                 <p className="mt-1 text-xs text-slate-400">{sellTarget.bank || 'Banka Belirtilmedi'} • {sellTarget.symbol}</p>
               </div>
               <button

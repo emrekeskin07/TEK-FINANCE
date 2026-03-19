@@ -21,6 +21,7 @@ export default function AssetList() {
     clearDashboardFilters,
     openEditModal,
     openAddModal,
+    onQuickBuyAsset,
     sellAsset,
     removeAsset,
   } = useDashboardData();
@@ -47,6 +48,7 @@ export default function AssetList() {
         setSortConfig={setSortConfig}
         onClearFilter={clearDashboardFilters}
         openEditModal={openEditModal}
+        onQuickBuyAsset={onQuickBuyAsset}
         onQuickAddPortfolio={(portfolioName) => openAddModal({ portfolioName, forcePrefill: true })}
         handleSellAsset={sellAsset}
         handleRemoveAsset={removeAsset}
