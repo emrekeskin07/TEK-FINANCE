@@ -1,14 +1,20 @@
 import React from 'react';
 import { Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { formatCurrencyParts, formatMaskedCurrency, formatMaskedPercent } from '../utils/helpers';
+import { usePrivacy } from '../context/PrivacyContext';
+import { formatCurrencyParts } from '../utils/helpers';
 
-export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue, selectedBank, onSelectBank, isPrivate = false }) {
+export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue, selectedBank, onSelectBank }) {
+  const { isPrivacyActive, maskValue } = usePrivacy();
   const bankNames = Object.keys(bankTotals);
 
   const renderCurrencyWithMutedSymbol = (value) => {
-    if (isPrivate) {
-      return <span>{formatMaskedCurrency(baseCurrency)}</span>;
+    const plainCurrencyText = formatCurrencyParts(value, baseCurrency, rates)
+      .map((part) => part.value)
+      .join('');
+
+    if (isPrivacyActive) {
+      return <span>{maskValue(plainCurrencyText)}</span>;
     }
 
     return (
@@ -58,7 +64,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
               <h4 className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400/90 truncate" title={bankName}>{bankName}</h4>
               <span className="shrink-0 bg-white/10 text-sky-200/90 text-[11px] font-semibold px-2 py-1 rounded-full">
-                {isPrivate ? formatMaskedPercent() : `%${weightPercentage.toFixed(1)}`}
+                {isPrivacyActive ? maskValue(`%${weightPercentage.toFixed(1)}`) : `%${weightPercentage.toFixed(1)}`}
               </span>
             </div>
             <p className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100">

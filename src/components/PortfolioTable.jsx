@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Coins, AlertCircle, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, DollarSign } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { formatCurrencyParts, formatMaskedCurrency, formatMaskedPercent } from '../utils/helpers';
+import { usePrivacy } from '../context/PrivacyContext';
+import { formatCurrencyParts } from '../utils/helpers';
 import { resolveAssetLivePrice, unitTypeToLabel } from '../utils/assetPricing';
 import { getCategoryBadgeStyle } from '../utils/categoryStyles';
 import { calculateRealReturnPercent, getLatestAnnualInflationRate } from '../utils/financeMath';
@@ -47,8 +48,8 @@ export default function PortfolioTable({
   openEditModal,
   handleSellAsset,
   handleRemoveAsset,
-  isPrivate = false,
 }) {
+  const { isPrivacyActive, maskValue } = usePrivacy();
   const filteredPortfolio = portfolio.filter((item) => {
     const bankName = item.bank || 'Banka Belirtilmedi';
     const categoryName = item.category || 'Diğer';
@@ -121,8 +122,12 @@ export default function PortfolioTable({
     });
 
   const renderCurrencyWithMutedSymbol = (value) => {
-    if (isPrivate) {
-      return <span>{formatMaskedCurrency(baseCurrency)}</span>;
+    const plainCurrencyText = formatCurrencyParts(value, baseCurrency, rates)
+      .map((part) => part.value)
+      .join('');
+
+    if (isPrivacyActive) {
+      return <span>{maskValue(plainCurrencyText)}</span>;
     }
 
     return (
@@ -394,12 +399,12 @@ export default function PortfolioTable({
                             {itemProfit > 0 ? '+' : ''}{renderCurrencyWithMutedSymbol(itemProfit)}
                           </p>
                           <p className={`text-[11px] ${itemProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'}`}>
-                            {isPrivate ? formatMaskedPercent() : `${itemProfit > 0 ? '+' : ''}${itemProfitPercent}%`}
+                            {isPrivacyActive ? maskValue(`${itemProfit > 0 ? '+' : ''}${itemProfitPercent}%`) : `${itemProfit > 0 ? '+' : ''}${itemProfitPercent}%`}
                           </p>
                         </div>
                         <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
                           <p className="text-[11px] text-slate-500">Portföy Payı</p>
-                          <p className="text-sm font-semibold text-blue-300">{isPrivate ? formatMaskedPercent() : `%${itemWeightPercent}`}</p>
+                          <p className="text-sm font-semibold text-blue-300">{isPrivacyActive ? maskValue(`%${itemWeightPercent}`) : `%${itemWeightPercent}`}</p>
                           {isCashAsset ? (
                             <p className="text-[11px] text-cyan-200 mt-1">{getHesapDetayi(item)}</p>
                           ) : null}

@@ -21,10 +21,9 @@ import AuthPage from './components/AuthPage';
 import MalVarligiPage from './components/MalVarligiPage';
 import EnflasyonAnaliziPage from './components/EnflasyonAnaliziPage';
 import { SyncContext } from './context/SyncContext';
-import { formatCurrencyParts, formatMaskedCurrency, formatMaskedPercent } from './utils/helpers';
+import { usePrivacy } from './context/PrivacyContext';
+import { formatCurrencyParts } from './utils/helpers';
 import { buildAlertInsights } from './utils/alertInsights';
-
-const PRIVACY_MODE_STORAGE_KEY = 'tek-finance:privacy-mode';
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -34,13 +33,7 @@ export default function App() {
   const [sortConfig, setSortConfig] = useState({ key: 'profit', direction: 'desc' });
   const [inflationSource, setInflationSource] = useState('enag');
   const [lastSyncTime, setLastSyncTime] = useState(null);
-  const [isPrivate, setIsPrivate] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    return window.localStorage.getItem(PRIVACY_MODE_STORAGE_KEY) === '1';
-  });
+  const { isPrivacyActive, maskValue } = usePrivacy();
 
   const {
     authUser,
@@ -83,14 +76,6 @@ export default function App() {
       setLastSyncTime(lastUpdated.getTime());
     }
   }, [lastUpdated]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    window.localStorage.setItem(PRIVACY_MODE_STORAGE_KEY, isPrivate ? '1' : '0');
-  }, [isPrivate]);
 
   const handleBankSelect = (bankName) => {
     setSelectedBank((prevSelected) => (prevSelected === bankName ? null : bankName));
@@ -199,8 +184,12 @@ export default function App() {
   };
 
   const renderCurrencyWithMutedSymbol = (value) => {
-    if (isPrivate) {
-      return <span>{formatMaskedCurrency(baseCurrency)}</span>;
+    const plainCurrencyText = formatCurrencyParts(value, baseCurrency, rates)
+      .map((part) => part.value)
+      .join('');
+
+    if (isPrivacyActive) {
+      return <span>{maskValue(plainCurrencyText)}</span>;
     }
 
     return (
@@ -213,8 +202,6 @@ export default function App() {
       </>
     );
   };
-
-  const renderMaskedPercent = () => formatMaskedPercent();
 
 
   if (authLoading) {
@@ -285,8 +272,6 @@ export default function App() {
           onToggleAlerts={handleToggleAlertDrawer}
           hasActiveAlerts={activeAlertCount > 0}
           alertCount={activeAlertCount}
-          isPrivate={isPrivate}
-          onTogglePrivacy={() => setIsPrivate((prev) => !prev)}
         />
       </div>
 
@@ -351,7 +336,7 @@ export default function App() {
                       </h2>
                       <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5">
                         <span className={`text-sm font-bold ${totalProfit >= 0 ? 'text-[#2BFF88]' : 'text-[#FF3B6B]'}`}>
-                          {isPrivate ? renderMaskedPercent() : `${totalProfit > 0 ? '+' : ''}${animatedProfitPercent.toFixed(2)}%`}
+                          {isPrivacyActive ? maskValue(`${totalProfit > 0 ? '+' : ''}${animatedProfitPercent.toFixed(2)}%`) : `${totalProfit > 0 ? '+' : ''}${animatedProfitPercent.toFixed(2)}%`}
                         </span>
                         <span className="text-xs text-slate-400">toplam performans</span>
                       </div>
@@ -377,7 +362,7 @@ export default function App() {
                 >
                   Reel Getiri ({selectedInflationSourceLabel})
                   <span className="font-bold">
-                    {isPrivate ? renderMaskedPercent() : `${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`}
+                    {isPrivacyActive ? maskValue(`${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`) : `${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`}
                   </span>
                 </span>
               </div>
@@ -396,7 +381,6 @@ export default function App() {
                   totalValue={totalValue}
                   selectedBank={selectedBank}
                   onSelectBank={handleBankSelect}
-                  isPrivate={isPrivate}
                 />
               </motion.section>
 
@@ -419,7 +403,6 @@ export default function App() {
                   marketData={marketData}
                   lineChartData={lineChartData}
                   showTopCards={false}
-                  isPrivate={isPrivate}
                 />
               </motion.section>
 
@@ -480,7 +463,6 @@ export default function App() {
                   openEditModal={openEditModal}
                   handleSellAsset={sellAsset}
                   handleRemoveAsset={removeAsset}
-                  isPrivate={isPrivate}
                 />
               </motion.section>
             </div>

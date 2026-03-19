@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Wallet, Activity, DollarSign, TrendingUp, TrendingDown, PieChart as PieChartIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, XAxis, YAxis, CartesianGrid, Sector } from 'recharts';
 import { animate, motion, useSpring, useTransform } from 'framer-motion';
-import { formatCurrencyParts, convertCurrency, formatMaskedCurrency, formatMaskedPercent } from '../utils/helpers';
+import { usePrivacy } from '../context/PrivacyContext';
+import { formatCurrencyParts, convertCurrency } from '../utils/helpers';
 import { resolveAssetActivePrice } from '../utils/assetPricing';
 import { getCategoryColor } from '../utils/categoryStyles';
 import { CHART_ANIMATION, CHART_DONUT, CHART_LINE, CHART_THEME, darkenHex, lightenHex } from '../utils/chartConfig';
@@ -178,8 +179,8 @@ export default function SummaryCards({
   marketData,
   lineChartData,
   showTopCards = true,
-  isPrivate = false,
 }) {
+  const { isPrivacyActive, maskValue } = usePrivacy();
   
   const chartData = Object.keys(bankTotals).map(bankName => ({
     name: bankName,
@@ -259,7 +260,10 @@ export default function SummaryCards({
       .sort((a, b) => b.total - a.total);
   }, [detailedAssetRows, totalValue]);
 
-  const formatPercent = (value) => (isPrivate ? formatMaskedPercent() : `%${Number(value || 0).toFixed(1)}`);
+  const formatPercent = (value) => {
+    const formatted = `%${Number(value || 0).toFixed(1)}`;
+    return isPrivacyActive ? maskValue(formatted) : formatted;
+  };
 
   const netWorthCategoryData = [...categoryChartData];
   if (convertedPhysicalAssets > 0) {
@@ -292,8 +296,12 @@ export default function SummaryCards({
   const premiumCardHighlightClass = "relative overflow-hidden before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/5 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/5 after:content-['']";
 
   const renderCurrencyWithMutedSymbol = (value) => {
-    if (isPrivate) {
-      return <span>{formatMaskedCurrency(baseCurrency)}</span>;
+    const plainCurrencyText = formatCurrencyParts(value, baseCurrency, rates)
+      .map((part) => part.value)
+      .join('');
+
+    if (isPrivacyActive) {
+      return <span>{maskValue(plainCurrencyText)}</span>;
     }
 
     return (
@@ -396,11 +404,13 @@ export default function SummaryCards({
   const selectedSlicePercent = selectedSlice ? getPiePercent(selectedSlice.value) : null;
 
   const formatChartCurrency = (value) => {
-    if (isPrivate) {
-      return formatMaskedCurrency('TRY');
+    const formatted = TRY_CURRENCY_FORMATTER.format(Number(value || 0));
+
+    if (isPrivacyActive) {
+      return maskValue(formatted);
     }
 
-    return TRY_CURRENCY_FORMATTER.format(Number(value || 0));
+    return formatted;
   };
 
   const renderPieLegend = ({ payload }) => {
@@ -427,7 +437,7 @@ export default function SummaryCards({
                 />
                 <span className="truncate text-xs font-medium text-slate-300/90">{entry?.value}</span>
               </div>
-              <span className="text-[11px] font-semibold text-slate-400">{isPrivate ? formatMaskedPercent() : `%${itemPercent.toFixed(1)}`}</span>
+              <span className="text-[11px] font-semibold text-slate-400">{isPrivacyActive ? maskValue(`%${itemPercent.toFixed(1)}`) : `%${itemPercent.toFixed(1)}`}</span>
             </li>
           );
         })}
@@ -531,7 +541,7 @@ export default function SummaryCards({
           </div>
           <div className="flex items-center gap-2 text-sm relative z-10">
             <span className={`font-semibold px-2 py-0.5 rounded-md ${totalProfit >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>
-              {isPrivate ? formatMaskedPercent() : `${totalProfit > 0 ? '+' : ''}${profitPercentage}%`}
+              {isPrivacyActive ? maskValue(`${totalProfit > 0 ? '+' : ''}${profitPercentage}%`) : `${totalProfit > 0 ? '+' : ''}${profitPercentage}%`}
             </span>
             <span className="text-slate-400">tüm zamanlar</span>
           </div>
@@ -649,7 +659,7 @@ export default function SummaryCards({
                       >
                         {formatChartCurrency(selectedSlice.value)}
                       </p>
-                      <p className="text-[11px] font-semibold text-slate-400 mt-0.5">{isPrivate ? formatMaskedPercent() : `%${selectedSlicePercent?.toFixed(1)}`}</p>
+                      <p className="text-[11px] font-semibold text-slate-400 mt-0.5">{isPrivacyActive ? maskValue(`%${selectedSlicePercent?.toFixed(1)}`) : `%${selectedSlicePercent?.toFixed(1)}`}</p>
                     </div>
                   ) : (
                     <div className="text-center px-4">
