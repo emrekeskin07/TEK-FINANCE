@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { NumericFormat } from 'react-number-format';
 import { fetchSymbolSuggestions } from '../services/api';
@@ -13,15 +13,36 @@ const CATEGORY_OPTIONS = ['Hisse Senedi', 'Yatırım Fonu', 'Döviz', 'Değerli 
 const HESAP_TURU_OPTIONS = ['Vadesiz', 'Vadeli (Mevduat)', 'Faizsiz Katılım'];
 const SAKLAMA_TURU_OPTIONS = ['Banka', 'Fiziksel/Evde'];
 const MIN_SYMBOL_QUERY_LENGTH = 2;
-const CUSTOM_INSTITUTION_VALUE = '__MANUAL__';
+const MANUAL_INSTITUTION_LABEL = 'Diğer (Manuel)';
 
 const INSTITUTION_OPTIONS = [
-  'Garanti BBVA',
   'Akbank',
+  'Albaraka Türk',
+  'Alternatif Bank',
+  'Anadolubank',
+  'Burgan Bank',
+  'Denizbank',
+  'Emlak Katılım',
   'Enpara',
+  'Fibabanka',
+  'Garanti BBVA',
+  'Halkbank',
+  'HSBC',
+  'ICBC Turkey',
+  'ING',
   'İş Bankası',
-  'Ziraat Bankası',
+  'Kuveyt Türk',
+  'Midas',
+  'Odeabank',
+  'Papara',
+  'QNB Finansbank',
+  'Şekerbank',
   'TEB',
+  'Türkiye Finans',
+  'Vakıfbank',
+  'Yapı Kredi',
+  'Ziraat Bankası',
+  MANUAL_INSTITUTION_LABEL,
 ];
 
 const INSTITUTION_RULES = {
@@ -87,6 +108,7 @@ const getCommodityOption = (symbol) => {
 };
 
 const getAmountUnit = (unitType) => unitTypeToLabel(unitType);
+const normalizeInstitutionForSearch = (value) => String(value || '').toLocaleLowerCase('tr-TR');
 
 export default function AssetModal({
   isOpen,
@@ -103,17 +125,40 @@ export default function AssetModal({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [selectedSuggestion, setSelectedSuggestion] = useState(null);
   const [symbolValidationError, setSymbolValidationError] = useState('');
+  const [institutionQuery, setInstitutionQuery] = useState('');
+  const [isInstitutionOpen, setIsInstitutionOpen] = useState(false);
+  const [activeInstitutionIndex, setActiveInstitutionIndex] = useState(-1);
+  const [isManualInstitutionSelected, setIsManualInstitutionSelected] = useState(false);
 
   const isStockCategory = formData.category === 'Hisse Senedi';
   const isFundCategory = formData.category === 'Yatırım Fonu';
   const isStockLikeCategory = isStockCategory || isFundCategory;
   const isCashCategory = formData.category === 'Nakit/Banka' || formData.category === 'Nakit';
   const isCommodityCategory = formData.category === 'Değerli Madenler' || formData.category === 'Emtia/Altın' || formData.category === 'Emtia';
+  const isManualInstitution = isManualInstitutionSelected || (Boolean(formData.bank) && !INSTITUTION_OPTIONS.includes(formData.bank));
 
   const institutionRule = getInstitutionRule(formData.bank);
-  const institutionSelectValue = INSTITUTION_OPTIONS.includes(formData.bank)
-    ? formData.bank
-    : CUSTOM_INSTITUTION_VALUE;
+  const filteredInstitutionOptions = useMemo(() => {
+    const normalizedQuery = normalizeInstitutionForSearch(institutionQuery.trim());
+
+    if (!normalizedQuery) {
+      return INSTITUTION_OPTIONS;
+    }
+
+    const startsWith = [];
+    const contains = [];
+
+    INSTITUTION_OPTIONS.forEach((option) => {
+      const normalizedOption = normalizeInstitutionForSearch(option);
+      if (normalizedOption.startsWith(normalizedQuery)) {
+        startsWith.push(option);
+      } else if (normalizedOption.includes(normalizedQuery)) {
+        contains.push(option);
+      }
+    });
+
+    return [...startsWith, ...contains];
+  }, [institutionQuery]);
   const unitTypeOptions = getAllowedUnitTypes({ category: formData.category, symbol: formData.symbol });
   const normalizedUnitType = normalizeUnitType(
     formData.unitType,
@@ -162,9 +207,13 @@ export default function AssetModal({
             }
           : null
       );
+      setInstitutionQuery(initialData.bank || '');
+      setIsManualInstitutionSelected(Boolean(initialData.bank) && !INSTITUTION_OPTIONS.includes(initialData.bank));
     } else {
       setFormData(INITIAL_FORM);
       setSelectedSuggestion(null);
+      setInstitutionQuery('');
+      setIsManualInstitutionSelected(false);
     }
 
     setSymbolSuggestions([]);
@@ -172,6 +221,8 @@ export default function AssetModal({
     setActiveSuggestionIndex(-1);
     setSymbolValidationError('');
     setIsSearchingSymbol(false);
+    setIsInstitutionOpen(false);
+    setActiveInstitutionIndex(-1);
   }, [isOpen, initialData]);
 
   useEffect(() => {
@@ -248,12 +299,14 @@ export default function AssetModal({
   };
 
   const handleInstitutionChange = (nextInstitution) => {
-    if (nextInstitution === CUSTOM_INSTITUTION_VALUE) {
+    if (nextInstitution === MANUAL_INSTITUTION_LABEL) {
+      setIsManualInstitutionSelected(true);
       setFormData((prev) => ({ ...prev, bank: '' }));
       return;
     }
 
     const nextRule = getInstitutionRule(nextInstitution);
+    setIsManualInstitutionSelected(false);
     setFormData((prev) => ({
       ...prev,
       bank: nextInstitution,
@@ -264,6 +317,44 @@ export default function AssetModal({
         ? prev.hesapTuru
         : nextRule.hesapTurleri[0],
     }));
+  };
+
+  const applyInstitutionSelection = (institutionName) => {
+    handleInstitutionChange(institutionName);
+    setInstitutionQuery(institutionName === MANUAL_INSTITUTION_LABEL ? '' : institutionName);
+    setIsInstitutionOpen(false);
+    setActiveInstitutionIndex(-1);
+  };
+
+  const handleInstitutionKeyDown = (event) => {
+    if (!isInstitutionOpen && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+      setIsInstitutionOpen(true);
+      setActiveInstitutionIndex(0);
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveInstitutionIndex((prev) => Math.min(prev + 1, filteredInstitutionOptions.length - 1));
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveInstitutionIndex((prev) => Math.max(prev - 1, 0));
+      return;
+    }
+
+    if (event.key === 'Enter' && isInstitutionOpen && activeInstitutionIndex >= 0 && filteredInstitutionOptions[activeInstitutionIndex]) {
+      event.preventDefault();
+      applyInstitutionSelection(filteredInstitutionOptions[activeInstitutionIndex]);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      setIsInstitutionOpen(false);
+      setActiveInstitutionIndex(-1);
+    }
   };
 
   const applySuggestion = (suggestion) => {
@@ -393,20 +484,53 @@ export default function AssetModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-1">Kurum Seçimi</label>
-                <select
-                  value={institutionSelectValue}
-                  onChange={(e) => handleInstitutionChange(e.target.value)}
-                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                >
-                  {INSTITUTION_OPTIONS.map((institution) => (
-                    <option key={institution} value={institution} className="bg-slate-900 text-slate-100">
-                      {institution}
-                    </option>
-                  ))}
-                  <option value={CUSTOM_INSTITUTION_VALUE} className="bg-slate-900 text-slate-100">
-                    Diğer (Manuel)
-                  </option>
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={institutionQuery}
+                    placeholder="Kurum ara veya seç"
+                    onFocus={() => {
+                      setIsInstitutionOpen(true);
+                      setActiveInstitutionIndex(filteredInstitutionOptions.length ? 0 : -1);
+                    }}
+                    onBlur={() => {
+                      window.setTimeout(() => {
+                        setIsInstitutionOpen(false);
+                        setActiveInstitutionIndex(-1);
+                      }, 120);
+                    }}
+                    onChange={(e) => {
+                      setInstitutionQuery(e.target.value);
+                      setIsInstitutionOpen(true);
+                      setActiveInstitutionIndex(0);
+                    }}
+                    onKeyDown={handleInstitutionKeyDown}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+
+                  {isInstitutionOpen ? (
+                    <div className="absolute z-20 mt-1 w-full rounded-lg border border-white/10 bg-[#0b1220] shadow-2xl overflow-hidden">
+                      <ul role="listbox" className="max-h-56 overflow-y-auto py-1">
+                        {filteredInstitutionOptions.length === 0 ? (
+                          <li className="px-3 py-2 text-sm text-slate-400">Eşleşen kurum bulunamadı</li>
+                        ) : filteredInstitutionOptions.map((institution, index) => (
+                          <li
+                            key={institution}
+                            role="option"
+                            aria-selected={activeInstitutionIndex === index}
+                            onMouseDown={(event) => {
+                              event.preventDefault();
+                              applyInstitutionSelection(institution);
+                            }}
+                            className={`px-3 py-2 text-sm cursor-pointer transition-colors ${activeInstitutionIndex === index ? 'bg-blue-500/20 text-blue-200' : 'text-slate-200 hover:bg-white/10'}`}
+                          >
+                            {institution}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
               <div>
@@ -425,14 +549,19 @@ export default function AssetModal({
               </div>
             </div>
 
-            {institutionSelectValue === CUSTOM_INSTITUTION_VALUE ? (
+            {isManualInstitution ? (
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-1">Banka veya Kurum Adı</label>
                 <input
                   type="text"
                   placeholder="Örn: Garanti BBVA, Akbank"
                   value={formData.bank}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, bank: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData((prev) => ({ ...prev, bank: value }));
+                    setInstitutionQuery(value);
+                    setIsManualInstitutionSelected(true);
+                  }}
                   required
                   className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
                 />
