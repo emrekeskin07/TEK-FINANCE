@@ -1,34 +1,16 @@
 import React, { useMemo } from 'react';
-import { Briefcase, Building2, Landmark, MoreHorizontal, PiggyBank, Wallet } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Building2 } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts } from '../utils/helpers';
 
-const INSTITUTION_ICON_SET = [Landmark, Building2, Wallet, PiggyBank, Briefcase];
-
-const getInstitutionIcon = (name, isOther = false) => {
-  if (isOther) {
-    return MoreHorizontal;
-  }
-
-  const normalized = String(name || '').trim();
-  if (!normalized) {
-    return Building2;
-  }
-
-  let hash = 0;
-  for (let i = 0; i < normalized.length; i += 1) {
-    hash = ((hash << 5) - hash) + normalized.charCodeAt(i);
-    hash |= 0;
-  }
-
-  const index = Math.abs(hash) % INSTITUTION_ICON_SET.length;
-  return INSTITUTION_ICON_SET[index];
-};
+const OTHER_THRESHOLD_PERCENT = 1;
+const PIE_COLORS = ['#38bdf8', '#818cf8', '#22d3ee', '#34d399', '#f59e0b', '#f472b6', '#a78bfa', '#94a3b8'];
 
 export default function BankTotals({ bankTotals, rates, totalValue, selectedBank, onSelectBank }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
-  const bankGroups = useMemo(() => {
+
+  const { rows: bankGroups, distributionTotal } = useMemo(() => {
     const entries = Object.entries(bankTotals || {})
       .map(([name, value]) => ({
         name,
@@ -37,20 +19,18 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
       .filter((entry) => Number.isFinite(entry.value) && entry.value > 0)
       .sort((a, b) => b.value - a.value);
 
-    const safeTotal = Number(totalValue || 0) > 0 ? Number(totalValue) : entries.reduce((sum, entry) => sum + entry.value, 0);
-    if (safeTotal <= 0) {
-      return [];
+    const institutionsTotal = entries.reduce((sum, entry) => sum + entry.value, 0);
+    if (institutionsTotal <= 0) {
+      return { rows: [], distributionTotal: 0 };
     }
 
     const major = [];
     let otherValue = 0;
-    const otherInstitutions = [];
 
     entries.forEach((entry) => {
-      const share = (entry.value / safeTotal) * 100;
-      if (share < 1) {
+      const share = (entry.value / institutionsTotal) * 100;
+      if (share < OTHER_THRESHOLD_PERCENT) {
         otherValue += entry.value;
-        otherInstitutions.push(entry.name);
         return;
       }
 
@@ -65,14 +45,26 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
       major.push({
         name: 'Diğer',
         value: otherValue,
-        share: (otherValue / safeTotal) * 100,
+        share: (otherValue / institutionsTotal) * 100,
         isOther: true,
-        institutions: otherInstitutions,
       });
     }
 
-    return major.sort((a, b) => b.value - a.value);
-  }, [bankTotals, totalValue]);
+    return {
+      rows: major.sort((a, b) => b.value - a.value),
+      distributionTotal: institutionsTotal,
+    };
+  }, [bankTotals]);
+
+  const chartData = useMemo(
+    () => bankGroups.map((entry, index) => ({
+      ...entry,
+      color: PIE_COLORS[index % PIE_COLORS.length],
+    })),
+    [bankGroups]
+  );
+
+  const centerTotalValue = Number(totalValue || 0) > 0 ? Number(totalValue) : distributionTotal;
 
   const renderTryCurrencyWithMutedSymbol = (value) => {
     const plainCurrencyText = formatCurrencyParts(value, 'TRY', rates)
@@ -94,12 +86,36 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
     );
   };
 
-  const topInstitution = bankGroups[0] || null;
-  const restInstitutions = bankGroups.slice(1);
-  const hasData = bankGroups.length > 0;
-  const TopInstitutionIcon = topInstitution
-    ? getInstitutionIcon(topInstitution.name, topInstitution.isOther)
-    : Building2;
+  const formatTryCurrencyText = (value) => {
+    const rawText = formatCurrencyParts(value, 'TRY', rates)
+      .map((part) => part.value)
+      .join('');
+
+    return isPrivacyActive ? maskValue(rawText) : rawText;
+  };
+
+  const activePieIndex = chartData.findIndex((entry) => entry.name === selectedBank);
+
+  const renderTooltip = ({ active, payload }) => {
+    if (!active || !Array.isArray(payload) || payload.length === 0) {
+      return null;
+    }
+
+    const point = payload[0]?.payload;
+    if (!point) {
+      return null;
+    }
+
+    return (
+      <div className="rounded-lg border border-white/10 bg-[#0f172a]/95 px-3 py-2 text-xs backdrop-blur-sm">
+        <p className="font-semibold text-slate-100">{point.name}</p>
+        <p className="mt-1 text-slate-300">{formatTryCurrencyText(point.value)}</p>
+        <p className="text-slate-400">{isPrivacyActive ? maskValue(`%${point.share.toFixed(1)}`) : `%${point.share.toFixed(1)}`}</p>
+      </div>
+    );
+  };
+
+  const hasData = chartData.length > 0;
 
   return (
     <div>
@@ -107,98 +123,90 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
         <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-300/25 bg-sky-500/10">
           <Building2 className="h-4 w-4 text-sky-200/90" />
         </div>
-        <h2 className="text-sm font-bold uppercase tracking-[0.13em] text-slate-200">KURUMLARDAKI TOPLAM VARLIKLAR</h2>
-        <p className="mt-1 text-xs font-medium text-slate-500">Nakit/Banka + Hisse + Altın dahil kurum bazlı toplam</p>
+        <h2 className="text-sm font-bold uppercase tracking-[0.13em] text-slate-200">KURUMLARDAKI DAĞILIM</h2>
+        <p className="mt-1 text-xs font-medium text-slate-500">Portföyün kurumlara göre yüzdesel dağılımı</p>
       </div>
 
       {!hasData ? (
-        <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-slate-400 text-sm">
+        <div className="p-4 rounded-xl border border-white/10 bg-white/5 text-sm text-slate-400">
           Kayıtlı kurum verisi bulunmuyor.
         </div>
       ) : (
-        <div className="space-y-3">
-          {topInstitution ? (
-            <motion.button
-              key={topInstitution.name}
-              type="button"
-              onClick={() => !topInstitution.isOther && onSelectBank(topInstitution.name)}
-              aria-pressed={selectedBank === topInstitution.name}
-              whileHover={{ y: -3, scale: 1.01 }}
-              whileTap={{ scale: 0.995 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              className={`w-full text-left relative overflow-hidden rounded-2xl border p-4 md:p-5 transition-all duration-200 ${
-                topInstitution.isOther
-                  ? 'cursor-default border-emerald-300/20 bg-emerald-500/8'
-                  : 'cursor-pointer border-emerald-300/40 bg-gradient-to-br from-emerald-500/15 via-cyan-500/10 to-slate-900/50 hover:border-emerald-300/65'
-              } ${selectedBank === topInstitution.name ? 'ring-2 ring-emerald-200/60 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : 'shadow-[0_8px_30px_rgba(15,23,42,0.35)]'}`}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-emerald-200/90">En Yüksek Paylı Kurum</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-emerald-200/30 bg-emerald-400/15 text-emerald-100">
-                      <TopInstitutionIcon className="h-4 w-4" />
-                    </span>
-                    <h4 className="text-base md:text-lg font-bold text-slate-100 break-words whitespace-normal">{topInstitution.name}</h4>
-                  </div>
-                </div>
-                <span className="inline-flex items-center rounded-full border border-emerald-200/30 bg-emerald-400/15 px-3 py-1 text-xs font-semibold text-emerald-100">
-                  {isPrivacyActive ? maskValue(`%${topInstitution.share.toFixed(1)}`) : `%${topInstitution.share.toFixed(1)}`}
-                </span>
+        <div className="rounded-2xl border border-white/10 bg-black/15 p-3 md:p-4">
+          <div className="relative h-[250px] w-full min-h-[250px] min-w-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={92}
+                  paddingAngle={2}
+                  activeIndex={activePieIndex >= 0 ? activePieIndex : undefined}
+                >
+                  {chartData.map((entry) => {
+                    const isSelected = selectedBank === entry.name;
+
+                    return (
+                      <Cell
+                        key={`institution-slice-${entry.name}`}
+                        fill={entry.color}
+                        stroke={isSelected ? '#e2e8f0' : 'rgba(15,23,42,0.45)'}
+                        strokeWidth={isSelected ? 3 : 1}
+                        onClick={() => !entry.isOther && onSelectBank?.(entry.name)}
+                        style={{ cursor: entry.isOther ? 'default' : 'pointer' }}
+                      />
+                    );
+                  })}
+                </Pie>
+                <Tooltip content={renderTooltip} />
+              </PieChart>
+            </ResponsiveContainer>
+
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="px-3 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Total Value</p>
+                <p className="mt-1 text-2xl md:text-[28px] font-black leading-tight tracking-tight text-slate-100">
+                  {renderTryCurrencyWithMutedSymbol(centerTotalValue)}
+                </p>
               </div>
-              <p className="mt-2 text-2xl md:text-3xl font-black tracking-tight text-slate-50">
-                {renderTryCurrencyWithMutedSymbol(topInstitution.value)}
-              </p>
-            </motion.button>
-          ) : null}
-
-          {restInstitutions.length > 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5 md:p-3">
-              <ul className="space-y-2.5">
-                {restInstitutions.map((entry) => {
-                  const isSelected = selectedBank === entry.name;
-                  const InstitutionIcon = getInstitutionIcon(entry.name, entry.isOther);
-
-                  return (
-                    <li key={entry.name}>
-                      <button
-                        type="button"
-                        onClick={() => !entry.isOther && onSelectBank(entry.name)}
-                        disabled={entry.isOther}
-                        className={`w-full rounded-xl border px-3 py-2.5 text-left transition-all duration-200 ${
-                          entry.isOther
-                            ? 'cursor-default border-white/10 bg-white/5'
-                            : 'cursor-pointer border-white/10 bg-white/[0.03] hover:border-sky-300/40 hover:bg-sky-500/10'
-                        } ${isSelected ? 'ring-1 ring-sky-200/60 border-sky-200/60 bg-sky-400/10' : ''}`}
-                        aria-pressed={entry.isOther ? undefined : isSelected}
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="min-w-0 flex flex-1 items-center gap-2.5">
-                            <span className={`inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border ${entry.isOther ? 'border-white/15 bg-white/10 text-slate-300' : 'border-sky-300/25 bg-sky-500/10 text-sky-200'}`}>
-                              <InstitutionIcon className="h-4 w-4" />
-                            </span>
-                            <div className="min-w-0">
-                              <p className="text-sm md:text-[15px] font-semibold text-slate-200 break-words whitespace-normal">{entry.name}</p>
-                              {entry.isOther && Array.isArray(entry.institutions) && entry.institutions.length > 0 ? (
-                                <p className="mt-0.5 text-[11px] text-slate-500">{entry.institutions.length} küçük kurum birleştirildi</p>
-                              ) : null}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm md:text-base font-medium text-slate-200">{renderTryCurrencyWithMutedSymbol(entry.value)}</p>
-                            <p className="text-xs font-semibold text-slate-400">{isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}</p>
-                          </div>
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
             </div>
-          ) : null}
+          </div>
+
+          <ul className="mt-3 space-y-1.5">
+            {chartData.map((entry) => {
+              const isSelected = selectedBank === entry.name;
+
+              return (
+                <li key={`legend-${entry.name}`}>
+                  <button
+                    type="button"
+                    onClick={() => !entry.isOther && onSelectBank?.(entry.name)}
+                    disabled={entry.isOther}
+                    aria-pressed={entry.isOther ? undefined : isSelected}
+                    className={`w-full rounded-lg border px-2.5 py-2 transition-all duration-200 ${
+                      entry.isOther
+                        ? 'cursor-default border-white/10 bg-white/[0.03]'
+                        : 'cursor-pointer border-white/10 bg-white/[0.03] hover:border-sky-300/40 hover:bg-sky-500/10'
+                    } ${isSelected ? 'border-sky-200/60 bg-sky-400/10 ring-1 ring-sky-200/60' : ''}`}
+                  >
+                    <div className="flex items-center justify-between gap-3 text-xs">
+                      <div className="min-w-0 flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: entry.color }} />
+                        <span className="truncate font-semibold text-slate-200">{entry.name}</span>
+                      </div>
+                      <span className="font-semibold text-slate-400">{isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}</span>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
-      </div>
-    
+    </div>
   );
 }

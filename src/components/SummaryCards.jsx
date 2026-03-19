@@ -183,6 +183,7 @@ export default function SummaryCards({
   selectedCategory = null,
 }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
+  const safeLineChartData = Array.isArray(lineChartData) ? lineChartData : [];
 
   const isChartFiltered = Boolean(selectedBank || selectedCategory);
   const filteredPortfolio = useMemo(() => {
@@ -488,6 +489,32 @@ export default function SummaryCards({
   const centerTitle = selectedSlice ? selectedSlice.name : 'TOPLAM VARLIK';
   const centerAmount = selectedSlice ? selectedSlice.value : activePieTotal;
 
+  const resolveAggressiveDomainPadding = (minValue, maxValue) => {
+    const safeMin = Number.isFinite(Number(minValue)) ? Number(minValue) : 0;
+    const safeMax = Number.isFinite(Number(maxValue)) ? Number(maxValue) : safeMin;
+    const range = Math.max(Math.abs(safeMax - safeMin), Math.abs(safeMax), Math.abs(safeMin), 1);
+
+    return Math.max(range * 0.18, 1000);
+  };
+
+  const getAreaDomainMin = (dataMin) => {
+    const dataMax = safeLineChartData.reduce((maxValue, point) => {
+      const value = Number(point?.value);
+      return Number.isFinite(value) ? Math.max(maxValue, value) : maxValue;
+    }, Number(dataMin || 0));
+
+    return Number(dataMin || 0) - resolveAggressiveDomainPadding(dataMin, dataMax);
+  };
+
+  const getAreaDomainMax = (dataMax) => {
+    const dataMin = safeLineChartData.reduce((minValue, point) => {
+      const value = Number(point?.value);
+      return Number.isFinite(value) ? Math.min(minValue, value) : minValue;
+    }, Number(dataMax || 0));
+
+    return Number(dataMax || 0) + resolveAggressiveDomainPadding(dataMin, dataMax);
+  };
+
   const formatChartCurrency = (value) => {
     const formatted = TRY_CURRENCY_FORMATTER.format(Number(value || 0));
 
@@ -776,7 +803,7 @@ export default function SummaryCards({
           <div ref={areaChartContainerRef} className="h-[260px] sm:h-[320px] md:h-[360px] w-full min-w-0 min-h-[260px] relative">
             {canRenderAreaChart ? (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={lineChartData}>
+              <AreaChart data={safeLineChartData}>
                 <defs>
                   <linearGradient id="portfolioFlowGradient" x1="0" y1="0" x2="0" y2="1">
                     {CHART_THEME.lineGradientStops.map((stop) => (
@@ -799,7 +826,8 @@ export default function SummaryCards({
                   tick={{ fontFamily: CHART_THEME.fontFamily }}
                 />
                 <YAxis 
-                  domain={['dataMin - 1000', 'dataMax + 1000']}
+                  domain={[getAreaDomainMin, getAreaDomainMax]}
+                  allowDataOverflow
                   stroke={CHART_THEME.axisStroke}
                   fontSize={CHART_THEME.axisFontSize}
                   tickLine={false} 
