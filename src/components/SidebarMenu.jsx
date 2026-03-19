@@ -1,13 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { LayoutDashboard, Menu, Settings, Target, WalletCards, X } from 'lucide-react';
+import { Home, Landmark, LineChart, Menu, Target, X } from 'lucide-react';
 
 const MENU_ITEMS = [
-  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { key: 'varliklarim', label: 'Varlıklarım', icon: WalletCards },
+  { key: 'dashboard', label: 'Ana Sayfa (Dashboard)', icon: Home },
+  { key: 'net-worth', label: 'Net Servetim (Mal Varlığı)', icon: Landmark },
+  { key: 'enflasyon', label: 'Enflasyon Analizi', icon: LineChart },
   { key: 'hedeflerim', label: 'Hedeflerim', icon: Target },
-  { key: 'ayarlar', label: 'Ayarlar', icon: Settings },
 ];
 
 export default function SidebarMenu({ isOpen, activePage, onClose, onNavigate }) {
@@ -33,11 +33,20 @@ export default function SidebarMenu({ isOpen, activePage, onClose, onNavigate })
             transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
             className="fixed left-0 top-0 z-[95] h-full w-[290px] border-r border-white/10 bg-card/90 p-5 shadow-[0_28px_90px_rgba(15,23,42,0.6)] backdrop-blur-2xl"
           >
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-page/70 px-3 py-2">
-                <Menu className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-text-main">Menu</span>
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div className="min-w-0 rounded-xl border border-white/10 bg-page/70 p-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-9 w-9 overflow-hidden rounded-lg border border-primary/40 bg-primary/20">
+                    <img src="/pwa-192x192.png" alt="TEK Finans" className="h-full w-full object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black tracking-tight text-text-main">TEK Finans</p>
+                    <p className="truncate text-[11px] text-text-muted">Emre &amp; [Yengemizin Adı]</p>
+                  </div>
+                </div>
+                <p className="mt-2 text-[11px] text-gray-300">Hoş geldiniz, finansal kontrol sizde.</p>
               </div>
+
               <button
                 type="button"
                 onClick={onClose}
@@ -46,6 +55,11 @@ export default function SidebarMenu({ isOpen, activePage, onClose, onNavigate })
               >
                 <X className="h-4 w-4" />
               </button>
+            </div>
+
+            <div className="mb-3 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-page/70 px-3 py-2">
+              <Menu className="h-4 w-4 text-primary" />
+              <span className="text-xs font-semibold uppercase tracking-tight text-gray-300">Navigasyon</span>
             </div>
 
             <nav className="space-y-2">

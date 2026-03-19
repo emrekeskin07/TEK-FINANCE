@@ -11,6 +11,7 @@ import { useAnimatedCounter } from './hooks/useAnimatedCounter';
 import Header from './components/Header';
 import GoalTracker from './components/GoalTracker';
 import SidebarMenu from './components/SidebarMenu';
+import MagicAiInput from './components/MagicAiInput';
 import DistributionCard from './components/DistributionCard';
 import AssetList from './components/AssetList';
 import AlertDrawer from './components/AlertDrawer';
@@ -33,6 +34,30 @@ import {
 
 const ATH_CELEBRATION_STORAGE_PREFIX = 'tek-finance:ath-celebration';
 const ATH_CELEBRATION_DURATION_MS = 3800;
+const PAGE_TO_PATH = {
+  dashboard: '/',
+  'net-worth': '/net-worth',
+  enflasyon: '/inflation-analysis',
+  hedeflerim: '/goals',
+};
+
+const resolvePageFromPath = (pathname) => {
+  if (pathname === '/net-worth') {
+    return 'net-worth';
+  }
+
+  if (pathname === '/inflation-analysis') {
+    return 'enflasyon';
+  }
+
+  if (pathname === '/goals') {
+    return 'hedeflerim';
+  }
+
+  return 'dashboard';
+};
+
+const resolvePathFromPage = (page) => PAGE_TO_PATH[page] || '/';
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -69,7 +94,7 @@ export default function App() {
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const athCelebrationTimeoutRef = useRef(null);
 
-  const { portfolio, addAsset, updateAsset, removeAsset, sellAsset } = usePortfolio(authUser?.id, (updatedPort) => {
+  const { portfolio, addAsset, updateAsset, removeAsset, sellAsset, refreshPortfolio } = usePortfolio(authUser?.id, (updatedPort) => {
     if (authUser) {
       updatePrices(updatedPort);
     }
@@ -84,6 +109,37 @@ export default function App() {
 
     updatePrices();
   }, [authUser, updatePrices]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const syncPageFromLocation = () => {
+      const nextPage = resolvePageFromPath(window.location.pathname);
+      setActivePage(nextPage);
+    };
+
+    syncPageFromLocation();
+    window.addEventListener('popstate', syncPageFromLocation);
+
+    return () => {
+      window.removeEventListener('popstate', syncPageFromLocation);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const nextPath = resolvePathFromPage(activePage);
+    const currentPath = window.location.pathname || '/';
+
+    if (nextPath !== currentPath) {
+      window.history.pushState({}, '', nextPath);
+    }
+  }, [activePage]);
 
   useEffect(() => {
     if (lastUpdated instanceof Date) {
@@ -318,6 +374,10 @@ export default function App() {
     || authUser?.email?.split('@')?.[0]
     || 'Kullanıcı';
 
+  const navigateToPage = useCallback((nextPage) => {
+    setActivePage(nextPage);
+  }, []);
+
   const handleToggleAlertDrawer = () => {
     setIsAlertDrawerOpen((prev) => !prev);
   };
@@ -327,7 +387,7 @@ export default function App() {
   };
 
   const handleOpenInflationFromAlert = () => {
-    setActivePage('enflasyon');
+    navigateToPage('enflasyon');
     setIsSidebarOpen(false);
     setIsAlertDrawerOpen(false);
     window.setTimeout(() => {
@@ -336,7 +396,7 @@ export default function App() {
   };
 
   const handleSidebarNavigate = (nextPage) => {
-    setActivePage(nextPage);
+    navigateToPage(nextPage);
     setIsSidebarOpen(false);
   };
 
@@ -500,7 +560,6 @@ export default function App() {
       <div>
         <Header 
           activePage={activePage}
-          setActivePage={setActivePage}
           onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
           activeTheme={activeTheme}
           themeOptions={THEME_OPTIONS}
@@ -524,6 +583,11 @@ export default function App() {
           <>
             <DashboardProvider value={dashboardContextValue}>
               <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
+                <MagicAiInput
+                  userId={authUser?.id}
+                  onSuccess={refreshPortfolio}
+                />
+
                 <Stats
                   greetingName={dashboardGreetingName}
                   totalProfit={totalProfit}
@@ -589,33 +653,13 @@ export default function App() {
               </div>
             </DashboardProvider>
           </>
-        ) : activePage === 'varliklarim' ? (
-          <DashboardProvider value={dashboardContextValue}>
-            <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
-              <motion.section
-                layout
-                transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                className="col-span-12 rounded-3xl border border-white/10 bg-card/70 p-5 shadow-[0_20px_70px_rgba(8,47,73,0.35)] backdrop-blur-2xl md:p-6"
-              >
-                <h3 className="text-sm font-bold uppercase tracking-tight text-text-main">Varlıklarım</h3>
-                <p className="mt-1 text-xs text-text-muted">Portföyündeki varlıkları detaylı filtreleyip yönetebilirsin.</p>
-              </motion.section>
-              <AssetList />
-            </div>
-          </DashboardProvider>
         ) : activePage === 'hedeflerim' ? (
           <DashboardProvider value={dashboardContextValue}>
             <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
               <GoalTracker />
             </div>
           </DashboardProvider>
-        ) : activePage === 'ayarlar' ? (
-          <div className="rounded-3xl border border-white/10 bg-card/70 p-6 shadow-[0_20px_70px_rgba(8,47,73,0.35)] backdrop-blur-2xl md:p-8">
-            <h3 className="text-sm font-bold uppercase tracking-tight text-text-main">Ayarlar</h3>
-            <p className="mt-2 text-sm text-text-muted">Tema ve görünüm ayarlarını üst kısımdaki kontrollerden canlı olarak değiştirebilirsin.</p>
-            <p className="mt-3 text-xs text-text-muted">Tema seçici: palet ikonlu swatch alanı • Para birimi: TRY/USD • Gizlilik modu: göz ikonu</p>
-          </div>
-        ) : activePage === 'malvarligi' ? (
+        ) : activePage === 'net-worth' ? (
           <div>
             <MalVarligiPage
               portfolioCashTotal={portfolioCashTotal}

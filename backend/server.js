@@ -9,6 +9,10 @@ const {
   getQuotesData,
   fetchTefasFundPrice,
 } = require("./services/priceService");
+const {
+  parseAssetCommand,
+  autoAddParsedAsset,
+} = require("./services/aiParseService");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -53,7 +57,7 @@ app.get("/api/search", async (req, res) => {
       data,
     });
   } catch (error) {
-    console.error("Hata Detayý:", error.message);
+    console.error("Hata Detayï¿½:", error.message);
 
     return res.status(502).json({
       ok: false,
@@ -83,7 +87,7 @@ app.get("/api/finance", async (req, res) => {
       ...(result.warning ? { warning: result.warning } : {}),
     });
   } catch (error) {
-    console.error("Hata Detayý:", error.message);
+    console.error("Hata Detayï¿½:", error.message);
 
     const status = Number.isFinite(Number(error?.status)) ? Number(error.status) : 502;
 
@@ -115,7 +119,7 @@ app.get("/api/quotes", async (req, res) => {
       data,
     });
   } catch (error) {
-    console.error("Hata Detayý:", error.message);
+    console.error("Hata Detayï¿½:", error.message);
 
     return res.status(500).json({
       ok: false,
@@ -131,14 +135,14 @@ app.get("/api/fon-fiyati/:kod", async (req, res) => {
   if (!fundCode) {
     return res.status(400).json({
       ok: false,
-      error: "Fon kodu zorunludur. Örnek: /api/fon-fiyati/MAC",
+      error: "Fon kodu zorunludur. ï¿½rnek: /api/fon-fiyati/MAC",
     });
   }
 
   if (!/^[a-zA-Z0-9]+$/.test(fundCode)) {
     return res.status(400).json({
       ok: false,
-      error: "Geçersiz fon kodu formatý.",
+      error: "Geï¿½ersiz fon kodu formatï¿½.",
     });
   }
 
@@ -146,13 +150,54 @@ app.get("/api/fon-fiyati/:kod", async (req, res) => {
     const data = await fetchTefasFundPrice(fundCode);
     return res.json({ ok: true, data });
   } catch (error) {
-    console.error("Hata Detayý:", error.message);
+    console.error("Hata Detayï¿½:", error.message);
 
     const status = error.status || 502;
     return res.status(status).json({
       ok: false,
-      error: error.message || "TEFAS fon fiyatý alýnamadý.",
+      error: error.message || "TEFAS fon fiyatï¿½ alï¿½namadï¿½.",
       ...(status === 502 ? { errorMessage: error.message } : {}),
+    });
+  }
+});
+
+// Example: POST /api/ai-parse { text: "Ziraat bankasina 50.000 TL ekle", userId: "..." }
+app.post("/api/ai-parse", async (req, res) => {
+  const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+  const userId = typeof req.body?.userId === "string" ? req.body.userId.trim() : "";
+
+  if (!text || text.length < 4) {
+    return res.status(400).json({
+      ok: false,
+      error: "Body param required: text (min 4 chars)",
+    });
+  }
+
+  if (!userId) {
+    return res.status(400).json({
+      ok: false,
+      error: "Body param required: userId",
+    });
+  }
+
+  try {
+    const parsed = await parseAssetCommand(text);
+    const result = await autoAddParsedAsset({ parsed, userId });
+
+    return res.json({
+      ok: true,
+      message: "BaÅŸarÄ±yla eklendi!",
+      data: {
+        parsed,
+        insertedAsset: result.insertedAsset,
+      },
+    });
+  } catch (error) {
+    console.error("AI parse/add hata detayi:", error.message);
+
+    return res.status(422).json({
+      ok: false,
+      error: error.message || "Metin cozumlenemedi.",
     });
   }
 });

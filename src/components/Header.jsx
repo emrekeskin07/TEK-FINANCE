@@ -6,7 +6,6 @@ import SplitText from './ui/SplitText';
 
 export default function Header({
   activePage,
-  setActivePage,
   onToggleSidebar = () => {},
   activeTheme = 'deep-ocean',
   themeOptions = [],
@@ -91,27 +90,6 @@ export default function Header({
       </div>
 
       <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 w-full md:w-auto">
-        <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-1 backdrop-blur-sm w-full md:w-auto overflow-x-auto">
-          <button
-            onClick={() => setActivePage('dashboard')}
-            className={`transform-gpu px-3 py-1.5 text-sm rounded-md transition-all duration-300 hover:scale-105 active:scale-95 ${activePage === 'dashboard' ? 'bg-blue-600/30 text-blue-300 border border-blue-500/40' : 'text-slate-300 hover:bg-white/10'}`}
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => setActivePage('malvarligi')}
-            className={`transform-gpu px-3 py-1.5 text-sm rounded-md transition-all duration-300 hover:scale-105 active:scale-95 ${activePage === 'malvarligi' ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40' : 'text-slate-300 hover:bg-white/10'}`}
-          >
-            Mal Varlığı
-          </button>
-          <button
-            onClick={() => setActivePage('enflasyon')}
-            className={`transform-gpu px-3 py-1.5 text-sm rounded-md transition-all duration-300 hover:scale-105 active:scale-95 ${activePage === 'enflasyon' ? 'bg-rose-600/25 text-rose-200 border border-rose-400/40' : 'text-slate-300 hover:bg-white/10'}`}
-          >
-            Enflasyon Analizi
-          </button>
-        </div>
-
         <button
           type="button"
           onClick={togglePrivacy}
