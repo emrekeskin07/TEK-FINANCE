@@ -440,6 +440,8 @@ export default function App() {
                   portfolio={portfolio}
                   marketData={marketData}
                   lineChartData={lineChartData}
+                  selectedBank={selectedBank}
+                  selectedCategory={selectedCategory}
                   showTopCards={false}
                 />
               </motion.section>

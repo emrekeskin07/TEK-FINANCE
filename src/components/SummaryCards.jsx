@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Wallet, Activity, DollarSign, TrendingUp, TrendingDown, PieChart as PieChartIcon } from 'lucide-react';
+import { Wallet, Activity, DollarSign, TrendingUp, TrendingDown, PieChart as PieChartIcon, Filter } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, XAxis, YAxis, CartesianGrid, Sector } from 'recharts';
 import { animate, motion, useSpring, useTransform } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
@@ -179,17 +179,71 @@ export default function SummaryCards({
   marketData,
   lineChartData,
   showTopCards = true,
+  selectedBank = null,
+  selectedCategory = null,
 }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
+
+  const isChartFiltered = Boolean(selectedBank || selectedCategory);
+  const filteredPortfolio = useMemo(() => {
+    const source = Array.isArray(portfolio) ? portfolio : [];
+
+    return source.filter((item) => {
+      const bankName = item.bank || 'Banka Belirtilmedi';
+      const categoryName = item.category || 'Diğer';
+      const bankMatch = !selectedBank || bankName === selectedBank;
+      const categoryMatch = !selectedCategory || categoryName === selectedCategory;
+
+      return bankMatch && categoryMatch;
+    });
+  }, [portfolio, selectedBank, selectedCategory]);
+
+  const bankTotalsForChart = useMemo(() => {
+    if (!isChartFiltered) {
+      return bankTotals || {};
+    }
+
+    return filteredPortfolio.reduce((acc, item) => {
+      const currentPrice = resolveAssetActivePrice(item, marketData);
+      const itemValue = currentPrice * item.amount;
+      const safeBankName = item.bank || 'Banka Belirtilmedi';
+
+      if (!acc[safeBankName]) {
+        acc[safeBankName] = 0;
+      }
+
+      acc[safeBankName] += itemValue;
+      return acc;
+    }, {});
+  }, [isChartFiltered, bankTotals, filteredPortfolio, marketData]);
+
+  const categoryTotalsForChart = useMemo(() => {
+    if (!isChartFiltered) {
+      return categoryTotals || {};
+    }
+
+    return filteredPortfolio.reduce((acc, item) => {
+      const currentPrice = resolveAssetActivePrice(item, marketData);
+      const itemValue = currentPrice * item.amount;
+      const categoryName = item.category || 'Diğer';
+
+      if (!acc[categoryName]) {
+        acc[categoryName] = 0;
+      }
+
+      acc[categoryName] += itemValue;
+      return acc;
+    }, {});
+  }, [isChartFiltered, categoryTotals, filteredPortfolio, marketData]);
   
-  const chartData = Object.keys(bankTotals).map(bankName => ({
+  const chartData = Object.keys(bankTotalsForChart || {}).map(bankName => ({
     name: bankName,
-    value: Number(convertCurrency(bankTotals[bankName], baseCurrency, rates).toFixed(2))
+    value: Number(convertCurrency(bankTotalsForChart[bankName], baseCurrency, rates).toFixed(2))
   })).filter(item => item.value > 0);
 
-  const categoryChartData = Object.keys(categoryTotals || {}).map((categoryName) => ({
+  const categoryChartData = Object.keys(categoryTotalsForChart || {}).map((categoryName) => ({
     name: categoryName,
-    value: Number(convertCurrency(categoryTotals[categoryName], baseCurrency, rates).toFixed(2))
+    value: Number(convertCurrency(categoryTotalsForChart[categoryName], baseCurrency, rates).toFixed(2))
   })).filter((item) => item.value > 0);
 
   const convertedPhysicalAssets = Number(
@@ -197,7 +251,7 @@ export default function SummaryCards({
   );
 
   const detailedAssetRows = useMemo(() => {
-    const rows = (portfolio || []).map((item) => {
+    const rows = (isChartFiltered ? filteredPortfolio : (portfolio || [])).map((item) => {
       const currentPrice = resolveAssetActivePrice(item, marketData);
       const valueInTry = Number(currentPrice) * Number(item.amount || 0);
       const convertedValue = Number(convertCurrency(valueInTry, baseCurrency, rates).toFixed(2));
@@ -211,7 +265,7 @@ export default function SummaryCards({
       };
     }).filter((item) => item.value > 0);
 
-    if (convertedPhysicalAssets > 0) {
+    if (convertedPhysicalAssets > 0 && !isChartFiltered) {
       rows.push({
         id: 'physical-assets',
         label: 'Fiziksel Varlıklar',
@@ -221,7 +275,7 @@ export default function SummaryCards({
       });
     }
 
-    const safeTotal = totalValue > 0 ? totalValue : 0;
+    const safeTotal = rows.reduce((sum, item) => sum + Number(item?.value || 0), 0);
 
     return rows
       .map((item) => ({
@@ -229,7 +283,7 @@ export default function SummaryCards({
         totalShare: safeTotal > 0 ? (item.value / safeTotal) * 100 : 0,
       }))
       .sort((a, b) => b.value - a.value);
-  }, [portfolio, marketData, baseCurrency, rates, convertedPhysicalAssets, totalValue]);
+  }, [portfolio, filteredPortfolio, isChartFiltered, marketData, baseCurrency, rates, convertedPhysicalAssets]);
 
   const categoryInternalRows = useMemo(() => {
     const buckets = detailedAssetRows.reduce((acc, item) => {
@@ -274,17 +328,23 @@ export default function SummaryCards({
   }
 
   const netWorthBankData = [...chartData];
-  if (convertedPhysicalAssets > 0) {
+  if (convertedPhysicalAssets > 0 && !isChartFiltered) {
     netWorthBankData.push({
       name: 'Fiziksel Varlıklar',
       value: convertedPhysicalAssets,
     });
   }
 
-  const bankPieData = useMemo(() => aggregateTinySlices(netWorthBankData), [netWorthBankData]);
-  const categoryPieData = useMemo(() => aggregateTinySlices(netWorthCategoryData), [netWorthCategoryData]);
+  const bankPieData = useMemo(
+    () => [...netWorthBankData].sort((a, b) => Number(b?.value || 0) - Number(a?.value || 0)),
+    [netWorthBankData]
+  );
+  const categoryPieData = useMemo(
+    () => [...netWorthCategoryData].sort((a, b) => Number(b?.value || 0) - Number(a?.value || 0)),
+    [netWorthCategoryData]
+  );
 
-  const bankOnlyTotal = Object.values(bankTotals || {}).reduce(
+  const bankOnlyTotal = Object.values(bankTotalsForChart || {}).reduce(
     (sum, currentValue) => sum + Number(currentValue || 0),
     0
   );
@@ -330,6 +390,23 @@ export default function SummaryCards({
   const canRenderPieChart = chartsReady && pieChartContainerReady;
   const canRenderAreaChart = chartsReady && areaChartContainerReady;
   const activePieTotal = activePieData.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const dominantBankIndex = useMemo(() => {
+    if (!isBankTab || !activePieData.length || activePieTotal <= 0) {
+      return null;
+    }
+
+    let maxIndex = 0;
+    let maxValue = Number(activePieData[0]?.value || 0);
+    activePieData.forEach((entry, index) => {
+      const value = Number(entry?.value || 0);
+      if (value > maxValue) {
+        maxValue = value;
+        maxIndex = index;
+      }
+    });
+
+    return (maxValue / activePieTotal) > 0.9 ? maxIndex : null;
+  }, [isBankTab, activePieData, activePieTotal]);
   const donutOuterRadius = Math.max(46, Math.round(CHART_DONUT.outerRadius * 0.8));
   const donutInnerRadius = Math.max(34, Math.round(donutOuterRadius * 0.88));
 
@@ -372,6 +449,12 @@ export default function SummaryCards({
   }, [activePieData.length, selectedPieIndex, renderedPieIndex]);
 
   useEffect(() => {
+    if (selectedPieIndex === null && dominantBankIndex !== null) {
+      setSelectedPieIndex(dominantBankIndex);
+    }
+  }, [selectedPieIndex, dominantBankIndex]);
+
+  useEffect(() => {
     const frameHandle = window.requestAnimationFrame(() => {
       setChartsReady(true);
     });
@@ -402,6 +485,8 @@ export default function SummaryCards({
 
   const selectedSlice = selectedPieIndex !== null ? activePieData[selectedPieIndex] : null;
   const selectedSlicePercent = selectedSlice ? getPiePercent(selectedSlice.value) : null;
+  const centerTitle = selectedSlice ? selectedSlice.name : 'TOPLAM VARLIK';
+  const centerAmount = selectedSlice ? selectedSlice.value : activePieTotal;
 
   const formatChartCurrency = (value) => {
     const formatted = TRY_CURRENCY_FORMATTER.format(Number(value || 0));
@@ -420,7 +505,7 @@ export default function SummaryCards({
     }
 
     return (
-      <ul className="mt-4 space-y-2">
+      <ul className="mt-4 max-h-[220px] space-y-2.5 overflow-y-auto pr-1">
         {legendItems.map((entry, index) => {
           const itemValue = Number(entry?.payload?.value || 0);
           const itemPercent = getPiePercent(itemValue);
@@ -428,16 +513,19 @@ export default function SummaryCards({
           return (
             <li
               key={`${entry?.value || 'legend'}-${index}`}
-              className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2.5"
             >
               <div className="min-w-0 flex items-center gap-2">
                 <span
-                  className="h-2.5 w-2.5 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.15)]"
+                  className="h-2.5 w-2.5 flex-shrink-0 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.15)]"
                   style={{ backgroundColor: entry?.color || '#94a3b8' }}
                 />
-                <span className="truncate text-xs font-medium text-slate-300/90">{entry?.value}</span>
+                <span className="truncate text-sm font-medium text-slate-200">{entry?.value}</span>
               </div>
-              <span className="text-[11px] font-semibold text-slate-400">{isPrivacyActive ? maskValue(`%${itemPercent.toFixed(1)}`) : `%${itemPercent.toFixed(1)}`}</span>
+              <div className="text-right">
+                <p className="text-xs font-semibold text-slate-200">{formatChartCurrency(itemValue)}</p>
+                <p className="text-[11px] font-semibold text-slate-400">{isPrivacyActive ? maskValue(`%${itemPercent.toFixed(1)}`) : `%${itemPercent.toFixed(1)}`}</p>
+              </div>
             </li>
           );
         })}
@@ -552,10 +640,18 @@ export default function SummaryCards({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8">
         <div className={`bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl lg:col-span-5 flex flex-col ${premiumCardHighlightClass}`}>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-300 flex items-center gap-2">
-              <PieChartIcon className="w-4 h-4 text-purple-400" />
-              Dağılım Analizi (TRY)
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-300 flex items-center gap-2">
+                <PieChartIcon className="w-4 h-4 text-purple-400" />
+                Dağılım Analizi (TRY)
+              </h3>
+              {isChartFiltered ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-sky-300/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-sky-200">
+                  <Filter className="h-3 w-3" />
+                  Filtrelendi
+                </span>
+              ) : null}
+            </div>
             <div className="inline-flex items-center gap-1.5 bg-black/20 border border-white/10 rounded-lg p-1">
               <button
                 type="button"
@@ -645,32 +741,23 @@ export default function SummaryCards({
                 </ResponsiveContainer>
 
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  {selectedSlice ? (
-                    <div className="text-center px-4">
-                      <p
-                        className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-300/90"
-                        style={{ fontFamily: CHART_THEME.fontFamily }}
-                      >
-                        {selectedSlice.name}
-                      </p>
-                      <p
-                        className="text-2xl font-bold text-slate-100 leading-tight"
-                        style={{ fontFamily: CHART_THEME.fontFamily }}
-                      >
-                        {formatChartCurrency(selectedSlice.value)}
-                      </p>
+                  <div className="text-center px-4">
+                    <p
+                      className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-300/90"
+                      style={{ fontFamily: CHART_THEME.fontFamily }}
+                    >
+                      {centerTitle}
+                    </p>
+                    <p
+                      className="text-2xl font-bold text-slate-100 leading-tight"
+                      style={{ fontFamily: CHART_THEME.fontFamily }}
+                    >
+                      {formatChartCurrency(centerAmount)}
+                    </p>
+                    {selectedSlice ? (
                       <p className="text-[11px] font-semibold text-slate-400 mt-0.5">{isPrivacyActive ? maskValue(`%${selectedSlicePercent?.toFixed(1)}`) : `%${selectedSlicePercent?.toFixed(1)}`}</p>
-                    </div>
-                  ) : (
-                    <div className="text-center px-4">
-                      <p
-                        className="text-2xl font-bold uppercase tracking-[0.08em] text-slate-300"
-                        style={{ fontFamily: CHART_THEME.fontFamily }}
-                      >
-                        BİR DİLİME TIKLA
-                      </p>
-                    </div>
-                  )}
+                    ) : null}
+                  </div>
                 </div>
               </>
             ) : activePieData.length === 0 ? (
