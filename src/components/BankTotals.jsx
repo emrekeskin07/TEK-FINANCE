@@ -114,16 +114,16 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
         <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-primary/30 bg-primary/18">
           <Building2 className="h-4 w-4 text-primary" />
         </div>
-        <h2 className="text-sm font-bold uppercase tracking-tight text-text-main">KURUMLARDAKI DAĞILIM</h2>
-        <p className="mt-1 text-xs font-medium text-gray-300">Portföyün kurumlara göre yüzdesel dağılımı</p>
+        <h2 className="text-sm font-bold uppercase tracking-tight text-slate-50">KURUMLARDAKI DAĞILIM</h2>
+        <p className="mt-1 text-xs font-medium text-slate-400">Portföyün kurumlara göre yüzdesel dağılımı</p>
       </div>
 
       {!hasData ? (
-        <div className="rounded-xl border border-white/15 bg-card/80 p-6 text-sm text-gray-300 shadow-[0_16px_46px_rgba(7,10,16,0.55)] backdrop-blur-md">
+        <div className="rounded-xl border border-white/5 bg-slate-900/35 p-6 text-sm text-slate-400 shadow-[0_16px_46px_rgba(2,6,23,0.6)] backdrop-blur-xl">
           Kayıtlı kurum verisi bulunmuyor.
         </div>
       ) : (
-        <div className="rounded-2xl border border-white/15 bg-card/80 p-6 shadow-[0_16px_46px_rgba(7,10,16,0.55)] backdrop-blur-md md:p-8">
+        <div className="rounded-2xl border border-white/5 bg-slate-900/35 p-6 shadow-[0_16px_46px_rgba(2,6,23,0.6)] backdrop-blur-xl md:p-8">
           <div className="relative h-[250px] w-full min-h-[250px] min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -160,8 +160,8 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
 
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div key={centerStateKey} className="pointer-events-auto px-3 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-tight text-gray-300">{centerTitle}</p>
-                <p className="mt-1 text-2xl font-black leading-tight tracking-tight text-emerald-200 drop-shadow-[0_0_16px_rgba(16,185,129,0.45)] md:text-[28px]">
+                <p className="text-[10px] font-bold uppercase tracking-tight text-slate-400">{centerTitle}</p>
+                <p className="mt-1 text-2xl font-black leading-tight tracking-tight text-slate-50 drop-shadow-[0_0_16px_rgba(217,70,239,0.38)] md:text-[28px]">
                   {formatTryCurrencyText(centerTotalValue)}
                 </p>
                 {selectedBank ? (
@@ -175,7 +175,7 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
                     Filtreyi Temizle (X)
                   </button>
                 ) : (
-                  <p className="mt-2 text-[10px] font-medium text-gray-300">Bir dilime tıklayarak filtrele</p>
+                  <p className="mt-2 text-[10px] font-medium text-slate-400">Bir dilime tıklayarak filtrele</p>
                 )}
               </div>
             </div>
@@ -192,15 +192,15 @@ export default function BankTotals({ bankTotals, baseCurrency, rates, totalValue
                     onClick={() => onSelectBank?.(entry.name)}
                     aria-pressed={isSelected}
                     className={`w-full min-h-[44px] transform-gpu rounded-lg border px-2.5 py-2 transition-all duration-200 ${
-                      'cursor-pointer border-white/10 bg-white/[0.03] hover:scale-[1.03] hover:border-sky-300/40 hover:bg-sky-500/10 active:scale-[0.98]'
+                      'cursor-pointer border-white/5 bg-slate-900/35 hover:scale-[1.03] hover:border-sky-300/40 hover:bg-sky-500/10 active:scale-[0.98]'
                     } ${isSelected ? 'border-sky-200/60 bg-sky-400/10 ring-1 ring-sky-200/60' : ''}`}
                   >
                     <div className="flex items-center justify-between gap-3 text-xs">
                       <div className="min-w-0 flex items-center gap-2">
                         <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: entry.color }} />
-                        <span className="truncate font-semibold text-gray-300">{entry.name}</span>
+                        <span className="truncate font-semibold text-slate-300">{entry.name}</span>
                       </div>
-                      <span className="font-semibold text-gray-300">{isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}</span>
+                      <span className="font-semibold text-slate-300">{isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}</span>
                     </div>
                   </button>
                 </li>

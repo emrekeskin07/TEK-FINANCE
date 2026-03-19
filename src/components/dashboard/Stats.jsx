@@ -30,7 +30,7 @@ export default function Stats({
     >
       <SpotlightCard
         spotlightColor="rgba(var(--secondary), 0.3)"
-        className="relative overflow-hidden rounded-3xl border border-white/15 bg-card/80 p-8 shadow-[0_30px_95px_rgba(7,10,16,0.6)] backdrop-blur-md md:p-10"
+        className="relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-8 shadow-[0_30px_95px_rgba(2,6,23,0.66)] backdrop-blur-xl md:p-10"
       >
         <div className="pointer-events-none absolute -left-20 -top-16 h-56 w-56 rounded-full bg-primary/25 blur-3xl" />
         <div className="pointer-events-none absolute -right-12 top-8 h-52 w-52 rounded-full bg-secondary/22 blur-3xl" />
@@ -38,13 +38,13 @@ export default function Stats({
 
         <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 max-w-3xl">
-            <p className="text-xs font-bold uppercase tracking-tight text-gray-300">Finansal Komuta Merkezi</p>
-            <h2 className="mt-2 text-xl font-black tracking-tight text-text-main md:text-3xl">
+            <p className="text-xs font-bold uppercase tracking-tight text-slate-400">Finansal Komuta Merkezi</p>
+            <h2 className="mt-2 text-xl font-black tracking-tight text-slate-50 md:text-3xl">
               <SplitText text={`Hoş Geldin ${greetingName}`} by="chars" stagger={0.02} />
             </h2>
-            <p className="mt-2 text-sm text-gray-300">Portföyünün canlı özeti, tek bir hero panelde.</p>
+            <p className="mt-2 text-sm text-slate-400">Portföyünün canlı özeti, tek bir hero panelde.</p>
 
-            <h3 className="mt-5 text-5xl font-black leading-none tracking-tight text-emerald-400 drop-shadow-[0_0_24px_rgba(16,185,129,0.45)] md:text-6xl">
+            <h3 className="mt-5 text-5xl font-black leading-none tracking-tight text-slate-50 drop-shadow-[0_0_22px_rgba(217,70,239,0.38)] md:text-6xl">
               <ShinyText>
                 <AnimatedCurrencyValue
                   value={dashboardTotalValue}
@@ -58,7 +58,7 @@ export default function Stats({
               Kâr / Zarar: {renderPercent()}
             </span>
 
-            <p className="mt-2 text-sm font-semibold text-gray-300">
+            <p className="mt-2 text-sm font-semibold text-slate-300">
               Net Değişim:{' '}
               <AnimatedCurrencyValue
                 value={totalProfit}
@@ -69,7 +69,7 @@ export default function Stats({
               />
             </p>
 
-            <p className="mt-4 text-sm text-gray-300">
+            <p className="mt-4 text-sm text-slate-400">
               (Bankalardaki Toplam:{' '}
               <AnimatedCurrencyValue
                 value={totalValue}
@@ -79,7 +79,7 @@ export default function Stats({
               )
             </p>
             {malVarligiManuelToplam > 0 ? (
-              <p className="mt-1 text-xs text-gray-300">
+              <p className="mt-1 text-xs text-slate-400">
                 Mal Varlığı Katkısı (Araç/Gayrimenkul/Diğer):{' '}
                 <AnimatedCurrencyValue
                   value={malVarligiManuelToplam}
@@ -88,7 +88,7 @@ export default function Stats({
                 />
               </p>
             ) : (
-              <p className="mt-1 text-xs text-gray-300">Şu an net değer yalnızca kurumlardaki varlıklardan oluşuyor.</p>
+              <p className="mt-1 text-xs text-slate-400">Şu an net değer yalnızca kurumlardaki varlıklardan oluşuyor.</p>
             )}
 
             <div className="mt-5 flex">
@@ -100,23 +100,23 @@ export default function Stats({
           </div>
 
           <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-[380px] lg:grid-cols-1">
-            <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-md">
+            <div className="rounded-2xl border border-white/5 bg-slate-950/55 p-5 backdrop-blur-xl">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-bold uppercase tracking-tight text-gray-300">Portföy Gücü</p>
+                <p className="text-xs font-bold uppercase tracking-tight text-slate-400">Portföy Gücü</p>
                 <Wallet className="h-4 w-4 text-primary" />
               </div>
-              <p className="mt-3 text-2xl font-black tracking-tight text-text-main drop-shadow-[0_0_14px_rgba(167,139,250,0.38)]">
+              <p className="mt-3 text-2xl font-black tracking-tight text-slate-50 drop-shadow-[0_0_14px_rgba(217,70,239,0.32)]">
                 {dashboardTotalValue > 0 ? 'Yüksek' : 'Başlangıç'}
               </p>
-              <p className="mt-1 text-xs text-gray-300">Anlık portföy büyüklüğüne göre otomatik güç seviyesi.</p>
+              <p className="mt-1 text-xs text-slate-400">Anlık portföy büyüklüğüne göre otomatik güç seviyesi.</p>
             </div>
 
-            <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-md">
-              <p className="text-xs font-bold uppercase tracking-tight text-gray-300">Veri Güveni</p>
-              <p className="mt-3 text-xl font-black tracking-tight text-text-main drop-shadow-[0_0_12px_rgba(236,72,153,0.35)]">
+            <div className="rounded-2xl border border-white/5 bg-slate-950/55 p-5 backdrop-blur-xl">
+              <p className="text-xs font-bold uppercase tracking-tight text-slate-400">Veri Güveni</p>
+              <p className="mt-3 text-xl font-black tracking-tight text-slate-50 drop-shadow-[0_0_12px_rgba(217,70,239,0.35)]">
                 Canlı + Senkron
               </p>
-              <p className="mt-1 text-xs text-gray-300">Banka ve varlık verileri tek bakışta senkron özetlenir.</p>
+              <p className="mt-1 text-xs text-slate-400">Banka ve varlık verileri tek bakışta senkron özetlenir.</p>
             </div>
           </div>
         </div>

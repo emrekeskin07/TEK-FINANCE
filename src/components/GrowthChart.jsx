@@ -178,17 +178,17 @@ export default function GrowthChart() {
     <motion.section
       layout
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-      className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-white/15 bg-card/80 p-8 shadow-[0_26px_76px_rgba(7,10,16,0.58)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45"
+      className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-white/5 bg-slate-900/40 p-8 shadow-[0_26px_76px_rgba(2,6,23,0.62)] backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-fuchsia-400/35"
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-tight text-text-main">
+          <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-tight text-slate-50">
             <TrendingUp className="h-4 w-4 text-primary" />
             Portföy Gelişimi
           </h3>
           <span className={`inline-flex min-h-[28px] items-center rounded-full border px-2.5 text-[11px] font-semibold ${
             rangeChangePercent === null
-              ? 'border-white/20 bg-white/10 text-gray-300'
+              ? 'border-white/10 bg-slate-900/60 text-slate-400'
               : (rangeChangePercent >= 0
                 ? 'border-emerald-300/40 bg-emerald-500/20 text-emerald-100 shadow-[0_0_14px_rgba(16,185,129,0.35)]'
                 : 'border-pink-300/40 bg-pink-500/20 text-pink-100 shadow-[0_0_14px_rgba(236,72,153,0.3)]')
@@ -197,7 +197,7 @@ export default function GrowthChart() {
           </span>
         </div>
 
-        <div className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-card/80 p-1 backdrop-blur-md">
+        <div className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-slate-950/55 p-1 backdrop-blur-xl">
           {RANGE_OPTIONS.map((option) => {
             const isActive = selectedRange === option.key;
             return (
@@ -208,8 +208,8 @@ export default function GrowthChart() {
                 onClick={() => setSelectedRange(option.key)}
                 className={`relative min-h-[44px] rounded-md px-3 py-2 text-[11px] ${
                   isActive
-                    ? 'bg-secondary/24 text-text-main shadow-[0_0_12px_rgba(236,72,153,0.22)]'
-                    : 'text-gray-300 hover:text-text-main'
+                    ? 'bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 text-slate-50 shadow-[0_0_14px_rgba(217,70,239,0.24)]'
+                    : 'text-slate-400 hover:text-slate-100'
                 }`}
               >
                 <span>{option.label}</span>

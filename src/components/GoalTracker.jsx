@@ -268,13 +268,13 @@ export default function GoalTracker() {
     <motion.section
       layout
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-      className="col-span-12 rounded-2xl border border-white/15 bg-card/80 p-8 shadow-[0_26px_78px_rgba(7,10,16,0.58)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45"
+      className="col-span-12 rounded-2xl border border-white/5 bg-slate-900/40 p-8 shadow-[0_26px_78px_rgba(2,6,23,0.62)] backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-fuchsia-400/35"
     >
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-tight text-text-main/90">Finansal Hedef Takibi</p>
-          <h3 className="mt-1 text-xl font-black tracking-tight text-text-main md:text-2xl">Goal Tracker</h3>
-          <p className="mt-2 text-xs text-gray-300">Bir hedef belirle, ilerlemeni takip et ve tahmini bitis suresini gor.</p>
+          <p className="text-xs font-bold uppercase tracking-tight text-slate-400">Finansal Hedef Takibi</p>
+          <h3 className="mt-1 text-xl font-black tracking-tight text-slate-50 md:text-2xl">Goal Tracker</h3>
+          <p className="mt-2 text-xs text-slate-400">Bir hedef belirle, ilerlemeni takip et ve tahmini bitis suresini gor.</p>
         </div>
 
         {hasGoal && !isEditing ? (
@@ -300,10 +300,10 @@ export default function GoalTracker() {
       </div>
 
       {isEditing ? (
-        <form onSubmit={handleSaveGoal} className="rounded-2xl border border-white/15 bg-card/80 p-6 backdrop-blur-md md:p-8">
+        <form onSubmit={handleSaveGoal} className="rounded-2xl border border-white/5 bg-slate-900/35 p-6 backdrop-blur-xl md:p-8">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="md:col-span-2">
-              <label htmlFor="goal-name" className="mb-1 block text-xs font-semibold uppercase tracking-tight text-gray-300">
+              <label htmlFor="goal-name" className="mb-1 block text-xs font-semibold uppercase tracking-tight text-slate-400">
                 Hedef Adi
               </label>
               <input
@@ -311,13 +311,13 @@ export default function GoalTracker() {
                 value={draftName}
                 onChange={(event) => setDraftName(event.target.value)}
                 placeholder="Orn: Yeni Araba, Ev Pesinati"
-                className="w-full rounded-lg border border-white/15 bg-card/70 px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-secondary/70"
+                className="w-full rounded-lg border border-white/5 bg-slate-950/60 px-3 py-2.5 text-sm text-slate-50 outline-none transition-colors focus:border-fuchsia-400/65"
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="goal-target" className="mb-1 block text-xs font-semibold uppercase tracking-tight text-gray-300">
+              <label htmlFor="goal-target" className="mb-1 block text-xs font-semibold uppercase tracking-tight text-slate-400">
                 Hedef Tutar
               </label>
               <NumericFormat
@@ -332,7 +332,7 @@ export default function GoalTracker() {
                 inputMode="decimal"
                 onValueChange={({ value }) => setDraftTargetAmount(value)}
                 placeholder="250.000"
-                className="w-full rounded-lg border border-white/15 bg-card/70 px-3 py-2.5 text-sm text-text-main outline-none transition-colors focus:border-secondary/70"
+                className="w-full rounded-lg border border-white/5 bg-slate-950/60 px-3 py-2.5 text-sm text-slate-50 outline-none transition-colors focus:border-fuchsia-400/65"
                 required
               />
             </div>
@@ -341,7 +341,7 @@ export default function GoalTracker() {
           <div className="mt-4 flex justify-end">
             <button
               type="submit"
-              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-lg border border-secondary/35 bg-gradient-to-r from-primary/35 via-secondary/30 to-accent/35 px-4 py-2 text-sm font-semibold text-text-main transition-all duration-200 hover:scale-105 hover:shadow-[0_0_20px_rgba(var(--secondary),0.35)] active:scale-95"
+              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-lg border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 px-4 py-2 text-sm font-semibold text-slate-50 transition-all duration-200 hover:scale-105 hover:shadow-[0_0_20px_rgba(217,70,239,0.35)] active:scale-95"
             >
               <Save className="h-4 w-4" />
               Hedefi Kaydet
@@ -352,17 +352,17 @@ export default function GoalTracker() {
 
       {hasGoal ? (
         <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-secondary/20 via-card/80 to-accent/18 p-6 backdrop-blur-md md:p-7">
+          <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-br from-violet-500/20 via-slate-900/45 to-fuchsia-500/18 p-6 backdrop-blur-xl md:p-7">
             <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-accent/20 blur-2xl" aria-hidden="true" />
             <div className="absolute -left-8 bottom-0 h-24 w-24 rounded-full bg-primary/16 blur-2xl" aria-hidden="true" />
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-tight text-gray-300">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-tight text-slate-400">
               <Target className="h-4 w-4 text-primary" />
               Hedef: {goal.name}
             </div>
 
             <div className="mt-6">
               <div className="flex items-end justify-between gap-3">
-                <p className="text-[11px] font-semibold uppercase tracking-tight text-gray-300">Ilerleme</p>
+                <p className="text-[11px] font-semibold uppercase tracking-tight text-slate-400">Ilerleme</p>
                 <p className="text-2xl font-black leading-none text-white drop-shadow-[0_0_14px_rgba(167,139,250,0.45)]">{isPrivacyActive ? maskValue(percentageLabel) : percentageLabel}</p>
               </div>
 
@@ -383,30 +383,30 @@ export default function GoalTracker() {
                 </div>
               </div>
 
-              <div className="mt-3 flex items-center justify-between gap-3 text-[12px] text-gray-300">
+              <div className="mt-3 flex items-center justify-between gap-3 text-[12px] text-slate-400">
                 <span>Mevcut: <AnimatedCurrencyValue value={currentValue} baseCurrency={baseCurrency} rates={rates} /></span>
                 <span>Hedef: <AnimatedCurrencyValue value={targetAmount} baseCurrency={baseCurrency} rates={rates} /></span>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/15 bg-card/80 p-6 backdrop-blur-md md:p-7">
+          <div className="rounded-2xl border border-white/5 bg-slate-900/35 p-6 backdrop-blur-xl md:p-7">
             <div className="space-y-2">
-              <p className="text-[11px] uppercase tracking-tight text-gray-300">Mevcut Portfoy</p>
+              <p className="text-[11px] uppercase tracking-tight text-slate-400">Mevcut Portfoy</p>
               <p className="text-2xl font-black text-slate-100 drop-shadow-[0_0_14px_rgba(236,72,153,0.3)] md:text-3xl">
                 <AnimatedCurrencyValue value={currentValue} baseCurrency={baseCurrency} rates={rates} />
               </p>
             </div>
 
             <div className="mt-4 space-y-2">
-              <p className="text-[11px] uppercase tracking-tight text-gray-300">Hedef Tutar</p>
+              <p className="text-[11px] uppercase tracking-tight text-slate-400">Hedef Tutar</p>
               <p className="text-lg font-bold text-emerald-200 md:text-xl">
                 <AnimatedCurrencyValue value={targetAmount} baseCurrency={baseCurrency} rates={rates} />
               </p>
             </div>
 
             <div className="mt-4 space-y-2">
-              <p className="text-[11px] uppercase tracking-tight text-gray-300">Kalan Tutar</p>
+              <p className="text-[11px] uppercase tracking-tight text-slate-400">Kalan Tutar</p>
               <p className="text-base font-semibold text-slate-200">
                 <AnimatedCurrencyValue value={remainingAmount} baseCurrency={baseCurrency} rates={rates} />
               </p>
@@ -421,9 +421,9 @@ export default function GoalTracker() {
                   max={240}
                   value={targetMonths}
                   onChange={(event) => setTargetMonths(event.target.value)}
-                  className="w-20 rounded-md border border-white/15 bg-slate-900/70 px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-secondary/70"
+                  className="w-20 rounded-md border border-white/5 bg-slate-950/70 px-2 py-1.5 text-sm text-slate-100 outline-none focus:border-fuchsia-400/70"
                 />
-                <span className="text-sm text-gray-300">ay icin gerekli aylik birikim:</span>
+                <span className="text-sm text-slate-400">ay icin gerekli aylik birikim:</span>
               </div>
               <p className="mt-2 text-lg font-black text-indigo-100 drop-shadow-[0_0_12px_rgba(167,139,250,0.42)]">
                 <AnimatedCurrencyValue value={monthlyContributionNeeded} baseCurrency={baseCurrency} rates={rates} />
@@ -448,7 +448,7 @@ export default function GoalTracker() {
           </div>
         </div>
       ) : (
-        <div className="mt-5 rounded-2xl border border-dashed border-white/15 bg-black/20 p-8 text-sm text-gray-300">
+        <div className="mt-5 rounded-2xl border border-dashed border-white/10 bg-slate-950/50 p-8 text-sm text-slate-400">
           Ilk hedefini olustur, sistem ilerleme orani ve 3 aylik hizina gore tahmini kalan gunu gostersin.
         </div>
       )}

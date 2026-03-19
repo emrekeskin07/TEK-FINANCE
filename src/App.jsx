@@ -480,8 +480,8 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-page text-slate-100">
-        <div className="text-sm text-gray-300">Oturum kontrol ediliyor...</div>
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-50">
+        <div className="text-sm text-slate-400">Oturum kontrol ediliyor...</div>
       </div>
     );
   }
@@ -515,7 +515,7 @@ export default function App() {
 
   return (
     <SyncContext.Provider value={{ lastSyncTime, setLastSyncTime }}>
-    <div className="relative min-h-screen overflow-hidden bg-page text-text-main font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10">
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-50 font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-24 -top-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
         <div className="absolute right-0 top-16 h-80 w-80 rounded-full bg-secondary/16 blur-3xl" />
@@ -615,32 +615,32 @@ export default function App() {
                 <motion.section
                   layout
                   transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                  className="col-span-12 md:col-span-4 md:order-2 relative overflow-hidden rounded-3xl border border-white/15 bg-card/80 p-8 shadow-[0_22px_74px_rgba(7,10,16,0.56)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-secondary/45"
+                  className="col-span-12 md:col-span-4 md:order-2 relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-8 shadow-[0_24px_72px_rgba(2,6,23,0.6)] backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-fuchsia-400/35"
                 >
                   <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-accent/18 blur-3xl" />
                   <div className="pointer-events-none absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-secondary/18 blur-3xl" />
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-bold uppercase tracking-tight text-text-main">Akıllı Öneriler</h3>
+                    <h3 className="text-sm font-bold uppercase tracking-tight text-slate-50">Akıllı Öneriler</h3>
                     <button
                       type="button"
                       onClick={handleToggleAlertDrawer}
-                      className="min-h-[44px] rounded-md border border-secondary/35 bg-secondary/20 px-2.5 py-1 text-xs font-semibold text-gray-100 transition-colors hover:bg-secondary/30"
+                      className="min-h-[44px] rounded-md border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 px-2.5 py-1 text-xs font-semibold text-slate-50 transition-colors hover:from-violet-500/35 hover:to-fuchsia-500/35"
                     >
                       Hepsini Gör
                     </button>
                   </div>
 
-                  <p className="mt-2 text-xs text-gray-300">Risk ve öneriler artık Alert panelinde. Burada kısa bir önizleme görebilirsin.</p>
+                  <p className="mt-2 text-xs text-slate-400">Risk ve öneriler artık Alert panelinde. Burada kısa bir önizleme görebilirsin.</p>
 
                   {previewAlerts.length > 0 ? (
                     <ul className="mt-4 space-y-2">
                       {previewAlerts.map((item) => (
-                        <li key={item.id} className="rounded-3xl border border-white/15 bg-black/25 px-3 py-2.5 backdrop-blur-md">
+                        <li key={item.id} className="rounded-3xl border border-white/5 bg-slate-950/60 px-3 py-2.5 backdrop-blur-xl">
                           <p className="text-sm font-semibold text-slate-100 flex items-center gap-2">
                             <span aria-hidden="true">{getAlertVisual(item).icon}</span>
                             <span>{item.title}</span>
                           </p>
-                          <p className="mt-1 line-clamp-2 text-xs text-gray-300">{item.detail}</p>
+                          <p className="mt-1 line-clamp-2 text-xs text-slate-400">{item.detail}</p>
                         </li>
                       ))}
                     </ul>
@@ -667,6 +667,8 @@ export default function App() {
               manualAssetsLoading={manualAssetsLoading}
               onManualAssetsChange={setManualAssets}
               userId={authUser.id}
+              marketData={marketData}
+              rates={rates}
             />
           </div>
         ) : (

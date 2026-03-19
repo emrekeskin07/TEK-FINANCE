@@ -67,7 +67,7 @@ export default function Header({
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-text-main transition-all duration-200 hover:scale-105 hover:bg-white/10 active:scale-95"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-slate-900/45 text-slate-50 transition-all duration-200 hover:scale-105 hover:bg-slate-800/60 active:scale-95"
           title="Menü"
           aria-label="Sidebar menüyü aç"
         >
@@ -85,7 +85,7 @@ export default function Header({
           <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
             <SplitText text="TEK Finans" by="chars" stagger={0.045} />
           </h1>
-          <p className="text-sm text-text-muted">Banka & Kurum Bazlı Varlık Takibi</p>
+          <p className="text-sm text-slate-400">Banka & Kurum Bazlı Varlık Takibi</p>
         </div>
       </div>
 
@@ -93,15 +93,15 @@ export default function Header({
         <button
           type="button"
           onClick={togglePrivacy}
-          className={`inline-flex transform-gpu items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm w-full md:w-auto ${isPrivacyActive ? 'bg-amber-500/15 border-amber-300/35 text-amber-100 hover:bg-amber-500/25' : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'}`}
+          className={`inline-flex transform-gpu items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm w-full md:w-auto ${isPrivacyActive ? 'bg-amber-500/15 border-amber-300/35 text-amber-100 hover:bg-amber-500/25' : 'bg-slate-900/40 border-white/5 text-slate-200 hover:bg-slate-800/60'}`}
           title={isPrivacyActive ? 'Gizlilik modunu kapat' : 'Gizlilik modunu aç'}
         >
           {isPrivacyActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           <span className="text-xs font-semibold">{isPrivacyActive ? 'Gizlilik Açık' : 'Gizlilik Kapalı'}</span>
         </button>
 
-        <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-card/70 px-2 py-1.5 backdrop-blur-md">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-page/70 text-text-main" title="Tema Seçici">
+        <div className="inline-flex items-center gap-1.5 rounded-lg border border-white/5 bg-slate-900/45 px-2 py-1.5 backdrop-blur-xl">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/5 bg-slate-950/70 text-slate-100" title="Tema Seçici">
             <Palette className="h-4 w-4" />
           </span>
           <div className="flex items-center gap-1">
@@ -125,7 +125,7 @@ export default function Header({
 
         {activePage === 'dashboard' ? (
           <>
-        <div className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1 backdrop-blur-sm">
+        <div className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-slate-900/35 p-1 backdrop-blur-xl">
           <button
             type="button"
             onClick={() => setBaseCurrency('TRY')}
@@ -146,7 +146,7 @@ export default function Header({
 
         <button 
           onClick={openAddModal}
-          className="flex transform-gpu items-center justify-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm w-full md:w-auto"
+          className="flex transform-gpu items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 hover:from-violet-500/35 hover:to-fuchsia-500/35 text-slate-50 border border-fuchsia-300/35 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-xl w-full md:w-auto"
         >
           <Plus className="w-4 h-4" />
           <span className="text-sm font-medium">Varlık Ekle</span>
@@ -157,7 +157,7 @@ export default function Header({
           <button 
             onClick={onRefresh} 
             disabled={loading}
-            className="flex transform-gpu items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm disabled:opacity-50"
+            className="flex transform-gpu items-center gap-2 px-4 py-2 bg-slate-900/40 hover:bg-slate-800/60 border border-white/5 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-xl disabled:opacity-50"
           >
             <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-400' : 'text-slate-300'}`} />
             <span className="text-sm hidden sm:inline">{loading ? 'Güncelleniyor...' : 'Yenile'}</span>
@@ -186,7 +186,7 @@ export default function Header({
             <button
               type="button"
               onClick={onToggleAlerts}
-              className="relative inline-flex h-10 w-10 transform-gpu items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition-all duration-200 hover:scale-105 hover:bg-white/10 active:scale-95"
+              className="relative inline-flex h-10 w-10 transform-gpu items-center justify-center rounded-xl border border-white/5 bg-slate-900/40 text-slate-200 transition-all duration-200 hover:scale-105 hover:bg-slate-800/60 active:scale-95"
               title="Uyarılar"
               aria-label="Uyarı panelini aç"
             >
@@ -201,7 +201,7 @@ export default function Header({
               ) : null}
             </button>
 
-            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 backdrop-blur-sm">
+            <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-slate-900/40 px-2.5 py-1.5 backdrop-blur-xl">
             {profileAvatar ? (
               <img
                 src={profileAvatar}
@@ -224,7 +224,7 @@ export default function Header({
             <button
               type="button"
               onClick={onSignOut}
-              className="inline-flex transform-gpu items-center gap-1 rounded-md border border-white/10 bg-black/25 px-2 py-1 text-[11px] text-slate-200 transition-all duration-200 hover:scale-105 hover:bg-black/40 active:scale-95"
+              className="inline-flex transform-gpu items-center gap-1 rounded-md border border-white/5 bg-slate-950/60 px-2 py-1 text-[11px] text-slate-200 transition-all duration-200 hover:scale-105 hover:bg-slate-900/80 active:scale-95"
               title="Çıkış yap"
             >
               <LogOut className="w-3.5 h-3.5" />

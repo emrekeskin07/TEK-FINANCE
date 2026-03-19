@@ -309,10 +309,10 @@ export default function PortfolioTable({
 
   return (
     <>
-    <div className="relative flex flex-col overflow-hidden rounded-2xl border border-white/15 bg-card/80 shadow-[0_20px_68px_rgba(7,10,16,0.56)] backdrop-blur-md transition-all duration-300 hover:scale-[1.01] hover:border-white/20 before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/10 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/10 after:content-['']">
+    <div className="relative flex flex-col overflow-hidden rounded-2xl border border-white/5 bg-slate-900/40 shadow-[0_20px_68px_rgba(2,6,23,0.62)] backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-white/15 before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/10 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/10 after:content-['']">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 p-6 md:p-8">
         <div className="flex items-center gap-3 flex-wrap">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
+          <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-50">
             <Coins className="w-5 h-5 text-blue-400" />
             VARLIKLARIM
           </h3>
@@ -330,7 +330,7 @@ export default function PortfolioTable({
             <button
               type="button"
               onClick={() => onClearFilter?.()}
-              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-full border border-primary/40 bg-gradient-to-r from-primary/20 to-secondary/20 px-3 py-1.5 text-xs font-semibold text-gray-100 transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-[0_0_18px_rgba(167,139,250,0.32)]"
+              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-full border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 px-3 py-1.5 text-xs font-semibold text-slate-50 transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-[0_0_18px_rgba(217,70,239,0.35)]"
               title="Filtreleri temizle"
             >
               <X className="w-3.5 h-3.5" />
@@ -338,11 +338,11 @@ export default function PortfolioTable({
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 p-1">
+        <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-slate-950/55 p-1">
           <button
             type="button"
             onClick={() => handleSortChange('totalValue')}
-            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'totalValue' ? 'bg-primary/22 text-gray-100' : 'text-gray-300 hover:bg-white/10'}`}
+            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'totalValue' ? 'bg-primary/22 text-slate-100' : 'text-slate-400 hover:bg-slate-800/60'}`}
             title="Toplam değere göre sırala"
           >
             Toplam Değer
@@ -353,7 +353,7 @@ export default function PortfolioTable({
           <button
             type="button"
             onClick={() => handleSortChange('profit')}
-            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'profit' ? 'bg-emerald-500/20 text-emerald-100' : 'text-gray-300 hover:bg-white/10'}`}
+            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'profit' ? 'bg-emerald-500/20 text-emerald-100' : 'text-slate-400 hover:bg-slate-800/60'}`}
             title="Kâr/zarara göre sırala"
           >
             Kâr/Zarar
@@ -367,7 +367,7 @@ export default function PortfolioTable({
           <button
             type="button"
             onClick={() => setIsReportMenuOpen((prev) => !prev)}
-            className="inline-flex min-h-[44px] transform-gpu items-center gap-2 rounded-md border border-emerald-300/35 bg-emerald-500/18 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition-all duration-200 hover:scale-105 hover:bg-emerald-500/28 active:scale-95"
+            className="inline-flex min-h-[44px] transform-gpu items-center gap-2 rounded-md border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 px-3 py-1.5 text-xs font-semibold text-slate-50 transition-all duration-200 hover:scale-105 hover:from-violet-500/35 hover:to-fuchsia-500/35 active:scale-95"
             title="Rapor seçeneklerini aç"
             aria-haspopup="menu"
             aria-expanded={isReportMenuOpen}
@@ -378,7 +378,7 @@ export default function PortfolioTable({
           </button>
 
           {isReportMenuOpen ? (
-            <div className="absolute right-0 z-20 mt-1 min-w-[190px] overflow-hidden rounded-lg border border-white/15 bg-[#10141d]/95 p-1.5 shadow-2xl backdrop-blur-md" role="menu">
+            <div className="absolute right-0 z-20 mt-1 min-w-[190px] overflow-hidden rounded-lg border border-white/5 bg-slate-950/95 p-1.5 shadow-2xl backdrop-blur-xl" role="menu">
               <button
                 type="button"
                 onMouseDown={(event) => event.preventDefault()}

@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 :root {
-	--primary: 167 139 250;
-	--secondary: 236 72 153;
-	--accent: 16 185 129;
-	--bg-card: 28 34 48;
-	--bg-page: 16 20 29;
-	--text-main: 241 245 249;
-	--text-muted: 209 213 219;
+	--primary: 139 92 246;
+	--secondary: 217 70 239;
+	--accent: 232 121 249;
+	--bg-card: 15 23 42;
+	--bg-page: 2 6 23;
+	--text-main: 248 250 252;
+	--text-muted: 148 163 184;
 }
 
 *,
@@ -23,8 +23,23 @@
 html,
 body,
 #root {
+	font-family: 'Manrope', 'Sora', 'Segoe UI', sans-serif;
 	color: rgb(var(--text-main));
 	background-color: rgb(var(--bg-page));
+}
+
+body {
+	background-image:
+		radial-gradient(circle at 12% 8%, rgba(139, 92, 246, 0.15), transparent 34%),
+		radial-gradient(circle at 86% 12%, rgba(217, 70, 239, 0.14), transparent 38%),
+		radial-gradient(circle at 55% 100%, rgba(99, 102, 241, 0.12), transparent 42%);
+	background-attachment: fixed;
+}
+
+@layer components {
+	.surface-card {
+		@apply border border-white/5 bg-slate-900/40 backdrop-blur-xl shadow-[0_22px_70px_rgba(2,6,23,0.58)];
+	}
 }
 
 ::-webkit-scrollbar {
@@ -33,7 +48,7 @@ body,
 }
 
 ::-webkit-scrollbar-track {
-	background: #10141d;
+	background: #020617;
 }
 
 ::-webkit-scrollbar-thumb {
