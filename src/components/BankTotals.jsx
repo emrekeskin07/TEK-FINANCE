@@ -167,11 +167,23 @@ export default function BankTotals({ bankTotals, rates, totalValue, selectedBank
             </ResponsiveContainer>
 
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="px-3 text-center">
+              <div className="pointer-events-auto px-3 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Total Value</p>
                 <p className="mt-1 text-2xl md:text-[28px] font-black leading-tight tracking-tight text-slate-100">
                   {renderTryCurrencyWithMutedSymbol(centerTotalValue)}
                 </p>
+                {selectedBank ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectBank?.(selectedBank)}
+                    className="mt-2 inline-flex items-center rounded-full border border-sky-300/35 bg-sky-500/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-sky-100 transition-all duration-200 hover:bg-sky-500/25 hover:shadow-[0_0_18px_rgba(56,189,248,0.35)]"
+                    title="Kurum filtresini temizle"
+                  >
+                    Filtreyi Temizle
+                  </button>
+                ) : (
+                  <p className="mt-2 text-[10px] font-medium text-slate-500">Bir dilime tıklayarak filtrele</p>
+                )}
               </div>
             </div>
           </div>

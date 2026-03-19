@@ -309,11 +309,21 @@ export default function PortfolioTable({
             <Coins className="w-5 h-5 text-blue-400" />
             VARLIKLARIM
           </h3>
+          {selectedBank && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-300/35 bg-sky-500/15 px-3 py-1.5 text-[11px] font-semibold text-sky-100">
+              Kurum: {selectedBank}
+            </span>
+          )}
+          {selectedCategory && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-300/35 bg-indigo-500/15 px-3 py-1.5 text-[11px] font-semibold text-indigo-100">
+              Kategori: {selectedCategory}
+            </span>
+          )}
           {(selectedBank || selectedCategory) && (
             <button
               type="button"
               onClick={() => onClearFilter?.()}
-              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-blue-400/30 bg-blue-500/10 text-blue-200 hover:bg-blue-500/20 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full border border-blue-300/40 bg-gradient-to-r from-blue-500/20 to-cyan-400/20 px-3 py-1.5 text-xs font-semibold text-blue-100 transition-all duration-200 hover:shadow-[0_0_18px_rgba(59,130,246,0.28)]"
               title="Filtreleri temizle"
             >
               <X className="w-3.5 h-3.5" />
@@ -360,25 +370,35 @@ export default function PortfolioTable({
               ? 'Henüz bir varlık eklemediniz.'
               : 'Seçili filtreler için varlık bulunamadı.'}
           </div>
-        ) : groupedDisplayedPortfolio.map((group) => {
-          const groupProfitPercent = group.totalCost > 0 ? ((group.totalProfit / group.totalCost) * 100).toFixed(2) : '0.00';
+        ) : (
+          <AnimatePresence initial={false} mode="popLayout">
+            {groupedDisplayedPortfolio.map((group) => {
+              const groupProfitPercent = group.totalCost > 0 ? ((group.totalProfit / group.totalCost) * 100).toFixed(2) : '0.00';
 
-          const portfolioKey = String(group.portfolioName || 'Genel Portföy');
-          const isPortfolioOpen = openPortfolios[portfolioKey] ?? true;
+              const portfolioKey = String(group.portfolioName || 'Genel Portföy');
+              const isPortfolioOpen = openPortfolios[portfolioKey] ?? true;
 
-          return (
-            <AssetGroup
-              key={`portfolio-group-${group.portfolioName}`}
-              group={group}
-              isOpen={isPortfolioOpen}
-              groupProfitPercent={groupProfitPercent}
-              onToggle={() => togglePortfolioAccordion(portfolioKey)}
-              onQuickAdd={() => onQuickAddPortfolio?.(portfolioKey)}
-              renderCurrency={renderCurrencyWithMutedSymbol}
-              isPrivacyActive={isPrivacyActive}
-              maskValue={maskValue}
-            >
-              {group.items.map(({ item, livePrice, activePrice, itemTotalValue, itemCost, itemProfit }) => {
+              return (
+                <motion.div
+                  key={`portfolio-group-${portfolioKey}`}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.24, ease: 'easeOut' }}
+                >
+                  <AssetGroup
+                    group={group}
+                    isOpen={isPortfolioOpen}
+                    groupProfitPercent={groupProfitPercent}
+                    onToggle={() => togglePortfolioAccordion(portfolioKey)}
+                    onQuickAdd={() => onQuickAddPortfolio?.(portfolioKey)}
+                    renderCurrency={renderCurrencyWithMutedSymbol}
+                    isPrivacyActive={isPrivacyActive}
+                    maskValue={maskValue}
+                    >
+                  <AnimatePresence initial={false} mode="popLayout">
+                  {group.items.map(({ item, livePrice, activePrice, itemTotalValue, itemCost, itemProfit }) => {
                 const categoryName = item.category || 'Diğer';
                 const isCategorySelected = selectedCategory === categoryName;
                 const isCashAsset = categoryName === 'Nakit' || categoryName === 'Nakit/Banka';
@@ -399,7 +419,15 @@ export default function PortfolioTable({
                 const isExpanded = expandedAssetId === item.id;
 
                 return (
-            <article key={item.id} className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
+            <motion.article
+              key={item.id}
+              layout
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="rounded-xl border border-white/10 bg-white/5 overflow-hidden"
+            >
               <button
                 type="button"
                 onClick={() => handleAccordionToggle(item.id)}
@@ -554,12 +582,16 @@ export default function PortfolioTable({
                   </motion.div>
                 ) : null}
               </AnimatePresence>
-            </article>
+            </motion.article>
                 );
               })}
-            </AssetGroup>
-          );
-        })}
+              </AnimatePresence>
+                  </AssetGroup>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        )}
       </div>
     </div>
     <AnimatePresence>
