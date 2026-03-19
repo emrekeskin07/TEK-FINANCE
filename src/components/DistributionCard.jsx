@@ -6,6 +6,8 @@ import BankTotals from './BankTotals';
 export default function DistributionCard() {
   const {
     bankTotals,
+    portfolio,
+    marketData,
     baseCurrency,
     rates,
     totalValue,
@@ -23,6 +25,8 @@ export default function DistributionCard() {
     >
       <BankTotals
         bankTotals={bankTotals}
+        portfolio={portfolio}
+        marketData={marketData}
         baseCurrency={baseCurrency}
         rates={rates}
         totalValue={totalValue}
