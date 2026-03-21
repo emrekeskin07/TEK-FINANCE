@@ -21,6 +21,7 @@ export default function Stats({
   rates,
   renderPercent,
   renderRealReturn,
+  onPrimaryAction,
 }) {
   const profitPercentColorClass = profitPercentageValue >= 0 ? 'text-emerald-500' : 'text-red-500';
 
@@ -34,79 +35,67 @@ export default function Stats({
     >
       <SpotlightCard
         spotlightColor="rgba(var(--secondary), 0.3)"
-        className="relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-8 shadow-[0_30px_95px_rgba(2,6,23,0.66)] backdrop-blur-xl md:p-10"
+        className="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-purple-50 to-white p-8 shadow-sm md:p-10 dark:border-white/5 dark:bg-slate-900/40 dark:shadow-[0_30px_95px_rgba(2,6,23,0.66)] dark:backdrop-blur-xl"
       >
         <div className="pointer-events-none absolute -left-20 -top-16 h-56 w-56 rounded-full bg-primary/25 blur-3xl" />
         <div className="pointer-events-none absolute -right-12 top-8 h-52 w-52 rounded-full bg-secondary/22 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 rounded-full bg-accent/18 blur-3xl" />
 
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0 max-w-3xl">
-            <p className="text-xs font-bold uppercase tracking-tight text-slate-400">Finansal Komuta Merkezi</p>
-            <h2 className="mt-2 text-xl font-black tracking-tight text-slate-50 md:text-3xl">
-              <SplitText text={`Hoş Geldin ${greetingName}`} by="chars" stagger={0.02} />
-            </h2>
-            <p className="mt-2 text-sm text-slate-400">Portföyünün canlı özeti, tek bir hero panelde.</p>
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <p className="text-xs font-bold uppercase tracking-tight text-slate-500 dark:text-slate-400">Finansal Komuta Merkezi</p>
+          <h2 className="mt-2 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl dark:text-slate-50">
+            Yatırımlarının Yeni Komuta Merkezi.
+          </h2>
+          <p className="mt-4 max-w-2xl text-lg text-slate-500 dark:text-slate-300">
+            Banka, borsa ve kripto varlıklarını tek bir akıllı panelde yönet. Gerçek kârını ve enflasyon karşısındaki gücünü saniyeler içinde analiz et.
+          </p>
 
-            <h3 className="mt-5 text-5xl font-black leading-none tracking-tight text-slate-50 drop-shadow-[0_0_22px_rgba(217,70,239,0.38)] md:text-6xl">
-              <ShinyText>
-                <AnimatedCurrencyValue
-                  value={dashboardTotalValue}
-                  baseCurrency={baseCurrency}
-                  rates={rates}
-                />
-              </ShinyText>
-            </h3>
+          <button
+            type="button"
+            onClick={onPrimaryAction}
+            className="mt-7 inline-flex transform-gpu items-center justify-center rounded-full bg-purple-600 px-8 py-4 text-base font-semibold text-white transition-all duration-300 hover:scale-105 hover:bg-purple-700"
+          >
+            Portföyünü Oluştur →
+          </button>
 
-            <span className={`mt-4 inline-flex items-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-extrabold tracking-tight shadow-[0_0_20px_rgba(15,23,42,0.24)] ${profitPercentColorClass}`}>
-              Kâr / Zarar: {renderPercent()}
-            </span>
+          <div className="mt-7 w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/65">
+            <div className="mb-3 flex items-center justify-between text-left">
+              <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Canlı Önizleme</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{greetingName}</p>
+            </div>
 
-            <p className="mt-2 text-sm font-semibold text-slate-300">
-              Net Değişim:{' '}
-              <AnimatedCurrencyValue
-                value={totalProfit}
-                baseCurrency={baseCurrency}
-                rates={rates}
-                showPositiveSign
-                className={`${totalProfit >= 0 ? 'text-emerald-200' : 'text-pink-200'} drop-shadow-[0_0_10px_rgba(167,139,250,0.45)]`}
-              />
-            </p>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:items-center">
+              <div className="flex items-center justify-center">
+                <div className="relative flex h-36 w-36 items-center justify-center rounded-full border-[14px] border-purple-200 dark:border-purple-500/35">
+                  <div className="absolute inset-3 rounded-full border-[10px] border-emerald-200 dark:border-emerald-500/30" />
+                  <div className="relative text-center">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Toplam</p>
+                    <p className="text-sm font-black text-slate-900 dark:text-slate-100">
+                      <ShinyText>
+                        <AnimatedCurrencyValue value={dashboardTotalValue} baseCurrency={baseCurrency} rates={rates} />
+                      </ShinyText>
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-            <p className="mt-4 text-sm text-slate-400">
-              (Bankalardaki Toplam:{' '}
-              <AnimatedCurrencyValue
-                value={totalValue}
-                baseCurrency={baseCurrency}
-                rates={rates}
-              />
-              )
-            </p>
-            {malVarligiManuelToplam > 0 ? (
-              <p className="mt-1 text-xs text-slate-400">
-                Mal Varlığı Katkısı (Araç/Gayrimenkul/Diğer):{' '}
-                <AnimatedCurrencyValue
-                  value={malVarligiManuelToplam}
-                  baseCurrency={baseCurrency}
-                  rates={rates}
-                />
-              </p>
-            ) : (
-              <p className="mt-1 text-xs text-slate-400">Şu an net değer yalnızca kurumlardaki varlıklardan oluşuyor.</p>
-            )}
-
-            <div className="mt-5 flex">
-              <span className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold tracking-tight ${portfolioRealReturnPercent >= 0 ? 'border-emerald-300/45 bg-emerald-500/16 text-emerald-100' : 'border-pink-300/45 bg-pink-500/14 text-pink-100'}`}>
-                <span className="inline-flex items-center gap-1">
-                  Reel Getiri ({selectedInflationSourceLabel})
-                  <InfoTooltip content="ENAG bağımsız enflasyon endeksine göre hesaplanan gerçek satın alma gücü getirisi" />
-                </span>
-                <span className="font-bold">{renderRealReturn()}</span>
-              </span>
+              <div className="space-y-2 text-left">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-slate-900/55">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Kâr / Zarar</p>
+                  <p className={`text-sm font-bold ${profitPercentColorClass}`}>{renderPercent()}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-slate-900/55">
+                  <p className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                    Reel Getiri ({selectedInflationSourceLabel})
+                    <InfoTooltip content="ENAG bağımsız enflasyon endeksine göre hesaplanan gerçek satın alma gücü getirisi" />
+                  </p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{renderRealReturn()}</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-[380px] lg:grid-cols-1">
+          <div className="mt-7 grid w-full gap-3 sm:grid-cols-2 lg:max-w-3xl">
             <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-5 backdrop-blur-xl">
               <div className="flex items-center justify-between gap-2">
                 <p className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-tight text-slate-400">
@@ -148,4 +137,10 @@ Stats.propTypes = {
   rates: PropTypes.object,
   renderPercent: PropTypes.func.isRequired,
   renderRealReturn: PropTypes.func.isRequired,
+  onPrimaryAction: PropTypes.func,
+};
+
+Stats.defaultProps = {
+  rates: {},
+  onPrimaryAction: () => {},
 };

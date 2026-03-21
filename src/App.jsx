@@ -750,6 +750,7 @@ export default function App() {
                         ? maskValue(`${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`)
                         : `${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`
                     )}
+                    onPrimaryAction={() => openAddModal()}
                   />
 
                   <GoalTracker />
