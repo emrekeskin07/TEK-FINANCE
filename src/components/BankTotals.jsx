@@ -424,6 +424,10 @@ export default function BankTotals({
                 <div className="mt-3 rounded-xl border border-indigo-300/25 bg-indigo-500/10 px-3 py-2 text-sm italic text-indigo-100">
                   {distributionTip}
                 </div>
+
+                <p className="mt-2 text-right text-[10px] text-slate-400">
+                  Veriler Yahoo Finance ve Binance API aracılığıyla gecikmeli olarak sağlanmaktadır.
+                </p>
               </div>
             </motion.div>
           </AnimatePresence>

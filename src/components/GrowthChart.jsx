@@ -509,6 +509,10 @@ export default function GrowthChart() {
             Grafik hazırlanıyor...
           </div>
         )}
+
+        <p className="pointer-events-none absolute bottom-2 right-2 text-[10px] text-slate-400">
+          Veriler Yahoo Finance ve Binance API aracılığıyla gecikmeli olarak sağlanmaktadır.
+        </p>
       </div>
     </motion.section>
   );

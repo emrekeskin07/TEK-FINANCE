@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import Confetti from 'react-confetti';
-import { Sparkles } from 'lucide-react';
+import { AlertTriangle, Sparkles } from 'lucide-react';
 import { usePortfolio } from './hooks/usePortfolio';
 import { useMarketPrices } from './hooks/useMarketPrices';
 import { useAuthSession } from './hooks/useAuthSession';
@@ -1064,6 +1064,17 @@ export default function App() {
           <div />
         )}
       </main>
+
+      <footer className={`mx-auto mt-8 max-w-[1400px] transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
+        <div className="rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3">
+          <p className="inline-flex items-start gap-2 text-xs text-amber-100">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-200" />
+            <span>
+              YASAL UYARI: Bu platform bir finansal simülasyon aracıdır. Burada sunulan hiçbir veri, grafik veya AI yorumu Yatırım Tavsiyesi (YTD) kapsamında değildir.
+            </span>
+          </p>
+        </div>
+      </footer>
 
       <AlertDrawer
         isOpen={isAlertDrawerOpen}

@@ -323,6 +323,9 @@ export default function EnflasyonAnaliziPage({
               <p className="mt-2 text-xs text-slate-300/80">
                 Reel getiri: {formatPercent(realReturn)} | Kaynak: {SOURCE_LABELS[source]} | Donem: {period.month}.{period.year}
               </p>
+              <p className="mt-1 text-[10px] text-slate-400">
+                Enflasyon verileri ENAG (bağımsız) baz alınarak hesaplanmaktadır.
+              </p>
 
               <div className="mt-5 rounded-2xl border border-white/5 bg-slate-900/40 p-3 backdrop-blur-xl md:p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-300">Nominal vs Enflasyon Etkisi</p>
@@ -479,6 +482,10 @@ export default function EnflasyonAnaliziPage({
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-500">Grafik hazırlanıyor...</div>
             )}
+
+            <p className="pointer-events-none absolute bottom-2 right-2 text-[10px] text-slate-400">
+              Veriler Yahoo Finance ve Binance API aracılığıyla gecikmeli olarak sağlanmaktadır.
+            </p>
           </div>
 
           <aside className="relative overflow-hidden rounded-2xl border border-white/5 bg-slate-900/40 p-5 backdrop-blur-xl xl:col-span-4">
