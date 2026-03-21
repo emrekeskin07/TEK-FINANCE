@@ -346,7 +346,9 @@ export const usePortfolio = (userId, onPortfolioChange) => {
         },
       });
 
-      toast.success(`${resolvedBank} - ${symbol} mevcut kayitla birlestirildi.`);
+      toast.success(`✅ ${resolveAssetName({ symbol, name: dbPayload.name })} varlığı başarıyla portföyüne eklendi.`, {
+        style: { background: '#052e16', color: '#dcfce7', border: '1px solid #166534' },
+      });
       setIsPortfolioMutating(false);
       return true;
     }
@@ -403,7 +405,9 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       },
     });
 
-    toast.success(`${resolvedBank} - ${symbol} basariyla eklendi!`);
+    toast.success(`✅ ${resolveAssetName({ symbol, name: dbPayload.name })} varlığı başarıyla portföyüne eklendi.`, {
+      style: { background: '#052e16', color: '#dcfce7', border: '1px solid #166534' },
+    });
     setIsPortfolioMutating(false);
     return true;
   };
@@ -538,9 +542,8 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     }
 
     if (assetToDelete) {
-      toast.success(`${assetToDelete.bank} - ${assetToDelete.symbol} silindi.`, {
-        icon: '🗑️',
-        style: { background: '#450a0a', color: '#fecdd3', border: '1px solid #9f1239' },
+      toast.success(`✅ ${resolveAssetName(assetToDelete)} varlığı portföyünden kaldırıldı.`, {
+        style: { background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155' },
       });
     }
 
@@ -731,7 +734,9 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       },
     });
 
-    toast.success(`${sourceAsset.symbol} satildi. Gelir ${bankName} nakit hesabina aktarildi.`);
+    toast.success(`✅ ${resolveAssetName(sourceAsset)} satışı tamamlandı. Gelir ${bankName} nakit hesabına aktarıldı.`, {
+      style: { background: '#052e16', color: '#dcfce7', border: '1px solid #166534' },
+    });
     setIsPortfolioMutating(false);
     return true;
   }, [fetchPortfolio, userId, logTransaction]);

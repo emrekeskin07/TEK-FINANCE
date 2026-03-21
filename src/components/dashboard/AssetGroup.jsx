@@ -20,7 +20,7 @@ export default function AssetGroup({
           type="button"
           onClick={onToggle}
           aria-expanded={isOpen}
-          className="w-full rounded-xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 text-left transition-all duration-300 ease-in-out hover:bg-blue-500/15 md:px-5"
+          className="w-full rounded-xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 text-left transition-all duration-200 ease-in-out hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-blue-500/15 md:px-5"
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -48,7 +48,7 @@ export default function AssetGroup({
         <button
           type="button"
           onClick={onQuickAdd}
-          className="inline-flex h-auto min-w-10 items-center justify-center rounded-xl border border-white/10 bg-black/25 px-2 text-slate-300 opacity-55 transition-all duration-300 ease-in-out hover:border-blue-300/45 hover:bg-blue-500/20 hover:text-blue-100 hover:opacity-100 group-hover:opacity-100"
+          className="inline-flex h-auto min-w-10 items-center justify-center rounded-xl border border-white/10 bg-black/25 px-2 text-slate-300 opacity-55 transition-all duration-200 ease-in-out hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:border-blue-300/45 hover:bg-blue-500/20 hover:text-blue-100 hover:opacity-100 group-hover:opacity-100"
           title={`${group.portfolioName} portföyüne hızlı varlık ekle`}
           aria-label={`${group.portfolioName} portföyüne hızlı varlık ekle`}
         >

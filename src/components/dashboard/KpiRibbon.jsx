@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { TrendingDown, TrendingUp } from 'lucide-react';
+import { Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/helpers';
 
 const GOAL_STORAGE_PREFIX = 'tek-finance:userGoals';
@@ -70,6 +70,7 @@ export default function KpiRibbon({
   userId,
   isPrivacyActive,
   maskValue,
+  isLoading,
 }) {
   const [goalState, setGoalState] = useState({ name: '', targetAmount: 0 });
 
@@ -155,6 +156,31 @@ export default function KpiRibbon({
       : formatCurrency(goalProgress.targetAmount, baseCurrency, rates))
     : '';
 
+  if (isLoading) {
+    return (
+      <section className="col-span-12 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 md:p-4 dark:border-slate-800 dark:bg-slate-950/30" aria-hidden="true">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <article key={`kpi-skeleton-${index}`} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md dark:border-slate-800 dark:bg-slate-900">
+              <div className="animate-pulse space-y-3">
+                <div className="h-3 w-28 rounded bg-slate-200 dark:bg-slate-800" />
+                <div className="h-8 w-44 rounded bg-slate-200 dark:bg-slate-800" />
+                <div className="h-3 w-36 rounded bg-slate-200 dark:bg-slate-800" />
+              </div>
+            </article>
+          ))}
+          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md md:col-span-3 dark:border-slate-800 dark:bg-slate-900">
+            <div className="animate-pulse space-y-3">
+              <div className="h-3 w-44 rounded bg-slate-200 dark:bg-slate-800" />
+              <div className="h-3 w-full rounded bg-slate-200 dark:bg-slate-800" />
+              <div className="h-3 w-4/5 rounded bg-slate-200 dark:bg-slate-800" />
+            </div>
+          </article>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="col-span-12 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 md:p-4 dark:border-slate-800 dark:bg-slate-950/30">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -203,7 +229,13 @@ export default function KpiRibbon({
               <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">%{goalProgress.progress.toFixed(0)} tamamlandı</p>
             </>
           ) : (
-            <p className="mt-2 text-xs text-slate-400">Henüz kayıtlı hedef bulunmuyor. Hedef kartından yeni bir hedef oluşturabilirsin.</p>
+            <div className="mt-3 rounded-xl border border-dashed border-slate-300/70 bg-slate-100/80 p-4 dark:border-slate-700 dark:bg-slate-800/55">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                <Target className="h-4 w-4 text-slate-400" />
+                Henüz bir hedef eklenmedi.
+              </p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Hedef kartından ilk birikim hedefini oluşturarak ilerlemeyi takip edebilirsin.</p>
+            </div>
           )}
         </article>
       </div>
@@ -223,6 +255,7 @@ KpiRibbon.propTypes = {
   userId: PropTypes.string,
   isPrivacyActive: PropTypes.bool,
   maskValue: PropTypes.func,
+  isLoading: PropTypes.bool,
 };
 
 KpiRibbon.defaultProps = {
@@ -231,4 +264,5 @@ KpiRibbon.defaultProps = {
   userId: null,
   isPrivacyActive: false,
   maskValue: (value) => value,
+  isLoading: false,
 };

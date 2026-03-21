@@ -940,7 +940,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => navigateToPage('portfolio')}
-                className="inline-flex min-h-[40px] items-center rounded-lg border border-purple-300/35 bg-purple-100 px-3 py-2 text-xs font-semibold text-purple-700 transition-colors hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:hover:bg-purple-900/45"
+                className="inline-flex min-h-[40px] transform-gpu items-center rounded-lg border border-purple-300/35 bg-purple-100 px-3 py-2 text-xs font-semibold text-purple-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:hover:bg-purple-900/45"
               >
                 Tümünü Gör
               </button>
@@ -968,6 +968,7 @@ export default function App() {
                       userId={authUser?.id || null}
                       isPrivacyActive={isPrivacyActive}
                       maskValue={maskValue}
+                      isLoading={loading || isPortfolioLoading}
                     />
                   </div>
 

@@ -92,7 +92,7 @@ export default function Stats({
           <button
             type="button"
             onClick={onPrimaryAction}
-            className="mt-7 inline-flex transform-gpu items-center justify-center rounded-full bg-purple-600 px-8 py-4 text-base font-semibold text-white transition-all duration-300 hover:scale-105 hover:bg-purple-700"
+            className="mt-7 inline-flex transform-gpu items-center justify-center rounded-full bg-purple-600 px-8 py-4 text-base font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-purple-700"
           >
             Portföyünü Oluştur →
           </button>

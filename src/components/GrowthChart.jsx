@@ -119,7 +119,7 @@ function TooltipContent({ active, payload, formatter, isBenchmarkMode }) {
 }
 
 export default function GrowthChart() {
-  const { lineChartData, rates, baseCurrency } = useDashboardData();
+  const { lineChartData, rates, baseCurrency, loading, portfolioLoading } = useDashboardData();
   const { isPrivacyActive, maskValue } = usePrivacy();
   const containerRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
@@ -435,7 +435,15 @@ export default function GrowthChart() {
       </div>
 
       <div ref={containerRef} className="relative h-[260px] min-h-[260px] w-full min-w-0 sm:h-[320px] md:h-[360px]">
-        {isReady && chartData.length > 0 ? (
+        {loading || portfolioLoading ? (
+          <div className="h-full w-full animate-pulse rounded-2xl border border-white/10 bg-slate-900/45 p-4" aria-hidden="true">
+            <div className="mb-3 h-4 w-36 rounded bg-slate-800" />
+            <div className="grid h-[86%] grid-cols-12 gap-3">
+              <div className="col-span-1 h-full rounded bg-slate-800/85" />
+              <div className="col-span-11 h-full rounded bg-slate-800/70" />
+            </div>
+          </div>
+        ) : isReady && chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%" aspect={isCompactScreen ? 1 : undefined}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(203,213,225,0.2)" vertical={false} />

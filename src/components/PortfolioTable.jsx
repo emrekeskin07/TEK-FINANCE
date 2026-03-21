@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, TrendingUp, TrendingDown, FileText, Download, Plus } from 'lucide-react';
+import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, TrendingUp, TrendingDown, FileText, Download, Plus, Wallet } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts, formatTickerName, groupAssetsByPortfolio } from '../utils/helpers';
@@ -507,7 +507,7 @@ export default function PortfolioTable({
             <button
               type="button"
               onClick={() => onClearFilter?.()}
-              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-full border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 px-3 py-1.5 text-xs font-semibold text-slate-50 transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-[0_0_18px_rgba(217,70,239,0.35)]"
+              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-full border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 px-3 py-1.5 text-xs font-semibold text-slate-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg"
               title="Filtreleri temizle"
             >
               <X className="w-3.5 h-3.5" />
@@ -519,7 +519,7 @@ export default function PortfolioTable({
           <button
             type="button"
             onClick={() => handleSortChange('totalValue')}
-            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'totalValue' ? 'bg-primary/22 text-slate-100' : 'text-slate-400 hover:bg-slate-800/60'}`}
+            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg ${sortConfig.key === 'totalValue' ? 'bg-primary/22 text-slate-100' : 'text-slate-400 hover:bg-slate-800/60'}`}
             title="Toplam değere göre sırala"
           >
             Toplam Değer
@@ -530,7 +530,7 @@ export default function PortfolioTable({
           <button
             type="button"
             onClick={() => handleSortChange('profit')}
-            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${sortConfig.key === 'profit' ? 'bg-emerald-500/20 text-emerald-100' : 'text-slate-400 hover:bg-slate-800/60'}`}
+            className={`inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg ${sortConfig.key === 'profit' ? 'bg-emerald-500/20 text-emerald-100' : 'text-slate-400 hover:bg-slate-800/60'}`}
             title="Kâr/zarara göre sırala"
           >
             Kâr/Zarar
@@ -544,7 +544,7 @@ export default function PortfolioTable({
           <button
             type="button"
             onClick={() => setIsReportMenuOpen((prev) => !prev)}
-            className="inline-flex min-h-[44px] transform-gpu items-center gap-2 rounded-md border border-purple-700 bg-purple-700 px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:scale-105 hover:bg-purple-800 active:scale-95 dark:border-fuchsia-300/35 dark:bg-gradient-to-r dark:from-violet-500/25 dark:to-fuchsia-500/25 dark:text-slate-50 dark:hover:from-violet-500/35 dark:hover:to-fuchsia-500/35"
+            className="inline-flex min-h-[44px] transform-gpu items-center gap-2 rounded-md border border-purple-700 bg-purple-700 px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-purple-800 dark:border-fuchsia-300/35 dark:bg-gradient-to-r dark:from-violet-500/25 dark:to-fuchsia-500/25 dark:text-slate-50 dark:hover:from-violet-500/35 dark:hover:to-fuchsia-500/35"
             title="Rapor seçeneklerini aç"
             aria-haspopup="menu"
             aria-expanded={isReportMenuOpen}
@@ -617,8 +617,8 @@ export default function PortfolioTable({
                   type="button"
                   onClick={() => handleCategoryFilterSelect(category)}
                   className={`inline-flex min-h-[38px] items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${isActive
-                    ? 'border-fuchsia-300/45 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-[0_10px_26px_rgba(168,85,247,0.38)] hover:scale-[1.03]'
-                    : 'border-slate-300/30 bg-slate-100 text-slate-700 hover:bg-slate-200/90 dark:border-slate-700/60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/80'}`}
+                    ? 'border-fuchsia-300/45 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-[0_10px_26px_rgba(168,85,247,0.38)] hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg'
+                    : 'border-slate-300/30 bg-slate-100 text-slate-700 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-slate-200/90 dark:border-slate-700/60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/80'}`}
                   title={`${category} filtresi`}
                 >
                   <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
@@ -644,26 +644,26 @@ export default function PortfolioTable({
             ))}
           </div>
         ) : groupedDisplayedPortfolio.length === 0 ? (
-          <div className="p-6 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl text-center text-sm text-slate-500 shadow-2xl">
-            {resolvedActiveCategory !== 'Tümü'
-              ? 'Bu kategoride henüz varlığınız bulunmuyor.'
-              : (portfolio.length === 0
-                ? 'Henüz bir varlık eklemediniz.'
-                : (searchedDisplayedPortfolio.length === 0
-                  ? 'Eşleşen varlık bulunamadı'
-                  : 'Seçili filtreler için varlık bulunamadı.'))}
-            {resolvedActiveCategory !== 'Tümü' ? (
-              <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={handleEmptyCategoryAdd}
-                  className="inline-flex min-h-[42px] transform-gpu items-center gap-2 rounded-xl border border-fuchsia-300/40 bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-2 text-xs font-semibold text-white shadow-[0_12px_28px_rgba(168,85,247,0.35)] transition-all duration-200 hover:scale-105 active:scale-95"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Ekle
-                </button>
-              </div>
-            ) : null}
+          <div className="rounded-xl border border-white/5 bg-slate-900/40 p-8 text-center shadow-2xl backdrop-blur-xl">
+            <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-slate-800/60 text-slate-400">
+              <Wallet className="h-6 w-6" />
+            </div>
+            <p className="mt-4 text-base font-semibold text-slate-100">Henüz birikim yolculuğuna başlamadın.</p>
+            <p className="mt-1 text-sm text-slate-400">
+              {resolvedActiveCategory !== 'Tümü'
+                ? 'Bu kategori için henüz varlık görünmüyor.'
+                : (searchedDisplayedPortfolio.length === 0 ? 'Aramana uygun varlık bulunamadı.' : 'İlk varlığını ekleyerek paneli canlandır.')}
+            </p>
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleEmptyCategoryAdd}
+                className="inline-flex min-h-[44px] transform-gpu items-center gap-2 rounded-xl border border-fuchsia-300/40 bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-2 text-xs font-semibold text-white shadow-[0_12px_28px_rgba(168,85,247,0.35)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                İlk Varlığını Ekle
+              </button>
+            </div>
           </div>
         ) : (
           <div className="max-h-[62vh] overflow-y-auto pr-1">
@@ -735,7 +735,7 @@ export default function PortfolioTable({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl overflow-hidden"
+              className="group/asset overflow-hidden rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl transition-all duration-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"
             >
               <div className="grid grid-cols-12 items-center gap-3 px-4 py-3 md:px-5">
                 <div className="col-span-2 min-w-0 text-xs text-slate-400 truncate">
@@ -776,11 +776,31 @@ export default function PortfolioTable({
                   <button
                     type="button"
                     onClick={() => openIncreaseModal(item, activePrice)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/35 bg-emerald-500/15 text-emerald-100 transition-all hover:scale-105 hover:bg-emerald-500/25"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/35 bg-emerald-500/15 text-emerald-100 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-emerald-500/25"
                     title="Hızlı Ekle"
                     aria-label="Hızlı Ekle"
                   >
                     <Plus className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(item)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-300/30 bg-blue-500/10 text-blue-100 opacity-0 transition-all duration-200 group-hover/asset:opacity-100 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-blue-500/20"
+                    title="Düzenle"
+                    aria-label="Düzenle"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAsset(item.id)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-300/30 bg-rose-500/10 text-rose-100 opacity-0 transition-all duration-200 group-hover/asset:opacity-100 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-rose-500/20"
+                    title="Sil"
+                    aria-label="Sil"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
 
                   <button
