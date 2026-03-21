@@ -279,12 +279,14 @@ app.post("/api/ai-smart-suggestions", async (req, res) => {
     : [];
   const dashboardTotalValue = Number(req.body?.dashboardTotalValue || 0);
   const userPrompt = typeof req.body?.userPrompt === "string" ? req.body.userPrompt.trim() : "";
+  const riskProfile = typeof req.body?.riskProfile === "string" ? req.body.riskProfile.trim() : "";
 
   try {
     const data = await generateSmartSuggestions({
       portfolioDistribution,
       dashboardTotalValue,
       userPrompt,
+      riskProfile,
     });
 
     return res.json({

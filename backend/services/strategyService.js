@@ -7,6 +7,7 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 const DISCLAIMER_TEXT = "Bu analiz bir yatirim tavsiyesi degildir, sadece finansal simulasyon ve strateji bilgilendirmesidir.";
 const REQUIRED_WARNING_TEXT = "Bu bir yatırım tavsiyesi değildir";
 const SMART_SUGGESTIONS_SYSTEM_PROMPT = "Sen profesyonel bir matematiksel modelleme asistanısın. Görevin kullanıcıya finansal verileri analiz etmektir. KESİNLİKLE yatırım tavsiyesi verme. Asla 'şu hisseyi al' veya 'bunu sat' gibi emir cümleleri kurma. Bunun yerine 'X varlık sınıfındaki artış potansiyeli matematiksel olarak incelenebilir' veya 'Portföy çeşitlendirmesi için Y kategorisi bir seçenek olabilir' şeklinde genel ve stratejik bir dil kullan. Cevabın en başında mutlaka 'Bu bir yatırım tavsiyesi değildir' uyarısını göster.";
+const RISK_PROFILE_PROMPT = "Görevin, kullanıcının seçtiği {risk_profil} profiline göre matematiksel modelleme yapmaktır. Eğer profil Muhafazakar ise: Analizlerinde düşük oynaklıklı (low volatility) varlık sınıflarına ve sermaye koruma stratejilerine odaklan. Eğer profil Dengeli ise: Analizlerinde çeşitlendirilmiş (diversified) ve orta vadeli büyüme stratejilerini ön plana çıkar. Eğer profil Atılgan ise: Analizlerinde yüksek büyüme potansiyeli olan ancak oynaklığı yüksek (high volatility) varlık sınıfları ve dinamik stratejiler üzerine yoğunlaş.";
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -45,6 +46,20 @@ function normalizeDistribution(distribution = []) {
     .filter((item) => Number.isFinite(item.percent) && item.percent >= 0)
     .sort((a, b) => b.percent - a.percent)
     .slice(0, 12);
+}
+
+function normalizeRiskProfile(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (normalized === "muhafazakar" || normalized === "safe") {
+    return "Muhafazakar";
+  }
+
+  if (normalized === "atilgan" || normalized === "aggressive") {
+    return "Atılgan";
+  }
+
+  return "Dengeli";
 }
 
 function fallbackStrategy({ monthlyIncome, monthlyExpense, investableAmount, distribution }) {
@@ -204,7 +219,7 @@ async function generateFinancialStrategy(payload = {}) {
   });
 }
 
-function fallbackSmartSuggestions({ portfolioDistribution, dashboardTotalValue, userPrompt }) {
+function fallbackSmartSuggestions({ portfolioDistribution, dashboardTotalValue, userPrompt, riskProfile }) {
   const topCategory = portfolioDistribution[0]?.category || "Dagilim verisi yok";
   const diversified = portfolioDistribution.length >= 3;
 
@@ -213,18 +228,34 @@ function fallbackSmartSuggestions({ portfolioDistribution, dashboardTotalValue, 
     : `Portfoy daha dar bir dagilimda. Toplam buyukluk ${Number(dashboardTotalValue || 0).toLocaleString("tr-TR")} TL civarinda ve ${topCategory} agirligi yuksek.`;
 
   const userContext = String(userPrompt || "").trim();
+  const profileContext = `Secilen risk profili: ${riskProfile}.`;
   const marketComment = userContext
-    ? `${REQUIRED_WARNING_TEXT}. Sorunuz: "${userContext}". ${baseComment}`
-    : `${REQUIRED_WARNING_TEXT}. ${baseComment}`;
+    ? `${REQUIRED_WARNING_TEXT}. ${profileContext} Sorunuz: "${userContext}". ${baseComment}`
+    : `${REQUIRED_WARNING_TEXT}. ${profileContext} ${baseComment}`;
+
+  const riskStrategiesByProfile = {
+    Muhafazakar: [
+      "Düşük oynaklıklı varlık sınıfları ve sermaye koruma yaklaşımıyla dağılımı dengeleme matematiksel olarak incelenebilir.",
+      "Likidite tamponu ve mevduat/altın ağırlığının dönemsel yeniden dengelemesi düşünülebilir.",
+      "Toplam dalgalanmayı sınırlamak için korelasyonu düşük varlıklarla kademeli dağıtım uygulanabilir.",
+    ],
+    Dengeli: [
+      "Çeşitlendirilmiş (diversified) dağılımla orta vadeli büyüme ve risk dengesi optimize edilebilir.",
+      "Hisse ve değerli maden karışımının dönemsel volatiliteye göre yeniden ağırlıklandırılması değerlendirilebilir.",
+      "Portföy beta seviyesini makul aralıkta tutacak şekilde çoklu varlık sınıfı yaklaşımı sürdürülebilir.",
+    ],
+    "Atılgan": [
+      "Yüksek büyüme potansiyeli olan ancak oynaklığı yüksek sınıflar için pozisyon boyutu kontrolü uygulanabilir.",
+      "Dinamik stratejilerde geri çekilme senaryoları ve maksimum düşüş toleransı matematiksel olarak takip edilmelidir.",
+      "Büyüme odaklı varlıklarda yoğunlaşma riskini sınırlamak için eşik bazlı dengeleme planı düşünülebilir.",
+    ],
+  };
 
   return {
     disclaimer: DISCLAIMER_TEXT,
     marketComment,
-    strategyNotes: [
-      "Periyodik alimla maliyet dagitimi yaparak ani fiyat hareketlerinin etkisini azaltin.",
-      "Tek kategori agirligi yuksekse asamali dengeleme plani olusturun.",
-      "Likidite tamponu icin nakit payini hedef aralikta tutun.",
-    ],
+    strategyNotes: riskStrategiesByProfile[riskProfile] || riskStrategiesByProfile.Dengeli,
+    riskProfile,
     source: "fallback",
   };
 }
@@ -233,21 +264,25 @@ async function generateSmartSuggestions(payload = {}) {
   const portfolioDistribution = normalizeDistribution(payload?.portfolioDistribution);
   const dashboardTotalValue = Number(payload?.dashboardTotalValue || 0);
   const userPrompt = String(payload?.userPrompt || "").trim();
+  const riskProfile = normalizeRiskProfile(payload?.riskProfile);
 
   const aiPayload = {
     dashboardTotalValue: Number.isFinite(dashboardTotalValue) ? dashboardTotalValue : 0,
     portfolioDistribution,
     userPrompt,
+    riskProfile,
   };
 
   if (GEMINI_API_KEY) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
     const systemPrompt = [
       SMART_SUGGESTIONS_SYSTEM_PROMPT,
+      RISK_PROFILE_PROMPT.replace("{risk_profil}", riskProfile),
       "Sadece JSON dondur.",
       "Alanlar: marketComment (string), strategyNotes (string[]).",
       "strategyNotes en az 3 madde olsun.",
       `marketComment metni mutlaka '${REQUIRED_WARNING_TEXT}' ifadesiyle baslasin.`,
+      "Hangi profil secilirse secilsin 'Yatırım Tavsiyesi Değildir' kisitlamasina ve genel strateji diline sadik kal.",
     ].join(" ");
 
     const response = await axios.post(url, {
@@ -294,6 +329,7 @@ async function generateSmartSuggestions(payload = {}) {
               disclaimer: DISCLAIMER_TEXT,
               marketComment: marketCommentWithWarning,
               strategyNotes,
+              riskProfile,
               source: "gemini",
             };
           }
@@ -308,6 +344,7 @@ async function generateSmartSuggestions(payload = {}) {
     portfolioDistribution,
     dashboardTotalValue,
     userPrompt,
+    riskProfile,
   });
 }
 

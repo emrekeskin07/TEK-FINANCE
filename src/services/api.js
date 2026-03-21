@@ -506,7 +506,7 @@ export const fetchAiFinancialStrategy = async ({ monthlyIncome, monthlyExpense, 
   }
 };
 
-export const fetchAiSmartSuggestions = async ({ portfolioDistribution, dashboardTotalValue, userPrompt = '' }) => {
+export const fetchAiSmartSuggestions = async ({ portfolioDistribution, dashboardTotalValue, userPrompt = '', riskProfile = 'Dengeli' }) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), BATCH_REQUEST_TIMEOUT_MS);
 
@@ -522,6 +522,7 @@ export const fetchAiSmartSuggestions = async ({ portfolioDistribution, dashboard
         portfolioDistribution: Array.isArray(portfolioDistribution) ? portfolioDistribution : [],
         dashboardTotalValue: Number(dashboardTotalValue || 0),
         userPrompt: String(userPrompt || '').trim(),
+        riskProfile: String(riskProfile || 'Dengeli').trim(),
       }),
     });
 
