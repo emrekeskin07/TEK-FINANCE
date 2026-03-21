@@ -25,6 +25,22 @@ const DB_SELECT_COLUMNS_LEGACY = 'id,symbol,name,category,amount,cost,bank_name,
 const CASH_SYMBOL = 'CASH_TRY';
 const CASH_CATEGORY = 'Nakit/Banka';
 const CASH_ACCOUNT_TYPE = 'Vadesiz';
+const GOAL_STORAGE_PREFIX = 'tek-finance:userGoals';
+
+const CATEGORY_GOAL_KEY_MAP = {
+  'Değerli Madenler': 'araba',
+  Döviz: 'araba',
+  'Hisse Senedi': 'emeklilik',
+  Kripto: 'emeklilik',
+  'Yatırım Fonu': 'emeklilik',
+  'Nakit/Banka': 'ev',
+};
+
+const GOAL_EMOJI_MAP = {
+  ev: '🏠',
+  araba: '🚗',
+  emeklilik: '💼',
+};
 
 const isUnitTypeSchemaError = (error) => {
   const message = String(error?.message || '').toLowerCase();
@@ -88,6 +104,31 @@ const inferCategory = (asset = {}) => {
 
   return 'Hisse Senedi';
 };
+
+const inferGoalKeyFromName = (goalName) => {
+  const normalized = String(goalName || '').trim().toLocaleLowerCase('tr-TR');
+
+  if (normalized.includes('ev') || normalized.includes('konut') || normalized.includes('home')) {
+    return 'ev';
+  }
+
+  if (normalized.includes('araba') || normalized.includes('otomobil') || normalized.includes('car')) {
+    return 'araba';
+  }
+
+  if (normalized.includes('emeklilik') || normalized.includes('retire')) {
+    return 'emeklilik';
+  }
+
+  return '';
+};
+
+const computePortfolioTotalCost = (list = []) => (
+  (Array.isArray(list) ? list : []).reduce(
+    (sum, item) => sum + (toFiniteNumber(item?.amount) * toFiniteNumber(item?.avgPrice || item?.cost)),
+    0
+  )
+);
 
 export const usePortfolio = (userId, onPortfolioChange) => {
   const [portfolio, setPortfolio] = useState([]);
@@ -191,6 +232,67 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     return payload;
   }, [userId]);
 
+  const buildGoalSuccessFlow = useCallback(({ normalizedCategory, assetName, addedValue, oldPortfolio, nextPortfolio }) => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    const storageKey = `${GOAL_STORAGE_PREFIX}:${userId || 'guest'}`;
+    const rawGoal = window.localStorage.getItem(storageKey);
+    if (!rawGoal) {
+      return null;
+    }
+
+    let parsedGoal;
+    try {
+      parsedGoal = JSON.parse(rawGoal);
+    } catch {
+      return null;
+    }
+
+    const goalName = String(parsedGoal?.name || '').trim();
+    const goalTargetAmount = Number(parsedGoal?.targetAmount || 0);
+    if (!goalName || !Number.isFinite(goalTargetAmount) || goalTargetAmount <= 0) {
+      return null;
+    }
+
+    const categoryGoalKey = CATEGORY_GOAL_KEY_MAP[String(normalizedCategory || '').trim()] || 'emeklilik';
+    const inferredGoalKey = inferGoalKeyFromName(goalName);
+    const relatedGoalKey = inferredGoalKey || categoryGoalKey;
+
+    if (inferredGoalKey && inferredGoalKey !== categoryGoalKey) {
+      return null;
+    }
+
+    const oldTotal = computePortfolioTotalCost(oldPortfolio);
+    const newTotal = computePortfolioTotalCost(nextPortfolio);
+    const oldPercent = Math.max(0, Math.min(100, (oldTotal / goalTargetAmount) * 100));
+    const newPercent = Math.max(0, Math.min(100, (newTotal / goalTargetAmount) * 100));
+    const deltaPercent = Math.max(0, newPercent - oldPercent);
+
+    if (!Number.isFinite(deltaPercent) || deltaPercent <= 0) {
+      return null;
+    }
+
+    const remaining = Math.max(0, goalTargetAmount - newTotal);
+    const monthlyPace = Number(addedValue || 0);
+    const monthsToGoal = monthlyPace > 0
+      ? Math.max(1, Math.ceil(remaining / monthlyPace))
+      : null;
+
+    return {
+      goalName,
+      goalKey: relatedGoalKey,
+      goalEmoji: GOAL_EMOJI_MAP[relatedGoalKey] || '🎯',
+      oldPercent,
+      newPercent,
+      deltaPercent,
+      monthsToGoal,
+      assetName: String(assetName || '').trim(),
+      category: String(normalizedCategory || '').trim(),
+    };
+  }, [userId]);
+
   const logTransaction = useCallback(async (entry = {}) => {
     if (!supabase || !userId) {
       return;
@@ -231,6 +333,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
 
     setIsPortfolioMutating(true);
 
+    const oldPortfolioSnapshot = Array.isArray(portfolio) ? portfolio.slice() : [];
     const newBank = formData.bank || 'Banka Belirtilmedi';
     const normalizedCategory = formData.category || inferCategory(formData);
     const isCashAsset = normalizedCategory === 'Nakit' || normalizedCategory === 'Nakit/Banka';
@@ -350,7 +453,20 @@ export const usePortfolio = (userId, onPortfolioChange) => {
         style: { background: '#052e16', color: '#dcfce7', border: '1px solid #166534' },
       });
       setIsPortfolioMutating(false);
-      return true;
+      const nextPortfolioSnapshot = oldPortfolioSnapshot.map((item) => (item.id === existingAssetRow.id ? normalizedAsset : item));
+      const addedValue = toFiniteNumber(dbPayload.amount) * toFiniteNumber(dbPayload.cost);
+      const flowPayload = buildGoalSuccessFlow({
+        normalizedCategory,
+        assetName: resolveAssetName({ symbol, name: dbPayload.name }),
+        addedValue,
+        oldPortfolio: oldPortfolioSnapshot,
+        nextPortfolio: nextPortfolioSnapshot,
+      });
+
+      return {
+        success: true,
+        flowPayload,
+      };
     }
 
     let { data, error } = await supabase
@@ -409,7 +525,20 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       style: { background: '#052e16', color: '#dcfce7', border: '1px solid #166534' },
     });
     setIsPortfolioMutating(false);
-    return true;
+    const nextPortfolioSnapshot = [...oldPortfolioSnapshot, normalizedAsset];
+    const addedValue = toFiniteNumber(dbPayload.amount) * toFiniteNumber(dbPayload.cost);
+    const flowPayload = buildGoalSuccessFlow({
+      normalizedCategory,
+      assetName: resolveAssetName({ symbol, name: dbPayload.name }),
+      addedValue,
+      oldPortfolio: oldPortfolioSnapshot,
+      nextPortfolio: nextPortfolioSnapshot,
+    });
+
+    return {
+      success: true,
+      flowPayload,
+    };
   };
 
   const updateAsset = async (id, formData) => {

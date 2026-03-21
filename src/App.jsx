@@ -23,6 +23,7 @@ import SmartSuggestionsPage from './components/SmartSuggestionsPage';
 import OperationsPage from './components/OperationsPage';
 import SettingsPage from './components/SettingsPage';
 import OnboardingWizard from './components/OnboardingWizard';
+import GoalSuccessModal from './components/GoalSuccessModal';
 import Chart from './components/dashboard/Chart';
 import Stats from './components/dashboard/Stats';
 import KpiRibbon from './components/dashboard/KpiRibbon';
@@ -48,17 +49,6 @@ const INSIGHT_TONE_STORAGE_KEY = 'tek-finance:insight-tone';
 const ATH_CELEBRATION_STORAGE_PREFIX = 'tek-finance:ath-celebration';
 const ATH_CELEBRATION_DURATION_MS = 3800;
 const WEEKLY_FLOW_STORAGE_PREFIX = 'tek-finance:weekly-flow';
-
-const GOAL_BY_CATEGORY = {
-  'Hisse Senedi': 'emeklilik',
-  Kripto: 'emeklilik',
-  'Değerli Madenler': 'ev',
-  Döviz: 'araba',
-  'Yatırım Fonu': 'emeklilik',
-  'Nakit/Banka': 'ev',
-};
-
-const resolveGoalFromCategory = (category) => GOAL_BY_CATEGORY[String(category || '').trim()] || 'emeklilik';
 
 const resolveIsoWeekKey = (date = new Date()) => {
   const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -155,7 +145,7 @@ export default function App() {
     hasPreferenceRecord: false,
     riskProfile: '',
   });
-  const [postPurchaseFlow, setPostPurchaseFlow] = useState(null);
+  const [goalSuccessFlow, setGoalSuccessFlow] = useState(null);
   const [marketDropInsight, setMarketDropInsight] = useState(null);
   const [weeklyFlowOpen, setWeeklyFlowOpen] = useState(false);
   const [weeklyFlowStep, setWeeklyFlowStep] = useState(0);
@@ -551,40 +541,19 @@ export default function App() {
   const animatedProfitPercent = useAnimatedCounter(Number(profitPercentage));
 
   const handleAddAssetWithFlow = useCallback(async (payload) => {
-    const beforeTotal = Number(dashboardTotalValue || 0);
-    const addedValue = Number(payload?.amount || 0) * Number(payload?.avgPrice || 0);
-    const assetCategory = String(payload?.category || 'Diğer').trim();
-    const goalKey = resolveGoalFromCategory(assetCategory);
-    const goalLabel = goalKey === 'ev' ? 'Ev' : (goalKey === 'araba' ? 'Araba' : 'Emeklilik');
+    const result = await addAsset(payload);
+    const isSuccess = Boolean(result && (result.success || result === true));
 
-    const isSuccess = await addAsset(payload);
     if (!isSuccess) {
       return false;
     }
 
-    const growthPercent = beforeTotal > 0
-      ? ((addedValue / beforeTotal) * 100)
-      : 100;
-
-    const categoryCurrentValue = Number(categoryTotals?.[assetCategory] || 0);
-    const projectedTotal = beforeTotal + addedValue;
-    const projectedCategoryValue = categoryCurrentValue + addedValue;
-    const categoryWeightPercent = projectedTotal > 0
-      ? ((projectedCategoryValue / projectedTotal) * 100)
-      : 0;
-
-    const daysCloser = Math.max(3, Math.min(30, Math.round(Math.abs(addedValue) / 1500) || 3));
-
-    setPostPurchaseFlow({
-      growthPercent,
-      categoryLabel: assetCategory,
-      categoryWeightPercent,
-      daysCloser,
-      goalLabel,
-    });
+    if (result?.flowPayload) {
+      setGoalSuccessFlow(result.flowPayload);
+    }
 
     return true;
-  }, [addAsset, dashboardTotalValue, categoryTotals]);
+  }, [addAsset]);
 
   const triggerCelebration = useCallback((durationMs = ATH_CELEBRATION_DURATION_MS) => {
     if (typeof window === 'undefined') {
@@ -1373,48 +1342,15 @@ export default function App() {
       </footer>
 
       <AnimatePresence>
-        {postPurchaseFlow ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[130] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ y: 16, opacity: 0, scale: 0.98 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 16, opacity: 0, scale: 0.98 }}
-              className="w-full max-w-xl rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-2xl"
-            >
-              <h3 className="text-ui-h2 text-slate-100">Tebrikler! Yeni varlık portföyüne işlendi.</h3>
-              <p className="mt-2 text-ui-body text-slate-300">
-                Portföyün yaklaşık %{postPurchaseFlow.growthPercent.toFixed(1)} büyüdü ve {postPurchaseFlow.categoryLabel} ağırlığın %{postPurchaseFlow.categoryWeightPercent.toFixed(1)} seviyesine çıktı.
-              </p>
-              <p className="mt-1 text-ui-body text-slate-300">
-                {postPurchaseFlow.goalLabel} hedefine yaklaşık {postPurchaseFlow.daysCloser} gün daha yaklaştın. Detayları analiz sayfasında görmek ister misin?
-              </p>
-
-              <div className="mt-4 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPostPurchaseFlow(null)}
-                  className="rounded-lg border border-slate-700 bg-transparent px-3 py-2 text-ui-body text-slate-300 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:bg-slate-800"
-                >
-                  Sonra
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPostPurchaseFlow(null);
-                    navigateToPage('analysis');
-                  }}
-                  className="rounded-lg border border-violet-300/40 bg-violet-600 px-3 py-2 text-ui-body font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:bg-violet-700"
-                >
-                  Analize Git
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+        {goalSuccessFlow ? (
+          <GoalSuccessModal
+            flow={goalSuccessFlow}
+            onClose={() => setGoalSuccessFlow(null)}
+            onOpenGoalDetails={() => {
+              setGoalSuccessFlow(null);
+              navigateToPage('analysis');
+            }}
+          />
         ) : null}
       </AnimatePresence>
 
