@@ -488,22 +488,14 @@ export default function App() {
 
       <AppNavbar
         isSidebarCollapsed={isSidebarCollapsed}
-        setIsSidebarOpen={setIsSidebarOpen}
         user={authUser}
         onSignOut={handleSignOut}
         onOpenSettings={() => navigateToPage('ayarlar')}
-        onSearchNavigate={handleHeaderSearchNavigate}
         isPrivacyActive={isPrivacyActive}
         onTogglePrivacy={handleTogglePrivacyMode}
-      />
-
-      <MagicCommandBar
-        isSidebarCollapsed={isSidebarCollapsed}
-        isVisible={isCommandBarVisible}
         aiCommandBarRef={aiCommandBarRef}
-        onExecute={handleExecuteAiCommand}
+        onExecuteAiCommand={handleExecuteAiCommand}
         onQuickAddAsset={handleQuickAddFromPriceResult}
-        setIsVisible={setIsCommandBarVisible}
       />
 
       <main className={`mx-auto max-w-[1400px] space-y-6 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
