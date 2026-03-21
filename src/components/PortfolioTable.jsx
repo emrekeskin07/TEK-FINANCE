@@ -59,6 +59,7 @@ export default function PortfolioTable({
   handleRemoveAsset,
 }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
+  const [searchQuery, setSearchQuery] = useState('');
   const filteredPortfolio = portfolio.filter((item) => {
     const bankName = item.bank || 'Banka Belirtilmedi';
     const categoryName = item.category || 'Diğer';
@@ -133,10 +134,24 @@ export default function PortfolioTable({
       return (aValue - bValue) * directionFactor;
     });
 
+  const searchedDisplayedPortfolio = useMemo(() => {
+    const normalizedQuery = String(searchQuery || '').trim().toLocaleLowerCase('tr-TR');
+
+    if (!normalizedQuery) {
+      return displayedPortfolio;
+    }
+
+    return displayedPortfolio.filter(({ item }) => {
+      const assetName = getAssetTitle(item).toLocaleLowerCase('tr-TR');
+      const institutionName = String(item?.bank || 'Banka Belirtilmedi').toLocaleLowerCase('tr-TR');
+      return assetName.includes(normalizedQuery) || institutionName.includes(normalizedQuery);
+    });
+  }, [displayedPortfolio, searchQuery]);
+
   const groupedDisplayedPortfolio = useMemo(
-    () => groupAssetsByPortfolio(displayedPortfolio)
+    () => groupAssetsByPortfolio(searchedDisplayedPortfolio)
       .sort((a, b) => Number(b?.totalValue || 0) - Number(a?.totalValue || 0)),
-    [displayedPortfolio]
+    [searchedDisplayedPortfolio]
   );
 
   const renderCurrencyWithMutedSymbol = (value) => {
@@ -157,6 +172,12 @@ export default function PortfolioTable({
         ))}
       </>
     );
+  };
+
+  const formatCurrencyPlain = (value) => {
+    return formatCurrencyParts(value, baseCurrency, rates)
+      .map((part) => part.value)
+      .join('');
   };
 
   const formatNumericText = (value, maxFractionDigits = 8) => {
@@ -472,6 +493,16 @@ export default function PortfolioTable({
       </div>
 
       <div className="p-6 md:p-8 space-y-3">
+        <div className="mb-1">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Varlık ara..."
+            className="w-full rounded-lg border border-white/10 bg-slate-900/35 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-fuchsia-400/60"
+          />
+        </div>
+
         {showSkeleton ? (
           <div className="space-y-3" aria-hidden="true">
             {Array.from({ length: 4 }).map((_, index) => (
@@ -485,13 +516,27 @@ export default function PortfolioTable({
               </div>
             ))}
           </div>
-        ) : displayedPortfolio.length === 0 ? (
+        ) : groupedDisplayedPortfolio.length === 0 ? (
           <div className="p-6 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl text-center text-sm text-slate-500 shadow-2xl">
             {portfolio.length === 0
               ? 'Henüz bir varlık eklemediniz.'
-              : 'Seçili filtreler için varlık bulunamadı.'}
+              : (searchedDisplayedPortfolio.length === 0
+                ? 'Eşleşen varlık bulunamadı'
+                : 'Seçili filtreler için varlık bulunamadı.')}
           </div>
         ) : (
+          <div className="max-h-[62vh] overflow-y-auto pr-1">
+            <div className="sticky top-0 z-20 grid grid-cols-12 gap-3 rounded-lg border border-white/10 bg-slate-900/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 md:px-5">
+              <div className="col-span-2">Kurum</div>
+              <div className="col-span-2">Varlık</div>
+              <div className="col-span-2">Kategori</div>
+              <div className="col-span-2 text-right">Toplam Değer</div>
+              <div className="col-span-2 text-right">K / Z</div>
+              <div className="col-span-1 text-right">Portföy %</div>
+              <div className="col-span-1 text-right">İşlemler</div>
+            </div>
+
+            <div className="mt-2 space-y-3">
           <AnimatePresence initial={false} mode="popLayout">
             {groupedDisplayedPortfolio.map((group) => {
               const groupProfitPercent = group.totalCost > 0 ? ((group.totalProfit / group.totalCost) * 100).toFixed(2) : '0.00';
@@ -536,6 +581,8 @@ export default function PortfolioTable({
                   : 'Piyasa Kapalı';
                 const itemWeightPercent = totalValue > 0 ? ((itemTotalValue / totalValue) * 100).toFixed(1) : '0.0';
                 const itemProfitPercent = itemCost > 0 ? ((itemProfit / itemCost) * 100).toFixed(2) : '0.00';
+                const itemProfitSign = itemProfit >= 0 ? '+' : '-';
+                const itemProfitSummary = `${itemProfitSign}${Math.abs(Number(itemProfitPercent)).toFixed(2)}% / ${itemProfitSign}${formatCurrencyPlain(Math.abs(itemProfit))}`;
                 const inflationScore = getInflationScore(itemCost, itemProfit);
                 const isExpanded = expandedAssetId === item.id;
 
@@ -549,48 +596,62 @@ export default function PortfolioTable({
               transition={{ duration: 0.2, ease: 'easeOut' }}
               className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl overflow-hidden"
             >
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => handleAccordionToggle(item.id)}
-                  className="w-full text-left px-4 py-3 pr-16 md:px-5 md:py-4 md:pr-20 hover:bg-white/[0.04] transition-colors"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-3 md:gap-4">
-                    <div className="md:col-span-4 min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Banka / Kurum</p>
-                      <p className="text-sm font-semibold text-slate-200 truncate">{item.bank || 'Banka Belirtilmedi'}</p>
-                    </div>
-                    <div className="md:col-span-5 min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Varlık Adı</p>
-                      <p className="text-sm font-semibold text-slate-100 truncate">{getAssetTitle(item)}</p>
-                    </div>
-                    <div className="md:col-span-2 md:text-right min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Toplam Değer</p>
-                      <div className="text-sm font-bold text-slate-100">
-                        {showSkeleton ? (
-                          <div className="animate-pulse h-4 bg-white/10 rounded w-24 md:ml-auto" />
-                        ) : (
-                          renderCurrencyWithMutedSymbol(itemTotalValue)
-                        )}
-                      </div>
-                    </div>
-                    <div className="md:col-span-1 flex md:justify-end">
-                      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/5 bg-slate-900/40 backdrop-blur-xl transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
-                        <ChevronDown className="h-4 w-4 text-slate-300" />
-                      </span>
-                    </div>
-                  </div>
-                </button>
+              <div className="grid grid-cols-12 items-center gap-3 px-4 py-3 md:px-5">
+                <div className="col-span-2 min-w-0 text-xs text-slate-400 truncate">
+                  {item.bank || 'Banka Belirtilmedi'}
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => openIncreaseModal(item, activePrice)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/35 bg-emerald-500/15 text-emerald-100 transition-all hover:scale-105 hover:bg-emerald-500/25"
-                  title="Miktar artır"
-                  aria-label="Miktar artır"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                <div className="col-span-2 min-w-0 text-sm font-medium text-slate-100 truncate">
+                  {getAssetTitle(item)}
+                </div>
+
+                <div className="col-span-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => onSelectCategory?.(categoryName)}
+                    style={getCategoryBadgeStyle(categoryName, isCategorySelected)}
+                    className={`text-[11px] font-semibold uppercase tracking-[0.04em] rounded-full px-2.5 py-1 border transition-all cursor-pointer ${
+                      isCategorySelected ? 'ring-1 ring-white/50 shadow-[0_0_12px_rgba(255,255,255,0.12)]' : 'hover:brightness-110'
+                    }`}
+                    title={`${categoryName} filtresi uygula`}
+                  >
+                    {categoryName}
+                  </button>
+                </div>
+
+                <div className="col-span-2 text-right text-sm font-semibold font-mono text-slate-100">
+                  {renderCurrencyWithMutedSymbol(itemTotalValue)}
+                </div>
+
+                <div className={`col-span-2 text-right text-xs font-semibold font-mono ${itemProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {renderMaskedText(itemProfitSummary)}
+                </div>
+
+                <div className="col-span-1 text-right text-xs font-semibold font-mono text-slate-300">
+                  {renderMaskedText(`%${itemWeightPercent}`)}
+                </div>
+
+                <div className="col-span-1 flex justify-end items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => openIncreaseModal(item, activePrice)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/35 bg-emerald-500/15 text-emerald-100 transition-all hover:scale-105 hover:bg-emerald-500/25"
+                    title="Hızlı Ekle"
+                    aria-label="Hızlı Ekle"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAccordionToggle(item.id)}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/5 bg-slate-900/40 backdrop-blur-xl transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`}
+                    title="Detayı aç"
+                    aria-label="Detayı aç"
+                  >
+                    <ChevronDown className="h-4 w-4 text-slate-300" />
+                  </button>
+                </div>
               </div>
 
               <AnimatePresence initial={false}>
@@ -724,6 +785,8 @@ export default function PortfolioTable({
               );
             })}
           </AnimatePresence>
+            </div>
+          </div>
         )}
       </div>
     </div>

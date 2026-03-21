@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Lightbulb, Loader2, MessageSquareText, Send, ShieldAlert } from 'lucide-react';
+import { Lightbulb, Loader2, MessageSquareText, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchAiSmartSuggestions } from '../services/api';
 
@@ -105,11 +105,6 @@ export default function SmartSuggestionsPage({ portfolioDistribution, dashboardT
         </div>
       </div>
 
-      <div className="mb-4 rounded-xl border border-amber-300/40 bg-amber-500/12 p-3">
-        <p className="text-xs font-black uppercase tracking-[0.09em] text-amber-200">Önemli Uyarı</p>
-        <p className="mt-1 text-sm text-amber-100">{DISCLAIMER}</p>
-      </div>
-
       <section className="mb-5 rounded-xl border border-white/10 bg-slate-950/65 p-4">
         <h3 className="text-sm font-black uppercase tracking-[0.08em] text-slate-200">Risk Karakterim</h3>
         <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -194,11 +189,10 @@ export default function SmartSuggestionsPage({ portfolioDistribution, dashboardT
         </div>
       )}
 
-      <div className="mt-6 rounded-xl border border-amber-300/35 bg-amber-500/10 p-3 text-sm text-amber-100">
-        <div className="flex items-center gap-2">
-          <ShieldAlert className="h-4 w-4" />
-          <span className="font-semibold">Bu analiz bir yatırım tavsiyesi değildir, sadece finansal simülasyon ve strateji bilgilendirmesidir.</span>
-        </div>
+      <div className="mt-6 border-t border-white/10 pt-3">
+        <p className="text-xs italic text-slate-400">
+          {DISCLAIMER}
+        </p>
       </div>
     </section>
   );
