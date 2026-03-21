@@ -106,10 +106,10 @@ export default function FinancialStrategyCenterPage({ portfolioDistribution }) {
           <button
             type="submit"
             disabled={isLoading}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 px-4 py-2 text-sm font-semibold text-slate-50 transition-all duration-200 hover:from-violet-500/35 hover:to-fuchsia-500/35 disabled:cursor-not-allowed disabled:opacity-65"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-purple-700 bg-purple-700 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-purple-800 disabled:cursor-not-allowed disabled:opacity-65 dark:border-fuchsia-300/35 dark:bg-gradient-to-r dark:from-violet-500/25 dark:to-fuchsia-500/25 dark:text-slate-50 dark:hover:from-violet-500/35 dark:hover:to-fuchsia-500/35"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BrainCircuit className="h-4 w-4" />}
-            {isLoading ? 'AI Analizi Hazırlanıyor...' : 'AI Stratejisini Oluştur'}
+            {isLoading ? 'AI Analizi Hazırlanıyor...' : 'AI Stratejisi Oluştur'}
           </button>
         </div>
       </form>

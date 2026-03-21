@@ -29,6 +29,7 @@ export default function SidebarMenu({
     || user?.email?.split('@')?.[0]
     || 'Kullanıcı';
   const profileAvatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+  const isLightTheme = activeTheme === 'light-soft';
 
   return (
     <AnimatePresence>
@@ -94,8 +95,12 @@ export default function SidebarMenu({
                       onClick={() => onNavigate(item.key)}
                       className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.99] ${
                         isActive
-                          ? 'border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/20 text-slate-50 shadow-[0_0_20px_rgba(217,70,239,0.24)]'
-                          : 'border-white/5 bg-slate-900/35 text-slate-300 hover:border-violet-300/35 hover:text-slate-50'
+                          ? (isLightTheme
+                            ? 'border-purple-200 border-l-4 border-l-purple-600 bg-purple-50 text-purple-800 shadow-sm'
+                            : 'border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/20 text-slate-50 shadow-[0_0_20px_rgba(217,70,239,0.24)]')
+                          : (isLightTheme
+                            ? 'border-slate-200 bg-white text-slate-700 hover:border-purple-300 hover:text-slate-900'
+                            : 'border-white/5 bg-slate-900/35 text-slate-300 hover:border-violet-300/35 hover:text-slate-50')
                       }`}
                     >
                       <Icon className="h-4 w-4" />

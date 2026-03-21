@@ -544,7 +544,7 @@ export default function PortfolioTable({
           <button
             type="button"
             onClick={() => setIsReportMenuOpen((prev) => !prev)}
-            className="inline-flex min-h-[44px] transform-gpu items-center gap-2 rounded-md border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 px-3 py-1.5 text-xs font-semibold text-slate-50 transition-all duration-200 hover:scale-105 hover:from-violet-500/35 hover:to-fuchsia-500/35 active:scale-95"
+            className="inline-flex min-h-[44px] transform-gpu items-center gap-2 rounded-md border border-purple-700 bg-purple-700 px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:scale-105 hover:bg-purple-800 active:scale-95 dark:border-fuchsia-300/35 dark:bg-gradient-to-r dark:from-violet-500/25 dark:to-fuchsia-500/25 dark:text-slate-50 dark:hover:from-violet-500/35 dark:hover:to-fuchsia-500/35"
             title="Rapor seçeneklerini aç"
             aria-haspopup="menu"
             aria-expanded={isReportMenuOpen}

@@ -341,7 +341,7 @@ export default function GoalTracker() {
           <div className="mt-4 flex justify-end">
             <button
               type="submit"
-              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-lg border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 px-4 py-2 text-sm font-semibold text-slate-50 transition-all duration-200 hover:scale-105 hover:shadow-[0_0_20px_rgba(217,70,239,0.35)] active:scale-95"
+              className="inline-flex min-h-[44px] transform-gpu items-center gap-1.5 rounded-lg border border-indigo-700 bg-indigo-700 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:scale-105 hover:bg-indigo-800 active:scale-95 dark:border-fuchsia-300/35 dark:bg-gradient-to-r dark:from-violet-500/25 dark:to-fuchsia-500/25 dark:text-slate-50 dark:hover:shadow-[0_0_20px_rgba(217,70,239,0.35)]"
             >
               <Save className="h-4 w-4" />
               Hedefi Kaydet
