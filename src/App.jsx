@@ -22,6 +22,7 @@ import FinancialStrategyCenterPage from './components/FinancialStrategyCenterPag
 import SmartSuggestionsPage from './components/SmartSuggestionsPage';
 import Chart from './components/dashboard/Chart';
 import Stats from './components/dashboard/Stats';
+import DashboardSkeleton from './components/dashboard/DashboardSkeleton';
 import { SyncContext } from './context/SyncContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { usePrivacy } from './context/PrivacyContext';
@@ -114,7 +115,17 @@ export default function App() {
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const athCelebrationTimeoutRef = useRef(null);
 
-  const { portfolio, addAsset, updateAsset, removeAsset, sellAsset, increaseAssetHolding, refreshPortfolio } = usePortfolio(authUser?.id, (updatedPort) => {
+  const {
+    portfolio,
+    isPortfolioLoading,
+    isPortfolioMutating,
+    addAsset,
+    updateAsset,
+    removeAsset,
+    sellAsset,
+    increaseAssetHolding,
+    refreshPortfolio,
+  } = usePortfolio(authUser?.id, (updatedPort) => {
     if (authUser) {
       updatePrices(updatedPort);
     }
@@ -467,11 +478,18 @@ export default function App() {
     return isPrivacyActive ? maskValue(percentText) : percentText;
   };
 
+  const showInitialDashboardSkeleton = activePage === 'dashboard'
+    && (loading || isPortfolioLoading)
+    && portfolio.length === 0;
+  const showDashboardMutationSkeleton = activePage === 'dashboard' && isPortfolioMutating;
+
   const dashboardContextValue = useMemo(() => ({
     portfolio,
     marketData,
     marketMeta,
     loading,
+    portfolioLoading: isPortfolioLoading,
+    portfolioMutating: isPortfolioMutating,
     lastUpdated,
     baseCurrency,
     rates,
@@ -502,6 +520,8 @@ export default function App() {
     marketData,
     marketMeta,
     loading,
+    isPortfolioLoading,
+    isPortfolioMutating,
     lastUpdated,
     baseCurrency,
     rates,
@@ -547,8 +567,8 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-50">
-        <div className="text-sm text-slate-400">Oturum kontrol ediliyor...</div>
+      <div className="flex min-h-screen items-center justify-center bg-page text-text-main">
+        <div className="text-sm text-text-muted">Oturum kontrol ediliyor...</div>
       </div>
     );
   }
@@ -651,35 +671,50 @@ export default function App() {
       <main className="max-w-7xl mx-auto space-y-6 md:space-y-10">
         {activePage === 'dashboard' ? (
           <>
-            <DashboardProvider value={dashboardContextValue}>
-              <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
-                <Stats
-                  greetingName={dashboardGreetingName}
-                  totalProfit={totalProfit}
-                  dashboardTotalValue={dashboardTotalValue}
-                  totalValue={totalValue}
-                  malVarligiManuelToplam={malVarligiManuelToplam}
-                  portfolioRealReturnPercent={portfolioRealReturnPercent}
-                  selectedInflationSourceLabel={selectedInflationSourceLabel}
-                  baseCurrency={baseCurrency}
-                  rates={rates}
-                  renderPercent={() => renderPercentText(animatedProfitPercent)}
-                  renderRealReturn={() => (
-                    isPrivacyActive
-                      ? maskValue(`${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`)
-                      : `${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`
-                  )}
-                />
+            {showInitialDashboardSkeleton ? (
+              <DashboardSkeleton />
+            ) : (
+              <DashboardProvider value={dashboardContextValue}>
+                <div className="relative grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
+                  <Stats
+                    greetingName={dashboardGreetingName}
+                    totalProfit={totalProfit}
+                    profitPercentageValue={animatedProfitPercent}
+                    dashboardTotalValue={dashboardTotalValue}
+                    totalValue={totalValue}
+                    malVarligiManuelToplam={malVarligiManuelToplam}
+                    portfolioRealReturnPercent={portfolioRealReturnPercent}
+                    selectedInflationSourceLabel={selectedInflationSourceLabel}
+                    baseCurrency={baseCurrency}
+                    rates={rates}
+                    renderPercent={() => renderPercentText(animatedProfitPercent)}
+                    renderRealReturn={() => (
+                      isPrivacyActive
+                        ? maskValue(`${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`)
+                        : `${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`
+                    )}
+                  />
 
-                <GoalTracker />
+                  <GoalTracker />
 
-                <Chart />
+                  <Chart />
 
-                <DistributionCard />
+                  <DistributionCard />
 
-                <AssetList />
-              </div>
-            </DashboardProvider>
+                  <AssetList />
+
+                  {showDashboardMutationSkeleton ? (
+                    <div className="pointer-events-none absolute inset-0 z-20 rounded-2xl bg-slate-950/25 backdrop-blur-[1px]" aria-hidden="true">
+                      <div className="grid h-full grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
+                        <div className="col-span-12 h-20 animate-pulse rounded-2xl bg-slate-700/40" />
+                        <div className="col-span-12 md:col-span-8 h-28 animate-pulse rounded-2xl bg-slate-700/35" />
+                        <div className="col-span-12 md:col-span-4 h-28 animate-pulse rounded-2xl bg-slate-700/35" />
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </DashboardProvider>
+            )}
           </>
         ) : activePage === 'hedeflerim' ? (
           <DashboardProvider value={dashboardContextValue}>
@@ -708,8 +743,8 @@ export default function App() {
           />
         ) : activePage === 'ayarlar' ? (
           <section className="mx-auto w-full max-w-5xl rounded-3xl border border-white/10 bg-slate-900/45 p-6 shadow-[0_30px_90px_rgba(2,6,23,0.58)] backdrop-blur-xl md:p-8">
-            <h2 className="text-xl font-black text-slate-50">Ayarlar</h2>
-            <p className="mt-2 text-sm text-slate-300">
+            <h2 className="text-xl font-black text-text-main">Ayarlar</h2>
+            <p className="mt-2 text-sm text-text-muted">
               Profil ve oturum islemleri sol menunun alt kismina tasindi. Tema degisikligi ve hesap yonetimi bu panelden kontrol edilebilir.
             </p>
           </section>

@@ -35,7 +35,7 @@ export default function AssetGroup({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <p className={`text-[11px] ${group.totalProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+              <p className={`text-[11px] font-semibold ${group.totalProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                 {isPrivacyActive ? maskValue(`%${groupProfitPercent}`) : `%${groupProfitPercent}`}
               </p>
               <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/20 transition-transform duration-300 ease-in-out ${isOpen ? 'rotate-180' : 'rotate-0'}`}>

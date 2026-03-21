@@ -91,6 +91,8 @@ const inferCategory = (asset = {}) => {
 
 export const usePortfolio = (userId, onPortfolioChange) => {
   const [portfolio, setPortfolio] = useState([]);
+  const [isPortfolioLoading, setIsPortfolioLoading] = useState(false);
+  const [isPortfolioMutating, setIsPortfolioMutating] = useState(false);
   const onPortfolioChangeRef = useRef(onPortfolioChange);
   const supportsUnitTypeRef = useRef(true);
 
@@ -139,6 +141,8 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       return;
     }
 
+    setIsPortfolioLoading(true);
+
     let { data, error } = await supabase
       .from('assets')
       .select('*')
@@ -147,6 +151,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     if (error) {
       console.error('Supabase assets select hatasi:', error);
       toast.error('Portfoy Supabase uzerinden yuklenemedi.');
+      setIsPortfolioLoading(false);
       return;
     }
 
@@ -154,6 +159,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
 
     setPortfolio(normalized);
     onPortfolioChangeRef.current?.(normalized);
+    setIsPortfolioLoading(false);
   }, [normalizeAsset, userId]);
 
   const buildDbPayload = useCallback((formData, resolvedBank, normalizedCategory, isCashAsset) => {
@@ -191,8 +197,10 @@ export const usePortfolio = (userId, onPortfolioChange) => {
   const addAsset = async (formData) => {
     if (!supabase || !userId) {
       toast.error('Supabase baglantisi hazir degil. .env degerlerini kontrol edin.');
-      return;
+      return false;
     }
+
+    setIsPortfolioMutating(true);
 
     const newBank = formData.bank || 'Banka Belirtilmedi';
     const normalizedCategory = formData.category || inferCategory(formData);
@@ -219,7 +227,8 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     if (existingAssetQuery.error) {
       console.error('Supabase assets existing kontrol hatasi:', existingAssetQuery.error);
       toast.error('Varlik kontrolu yapilamadi.');
-      return;
+      setIsPortfolioMutating(false);
+      return false;
     }
 
     const existingAssetRow = sortAssetsClientSide(existingAssetQuery.data || [])[0] || null;
@@ -273,7 +282,8 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       if (error) {
         console.error('Supabase assets merge update hatasi:', error);
         toast.error('Mevcut varlik guncellenemedi.');
-        return;
+        setIsPortfolioMutating(false);
+        return false;
       }
 
       const normalizedAsset = normalizeAsset({
@@ -291,7 +301,8 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       });
 
       toast.success(`${resolvedBank} - ${symbol} mevcut kayitla birlestirildi.`);
-      return;
+      setIsPortfolioMutating(false);
+      return true;
     }
 
     let { data, error } = await supabase
@@ -319,7 +330,8 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     if (error) {
       console.error('Supabase assets insert hatasi:', error);
       toast.error('Varlik eklenemedi.');
-      return;
+      setIsPortfolioMutating(false);
+      return false;
     }
 
     const normalizedAsset = normalizeAsset({ ...(data || dbPayload), portfolioName: formData.portfolioName });
@@ -331,13 +343,17 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     });
 
     toast.success(`${resolvedBank} - ${symbol} basariyla eklendi!`);
+    setIsPortfolioMutating(false);
+    return true;
   };
 
   const updateAsset = async (id, formData) => {
     if (!supabase || !userId) {
       toast.error('Supabase baglantisi hazir degil. .env degerlerini kontrol edin.');
-      return;
+      return false;
     }
+
+    setIsPortfolioMutating(true);
 
     const newBank = formData.bank || 'Banka Belirtilmedi';
     const normalizedCategory = formData.category || inferCategory(formData);
@@ -383,7 +399,8 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     if (error) {
       console.error('Supabase assets update hatasi:', error);
       toast.error('Varlik guncellenemedi.');
-      return;
+      setIsPortfolioMutating(false);
+      return false;
     }
 
     const normalizedAsset = normalizeAsset({ ...(data || { ...dbPayload, id }), portfolioName: formData.portfolioName });
@@ -395,13 +412,17 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     });
 
     toast.success(`${resolvedBank} - ${symbol} basariyla guncellendi!`);
+    setIsPortfolioMutating(false);
+    return true;
   };
 
   const removeAsset = async (id) => {
     if (!supabase || !userId) {
       toast.error('Supabase baglantisi hazir degil. .env degerlerini kontrol edin.');
-      return;
+      return false;
     }
+
+    setIsPortfolioMutating(true);
 
     const assetToDelete = portfolio.find((item) => item.id === id);
 
@@ -413,7 +434,8 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     if (error) {
       console.error('Supabase assets delete hatasi:', error);
       toast.error('Varlik silinemedi.');
-      return;
+      setIsPortfolioMutating(false);
+      return false;
     }
 
     setPortfolio((prev) => {
@@ -428,6 +450,9 @@ export const usePortfolio = (userId, onPortfolioChange) => {
         style: { background: '#450a0a', color: '#fecdd3', border: '1px solid #9f1239' },
       });
     }
+
+    setIsPortfolioMutating(false);
+    return true;
   };
 
   const sellAsset = useCallback(async ({ assetId, sellAmount, sellPrice }) => {
@@ -436,11 +461,14 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       return false;
     }
 
+    setIsPortfolioMutating(true);
+
     const safeSellAmount = toFiniteNumber(sellAmount);
     const safeSellPrice = toFiniteNumber(sellPrice);
 
     if (safeSellAmount <= 0 || safeSellPrice <= 0) {
       toast.error('Satis miktari ve satis fiyati sifirdan buyuk olmali.');
+      setIsPortfolioMutating(false);
       return false;
     }
 
@@ -454,12 +482,14 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     if (sourceAssetError || !sourceAsset) {
       console.error('Supabase assets satis kaynak kaydi okunamadi:', sourceAssetError);
       toast.error('Satilacak varlik bulunamadi.');
+      setIsPortfolioMutating(false);
       return false;
     }
 
     const sourceAmount = toFiniteNumber(sourceAsset.amount);
     if (safeSellAmount > sourceAmount) {
       toast.error('Satilacak lot miktari mevcut miktardan buyuk olamaz.');
+      setIsPortfolioMutating(false);
       return false;
     }
 
@@ -478,6 +508,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       if (deleteError) {
         console.error('Supabase assets satis sonrasi silme hatasi:', deleteError);
         toast.error('Satis tamamlanamadi.');
+        setIsPortfolioMutating(false);
         return false;
       }
     } else {
@@ -490,6 +521,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       if (amountUpdateError) {
         console.error('Supabase assets satis miktar guncelleme hatasi:', amountUpdateError);
         toast.error('Satis miktari guncellenemedi.');
+        setIsPortfolioMutating(false);
         return false;
       }
     }
@@ -506,6 +538,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       console.error('Supabase assets nakit hesap arama hatasi:', cashSelectError);
       toast.error('Nakit hesaba aktarim yapilamadi.');
       await fetchPortfolio();
+      setIsPortfolioMutating(false);
       return false;
     }
 
@@ -538,6 +571,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
         console.error('Supabase assets nakit hesap update hatasi:', cashUpdateError);
         toast.error('Satis gerceklesti ancak nakit hesaba aktarim yapilamadi.');
         await fetchPortfolio();
+        setIsPortfolioMutating(false);
         return false;
       }
     } else {
@@ -581,12 +615,14 @@ export const usePortfolio = (userId, onPortfolioChange) => {
         console.error('Supabase assets nakit hesap insert hatasi:', cashInsertError);
         toast.error('Satis gerceklesti ancak nakit hesap olusturulamadi.');
         await fetchPortfolio();
+        setIsPortfolioMutating(false);
         return false;
       }
     }
 
     await fetchPortfolio();
     toast.success(`${sourceAsset.symbol} satildi. Gelir ${bankName} nakit hesabina aktarildi.`);
+    setIsPortfolioMutating(false);
     return true;
   }, [fetchPortfolio, userId]);
 
@@ -595,6 +631,8 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       toast.error('Kullanici oturumu bulunamadi.');
       return false;
     }
+
+    setIsPortfolioMutating(true);
 
     try {
       await increaseAssetAmount({
@@ -606,15 +644,19 @@ export const usePortfolio = (userId, onPortfolioChange) => {
 
       await fetchPortfolio();
       toast.success('Miktar artırıldı, ortalama maliyet güncellendi.');
+      setIsPortfolioMutating(false);
       return true;
     } catch (error) {
       toast.error(error?.message || 'Miktar artırma işlemi başarısız.');
+      setIsPortfolioMutating(false);
       return false;
     }
   }, [fetchPortfolio, userId]);
 
   return {
     portfolio,
+    isPortfolioLoading,
+    isPortfolioMutating,
     addAsset,
     updateAsset,
     removeAsset,

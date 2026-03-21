@@ -232,6 +232,7 @@ export default function AssetModal({
   const [portfolioQuery, setPortfolioQuery] = useState(INITIAL_FORM.portfolioName);
   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
   const [activePortfolioIndex, setActivePortfolioIndex] = useState(-1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isStockCategory = formData.category === 'Hisse Senedi';
   const isFundCategory = formData.category === 'Yatırım Fonu';
@@ -660,7 +661,7 @@ export default function AssetModal({
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const normalizedSymbol = formData.symbol.trim().toUpperCase();
@@ -715,13 +716,20 @@ export default function AssetModal({
         : dedupePortfolioNames([...prev, resolvedPortfolioName])
     ));
 
+    setIsSubmitting(true);
+
+    let isSuccess = false;
     if (editingAssetId) {
-      onUpdate(editingAssetId, payload);
+      isSuccess = await onUpdate(editingAssetId, payload);
     } else {
-      onAdd(payload);
+      isSuccess = await onAdd(payload);
     }
 
-    closeModal();
+    setIsSubmitting(false);
+
+    if (isSuccess) {
+      closeModal();
+    }
   };
 
   const isStep2Active = Boolean(formData.bank || formData.category);
@@ -821,17 +829,26 @@ export default function AssetModal({
             <button
               type="button"
               onClick={closeModal}
+              disabled={isSubmitting}
               className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-colors font-medium"
             >
               İptal
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/20"
+              disabled={isSubmitting}
+              className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-700/80 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/20"
             >
-              {editingAssetId ? 'Güncelle' : 'Ekle'}
+              {isSubmitting ? 'Kaydediliyor...' : (editingAssetId ? 'Güncelle' : 'Ekle')}
             </button>
           </div>
+
+          {isSubmitting ? (
+            <div className="space-y-2 pt-1" aria-hidden="true">
+              <div className="h-3 w-full animate-pulse rounded bg-slate-700/70" />
+              <div className="h-3 w-3/4 animate-pulse rounded bg-slate-700/60" />
+            </div>
+          ) : null}
         </form>
       </div>
     </div>

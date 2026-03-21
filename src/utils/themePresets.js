@@ -84,8 +84,9 @@ export const applyThemeToRoot = (themeId) => {
   });
 
   const isDarkMode = theme.mode === 'dark';
-  document.documentElement.classList.toggle('dark', isDarkMode);
-  document.documentElement.classList.toggle('light', !isDarkMode);
+  // Ensure only one mode class exists to prevent dark:* utility leakage.
+  document.documentElement.classList.remove('dark', 'light');
+  document.documentElement.classList.add(isDarkMode ? 'dark' : 'light');
 
   document.documentElement.setAttribute('data-theme', resolvedThemeId);
   return resolvedThemeId;

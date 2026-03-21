@@ -472,7 +472,20 @@ export default function PortfolioTable({
       </div>
 
       <div className="p-6 md:p-8 space-y-3">
-        {displayedPortfolio.length === 0 ? (
+        {showSkeleton ? (
+          <div className="space-y-3" aria-hidden="true">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={`portfolio-skeleton-${index}`} className="rounded-xl border border-white/10 bg-slate-800/45 p-4">
+                <div className="mb-3 h-3 w-40 animate-pulse rounded bg-slate-700/70" />
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-12 md:items-center">
+                  <div className="h-4 w-32 animate-pulse rounded bg-slate-700/65 md:col-span-4" />
+                  <div className="h-4 w-44 animate-pulse rounded bg-slate-700/60 md:col-span-5" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-slate-700/65 md:col-span-2 md:ml-auto" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : displayedPortfolio.length === 0 ? (
           <div className="p-6 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl text-center text-sm text-slate-500 shadow-2xl">
             {portfolio.length === 0
               ? 'Henüz bir varlık eklemediniz.'
@@ -632,10 +645,10 @@ export default function PortfolioTable({
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2">
                           <p className="text-[11px] text-slate-500">Kâr / Zarar</p>
-                          <p className={`text-sm font-semibold ${itemProfit >= 0 ? 'text-emerald-400' : 'text-[#FF3B6B]'}`}>
+                          <p className={`text-sm font-semibold ${itemProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {itemProfit > 0 ? '+' : ''}{renderCurrencyWithMutedSymbol(itemProfit)}
                           </p>
-                          <p className={`text-[11px] ${itemProfit >= 0 ? 'text-emerald-300' : 'text-[#FF3B6B]'}`}>
+                          <p className={`text-[11px] font-semibold ${itemProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {isPrivacyActive ? maskValue(`${itemProfit > 0 ? '+' : ''}${itemProfitPercent}%`) : `${itemProfit > 0 ? '+' : ''}${itemProfitPercent}%`}
                           </p>
                         </div>

@@ -10,6 +10,7 @@ import SpotlightCard from '../SpotlightCard';
 export default function Stats({
   greetingName,
   totalProfit,
+  profitPercentageValue,
   dashboardTotalValue,
   totalValue,
   malVarligiManuelToplam,
@@ -20,6 +21,8 @@ export default function Stats({
   renderPercent,
   renderRealReturn,
 }) {
+  const profitPercentColorClass = profitPercentageValue >= 0 ? 'text-emerald-500' : 'text-red-500';
+
   return (
     <motion.section
       layout
@@ -54,7 +57,7 @@ export default function Stats({
               </ShinyText>
             </h3>
 
-            <span className="mt-4 inline-flex items-center rounded-xl border border-emerald-300/45 bg-emerald-500/20 px-4 py-2 text-sm font-extrabold tracking-tight text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.28)]">
+            <span className={`mt-4 inline-flex items-center rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-extrabold tracking-tight shadow-[0_0_20px_rgba(15,23,42,0.24)] ${profitPercentColorClass}`}>
               Kâr / Zarar: {renderPercent()}
             </span>
 
@@ -128,6 +131,7 @@ export default function Stats({
 Stats.propTypes = {
   greetingName: PropTypes.string.isRequired,
   totalProfit: PropTypes.number.isRequired,
+  profitPercentageValue: PropTypes.number.isRequired,
   dashboardTotalValue: PropTypes.number.isRequired,
   totalValue: PropTypes.number.isRequired,
   malVarligiManuelToplam: PropTypes.number.isRequired,
