@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, Eye, EyeOff, LogOut, Menu, Plus, RefreshCcw } from 'lucide-react';
+import { Bell, Eye, EyeOff, Menu, Plus, RefreshCcw, Zap } from 'lucide-react';
 import { useSyncState } from '../context/SyncContext';
 import { usePrivacy } from '../context/PrivacyContext';
 import SplitText from './ui/SplitText';
@@ -10,11 +10,10 @@ export default function Header({
   baseCurrency,
   setBaseCurrency,
   openAddModal,
+  openQuickAddModal,
   loading,
   syncFailed,
   onRefresh,
-  user,
-  onSignOut,
   onToggleAlerts,
   hasActiveAlerts = false,
   alertCount = 0,
@@ -52,11 +51,6 @@ export default function Header({
   const timestampToneClass = syncFailed
     ? 'text-rose-400'
     : (isStale ? 'text-amber-300' : 'text-slate-400');
-  const profileName = user?.user_metadata?.full_name
-    || user?.user_metadata?.name
-    || user?.email?.split('@')?.[0]
-    || 'Kullanıcı';
-  const profileAvatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
 
   return (
     <header className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-10 gap-4 md:gap-5">
@@ -126,6 +120,15 @@ export default function Header({
           <span className="text-sm font-medium">Varlık Ekle</span>
         </button>
 
+        <button
+          type="button"
+          onClick={openQuickAddModal}
+          className="flex transform-gpu items-center justify-center gap-2 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-100 border border-emerald-300/35 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-xl w-full md:w-auto"
+        >
+          <Zap className="w-4 h-4" />
+          <span className="text-sm font-medium">Hızlı Ekle</span>
+        </button>
+
         <div className="flex flex-col items-start md:items-end gap-1 md:gap-1.5 w-full md:w-auto">
           <div className="flex items-center gap-2 md:gap-3">
           <button 
@@ -155,58 +158,23 @@ export default function Header({
           </>
         ) : null}
 
-        {user ? (
-          <div className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto">
-            <button
-              type="button"
-              onClick={onToggleAlerts}
-              className="relative inline-flex h-10 w-10 transform-gpu items-center justify-center rounded-xl border border-white/5 bg-slate-900/40 text-slate-200 transition-all duration-200 hover:scale-105 hover:bg-slate-800/60 active:scale-95"
-              title="Uyarılar"
-              aria-label="Uyarı panelini aç"
-            >
-              <Bell className="h-5 w-5" />
-              {hasActiveAlerts ? (
-                <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]" />
-              ) : null}
-              {alertCount > 0 ? (
-                <span className="absolute -right-1 -top-1 rounded-full border border-rose-200/40 bg-rose-500 px-1 text-[10px] font-bold text-white leading-4 min-w-[1rem] text-center">
-                  {alertCount > 9 ? '9+' : alertCount}
-                </span>
-              ) : null}
-            </button>
-
-            <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-slate-900/40 px-2.5 py-1.5 backdrop-blur-xl">
-            {profileAvatar ? (
-              <img
-                src={profileAvatar}
-                alt={`${profileName} avatar`}
-                className="w-8 h-8 rounded-full object-cover border border-white/20"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-blue-500/25 border border-blue-400/35 flex items-center justify-center text-xs font-bold text-blue-200">
-                {String(profileName).trim().charAt(0).toUpperCase() || 'U'}
-              </div>
-            )}
-
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-slate-100 truncate max-w-[9rem]">
-                <SplitText key={profileName} text={profileName} by="chars" stagger={0.02} />
-              </p>
-              <p className="text-[11px] text-slate-400 truncate max-w-[9rem]">{user.email}</p>
-            </div>
-
-            <button
-              type="button"
-              onClick={onSignOut}
-              className="inline-flex transform-gpu items-center gap-1 rounded-md border border-white/5 bg-slate-950/60 px-2 py-1 text-[11px] text-slate-200 transition-all duration-200 hover:scale-105 hover:bg-slate-900/80 active:scale-95"
-              title="Çıkış yap"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Çıkış
-            </button>
-            </div>
-          </div>
-        ) : null}
+        <button
+          type="button"
+          onClick={onToggleAlerts}
+          className="relative inline-flex h-10 w-10 transform-gpu items-center justify-center rounded-xl border border-white/5 bg-slate-900/40 text-slate-200 transition-all duration-200 hover:scale-105 hover:bg-slate-800/60 active:scale-95"
+          title="Uyarılar"
+          aria-label="Uyarı panelini aç"
+        >
+          <Bell className="h-5 w-5" />
+          {hasActiveAlerts ? (
+            <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]" />
+          ) : null}
+          {alertCount > 0 ? (
+            <span className="absolute -right-1 -top-1 rounded-full border border-rose-200/40 bg-rose-500 px-1 text-[10px] font-bold text-white leading-4 min-w-[1rem] text-center">
+              {alertCount > 9 ? '9+' : alertCount}
+            </span>
+          ) : null}
+        </button>
       </div>
     </header>
   );

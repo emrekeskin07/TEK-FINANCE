@@ -19,6 +19,7 @@ import AssetModal from './components/AssetModal';
 import AuthPage from './components/AuthPage';
 import MalVarligiPage from './components/MalVarligiPage';
 import EnflasyonAnaliziPage from './components/EnflasyonAnaliziPage';
+import FinancialStrategyCenterPage from './components/FinancialStrategyCenterPage';
 import Chart from './components/dashboard/Chart';
 import Stats from './components/dashboard/Stats';
 import { SyncContext } from './context/SyncContext';
@@ -39,6 +40,8 @@ const PAGE_TO_PATH = {
   'net-worth': '/net-worth',
   enflasyon: '/inflation-analysis',
   hedeflerim: '/goals',
+  'strategy-center': '/strategy-center',
+  ayarlar: '/settings',
 };
 
 const resolvePageFromPath = (pathname) => {
@@ -52,6 +55,14 @@ const resolvePageFromPath = (pathname) => {
 
   if (pathname === '/goals') {
     return 'hedeflerim';
+  }
+
+  if (pathname === '/strategy-center') {
+    return 'strategy-center';
+  }
+
+  if (pathname === '/settings') {
+    return 'ayarlar';
   }
 
   return 'dashboard';
@@ -84,6 +95,7 @@ export default function App() {
   } = useManualAssets(authUser?.id);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isQuickAddModalOpen, setIsQuickAddModalOpen] = useState(false);
   const [editingAssetId, setEditingAssetId] = useState(null);
   const [editingAssetData, setEditingAssetData] = useState(null);
   const [initialPortfolioName, setInitialPortfolioName] = useState('');
@@ -102,6 +114,19 @@ export default function App() {
   
   const { marketData, marketChanges, marketMeta, loading, lastUpdated, lastFetchFailed, rates, updatePrices } = useMarketPrices(portfolio);
 
+  const openQuickAddModal = useCallback(() => {
+    setIsQuickAddModalOpen(true);
+  }, []);
+
+  const closeQuickAddModal = useCallback(() => {
+    setIsQuickAddModalOpen(false);
+  }, []);
+
+  const handleQuickAddSuccess = useCallback(async () => {
+    await refreshPortfolio();
+    setIsQuickAddModalOpen(false);
+  }, [refreshPortfolio]);
+
   useEffect(() => {
     if (!authUser) {
       return;
@@ -109,6 +134,12 @@ export default function App() {
 
     updatePrices();
   }, [authUser, updatePrices]);
+
+  useEffect(() => {
+    if (activePage !== 'dashboard' && isQuickAddModalOpen) {
+      setIsQuickAddModalOpen(false);
+    }
+  }, [activePage, isQuickAddModalOpen]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -284,6 +315,7 @@ export default function App() {
     profitPercentage,
     portfolioRealReturnPercent,
     bankTotals,
+    categoryTotals,
     portfolioCashTotal,
     lineChartData,
     selectedInflationSourceLabel,
@@ -489,6 +521,27 @@ export default function App() {
     removeAsset,
   ]);
 
+  const portfolioDistribution = useMemo(() => {
+    const totals = Object.entries(categoryTotals || {})
+      .map(([category, value]) => ({
+        category,
+        value: Number(value || 0),
+      }))
+      .filter((item) => Number.isFinite(item.value) && item.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    const totalValueByCategory = totals.reduce((sum, item) => sum + item.value, 0);
+    if (totalValueByCategory <= 0) {
+      return [];
+    }
+
+    return totals.map((item) => ({
+      category: item.category,
+      value: Number(item.value.toFixed(2)),
+      percent: Number(((item.value / totalValueByCategory) * 100).toFixed(2)),
+    }));
+  }, [categoryTotals]);
+
 
   if (authLoading) {
     return (
@@ -570,6 +623,8 @@ export default function App() {
         onThemeChange={setActiveTheme}
         onClose={() => setIsSidebarOpen(false)}
         onNavigate={handleSidebarNavigate}
+        user={authUser}
+        onSignOut={handleSignOut}
       />
 
       <div>
@@ -579,11 +634,10 @@ export default function App() {
           baseCurrency={baseCurrency}
           setBaseCurrency={setBaseCurrency}
           openAddModal={openAddModal}
+          openQuickAddModal={openQuickAddModal}
           loading={loading}
           syncFailed={lastFetchFailed}
           onRefresh={handleManualRefresh}
-          user={authUser}
-          onSignOut={handleSignOut}
           onToggleAlerts={handleToggleAlertDrawer}
           hasActiveAlerts={activeAlertCount > 0}
           alertCount={activeAlertCount}
@@ -595,11 +649,6 @@ export default function App() {
           <>
             <DashboardProvider value={dashboardContextValue}>
               <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
-                <MagicAiInput
-                  userId={authUser?.id}
-                  onSuccess={refreshPortfolio}
-                />
-
                 <Stats
                   greetingName={dashboardGreetingName}
                   totalProfit={totalProfit}
@@ -691,6 +740,15 @@ export default function App() {
               rates={rates}
             />
           </div>
+        ) : activePage === 'strategy-center' ? (
+          <FinancialStrategyCenterPage portfolioDistribution={portfolioDistribution} />
+        ) : activePage === 'ayarlar' ? (
+          <section className="mx-auto w-full max-w-5xl rounded-3xl border border-white/10 bg-slate-900/45 p-6 shadow-[0_30px_90px_rgba(2,6,23,0.58)] backdrop-blur-xl md:p-8">
+            <h2 className="text-xl font-black text-slate-50">Ayarlar</h2>
+            <p className="mt-2 text-sm text-slate-300">
+              Profil ve oturum islemleri sol menunun alt kismina tasindi. Tema degisikligi ve hesap yonetimi bu panelden kontrol edilebilir.
+            </p>
+          </section>
         ) : (
           <div>
             <EnflasyonAnaliziPage
@@ -709,6 +767,35 @@ export default function App() {
         alerts={alerts}
         onOpenInflationAnalysis={handleOpenInflationFromAlert}
       />
+
+      {activePage === 'dashboard' && isQuickAddModalOpen ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-[90] bg-black/55 backdrop-blur-[2px]"
+            onClick={closeQuickAddModal}
+            aria-label="Hızlı ekle modalini kapat"
+          />
+
+          <div className="fixed left-1/2 top-1/2 z-[100] w-[94vw] max-w-4xl max-h-[88vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-[0_30px_120px_rgba(2,6,23,0.7)] backdrop-blur-xl md:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="text-base font-bold text-slate-100">Hızlı Varlık Ekle</h3>
+              <button
+                type="button"
+                onClick={closeQuickAddModal}
+                className="rounded-lg border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-800/80"
+              >
+                Kapat
+              </button>
+            </div>
+
+            <MagicAiInput
+              userId={authUser?.id}
+              onSuccess={handleQuickAddSuccess}
+            />
+          </div>
+        </>
+      ) : null}
 
       {activePage === 'dashboard' ? (
         <AssetModal 

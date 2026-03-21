@@ -14,6 +14,7 @@ const {
   normalizeParsedInput,
   autoAddParsedAsset,
 } = require("./services/aiParseService");
+const { generateFinancialStrategy } = require("./services/strategyService");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -221,6 +222,49 @@ app.post("/api/ai-add-asset/confirm", async (req, res) => {
     return res.status(422).json({
       ok: false,
       error: error.message || "AI sonucu kaydedilemedi.",
+    });
+  }
+});
+
+// Example: POST /api/ai-strategy { monthlyIncome, monthlyExpense, investableAmount, portfolioDistribution }
+app.post("/api/ai-strategy", async (req, res) => {
+  const monthlyIncome = Number(req.body?.monthlyIncome || 0);
+  const monthlyExpense = Number(req.body?.monthlyExpense || 0);
+  const investableAmount = Number(req.body?.investableAmount || 0);
+  const portfolioDistribution = Array.isArray(req.body?.portfolioDistribution)
+    ? req.body.portfolioDistribution
+    : [];
+
+  if (!Number.isFinite(monthlyIncome) || monthlyIncome <= 0) {
+    return res.status(400).json({
+      ok: false,
+      error: "Aylik gelir pozitif sayi olmalidir.",
+    });
+  }
+
+  if (!Number.isFinite(monthlyExpense) || monthlyExpense < 0) {
+    return res.status(400).json({
+      ok: false,
+      error: "Aylik gider sifir veya pozitif sayi olmalidir.",
+    });
+  }
+
+  try {
+    const analysis = await generateFinancialStrategy({
+      monthlyIncome,
+      monthlyExpense,
+      investableAmount,
+      portfolioDistribution,
+    });
+
+    return res.json({
+      ok: true,
+      data: analysis,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error?.message || "Finansal strateji analizi olusturulamadi.",
     });
   }
 });

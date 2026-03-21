@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { NumericFormat } from 'react-number-format';
 import Input from './common/Input';
@@ -88,6 +88,36 @@ export default function AssetFormFields({
 
     return `${selectedSuggestion.symbol} doğrulandı.`;
   }, [formData.symbol, isStockLikeCategory, selectedSuggestion]);
+
+  const [amountFieldMeta, setAmountFieldMeta] = useState({
+    label: 'Miktar',
+    placeholder: 'Örn: 10',
+  });
+
+  useEffect(() => {
+    const normalizedSymbol = String(formData.symbol || '').trim().toUpperCase();
+
+    if (formData.category === 'Hisse Senedi') {
+      setAmountFieldMeta({
+        label: 'Miktar (Lot)',
+        placeholder: 'Örn: 100 lot',
+      });
+      return;
+    }
+
+    if (normalizedSymbol === 'GA=F' || normalizedSymbol === 'GRAM_ALTIN') {
+      setAmountFieldMeta({
+        label: 'Miktar (Gram)',
+        placeholder: 'Örn: 25,5 gram',
+      });
+      return;
+    }
+
+    setAmountFieldMeta({
+      label: `Miktar (${amountUnit})`,
+      placeholder: 'Örn: 10',
+    });
+  }, [formData.category, formData.symbol, amountUnit]);
 
   return (
     <>
@@ -493,7 +523,7 @@ export default function AssetFormFields({
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-400">Miktar</label>
+            <label className="mb-1 block text-sm font-medium text-slate-400">{amountFieldMeta.label}</label>
             <div className="relative">
               <NumericFormat
                 valueIsNumericString
@@ -505,6 +535,7 @@ export default function AssetFormFields({
                 decimalSeparator=","
                 value={formData.amount}
                 onValueChange={({ value }) => setFormData((prev) => ({ ...prev, amount: value }))}
+                placeholder={amountFieldMeta.placeholder}
                 className="w-full rounded-lg border border-white/10 bg-black/20 p-3 pr-14 text-slate-200 transition-colors focus:border-blue-500 focus:outline-none"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">

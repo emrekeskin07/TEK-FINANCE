@@ -437,3 +437,71 @@ export const parseAiAndAutoAddAsset = async ({ text, userId }) => {
   const parsed = parsedData?.parsed || parsedData;
   return confirmAiAddAsset({ parsed, userId });
 };
+
+export const fetchAiFinancialStrategy = async ({ monthlyIncome, monthlyExpense, investableAmount, portfolioDistribution }) => {
+  const income = Number(monthlyIncome || 0);
+  const expense = Number(monthlyExpense || 0);
+  const investable = Number(investableAmount || 0);
+
+  if (!Number.isFinite(income) || income <= 0) {
+    throw new ApiError('Aylik gelir sifirdan buyuk olmalidir.', { code: 'INVALID_INCOME' });
+  }
+
+  if (!Number.isFinite(expense) || expense < 0) {
+    throw new ApiError('Aylik gider negatif olamaz.', { code: 'INVALID_EXPENSE' });
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), BATCH_REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/ai-strategy`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        monthlyIncome: income,
+        monthlyExpense: expense,
+        investableAmount: investable,
+        portfolioDistribution: Array.isArray(portfolioDistribution) ? portfolioDistribution : [],
+      }),
+    });
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new ApiError('AI strateji servisi gecersiz cevap dondu.', {
+        status: response.status,
+        code: 'INVALID_JSON',
+      });
+    }
+
+    if (!response.ok || payload?.ok === false) {
+      throw new ApiError(payload?.error || 'AI strateji analizi alinamadi.', {
+        status: response.status,
+        body: payload,
+      });
+    }
+
+    return payload?.data || null;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new ApiError('AI strateji analizi zaman asimina ugradi.', { code: 'TIMEOUT' });
+    }
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError('AI strateji servisine ulasilamadi.', {
+      code: 'NETWORK_ERROR',
+      body: error,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
