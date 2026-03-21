@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Flame, TrendingUp, TrendingDown, Edit2, Trash2, ChevronDown, House, CarFront, BriefcaseBusiness } from 'lucide-react';
+import { CheckCircle2, Flame, TrendingUp, TrendingDown, Edit2, Trash2, ChevronDown, House, CarFront, BriefcaseBusiness, Plus } from 'lucide-react';
 import { getCategoryBadgeStyle } from '../../utils/categoryStyles';
 import { getMarketPriceKey, unitTypeToLabel } from '../../utils/assetPricing';
 import { formatTickerName } from '../../utils/helpers';
