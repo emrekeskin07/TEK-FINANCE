@@ -845,8 +845,8 @@ export default function AssetModal({
 
           {isSubmitting ? (
             <div className="space-y-2 pt-1" aria-hidden="true">
-              <div className="h-3 w-full animate-pulse rounded bg-slate-700/70" />
-              <div className="h-3 w-3/4 animate-pulse rounded bg-slate-700/60" />
+              <div className="skeleton-ui h-3 w-full rounded" />
+              <div className="skeleton-ui h-3 w-3/4 rounded" />
             </div>
           ) : null}
         </form>

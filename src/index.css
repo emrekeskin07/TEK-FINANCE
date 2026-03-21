@@ -54,6 +54,56 @@ html[data-theme='light-soft'] body {
 	}
 }
 
+@layer components {
+	.skeleton-ui {
+		position: relative;
+		overflow: hidden;
+		background-color: rgb(30 41 59);
+		animation: skeletonPulse 1.8s ease-in-out infinite;
+		transition: background-color 300ms ease;
+	}
+
+	html.light .skeleton-ui {
+		background-color: rgb(241 245 249);
+	}
+
+	html.dark .skeleton-ui {
+		background-color: rgb(30 41 59);
+	}
+
+	.skeleton-ui::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: -150%;
+		width: 150%;
+		height: 100%;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+		animation: skeletonShimmer 1.6s ease-in-out infinite;
+		transition: background 300ms ease;
+	}
+
+	html.dark .skeleton-ui::after {
+		background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.24), transparent);
+	}
+}
+
+@keyframes skeletonShimmer {
+	100% {
+		left: 100%;
+	}
+}
+
+@keyframes skeletonPulse {
+	0%,
+	100% {
+		opacity: 0.95;
+	}
+	50% {
+		opacity: 0.78;
+	}
+}
+
 @layer base {
 	h1 {
 		font-weight: 800;

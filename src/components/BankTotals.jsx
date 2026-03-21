@@ -121,6 +121,21 @@ const buildNestedPortfolioData = (portfolio, marketData, bankTotals) => {
 export default function BankTotals({ bankTotals, portfolio, marketData, baseCurrency, rates, totalValue, selectedBank, onSelectBank }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
   const [selectedPath, setSelectedPath] = useState([]);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 639px)');
+    const syncScreenState = () => setIsSmallScreen(Boolean(mediaQuery.matches));
+
+    syncScreenState();
+    mediaQuery.addEventListener('change', syncScreenState);
+
+    return () => mediaQuery.removeEventListener('change', syncScreenState);
+  }, []);
 
   const nestedData = useMemo(
     () => buildNestedPortfolioData(portfolio, marketData, bankTotals),
@@ -248,6 +263,8 @@ export default function BankTotals({ bankTotals, portfolio, marketData, baseCurr
 
   const hasData = chartData.length > 0;
   const filterTitle = selectedPath.length > 0 ? 'Üst seviyeye çık' : 'Filtreyi temizle';
+  const innerRadius = isSmallScreen ? 50 : 64;
+  const outerRadius = isSmallScreen ? 92 : 112;
 
   return (
     <div>
@@ -307,9 +324,9 @@ export default function BankTotals({ bankTotals, portfolio, marketData, baseCurr
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22, ease: 'easeOut' }}
-              className="grid grid-cols-1 gap-6 lg:grid-cols-12"
+              className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6"
             >
-              <div className="relative min-h-[280px] lg:col-span-7">
+              <div className="relative min-h-[260px] w-full md:min-h-[300px] md:w-7/12">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -318,8 +335,8 @@ export default function BankTotals({ bankTotals, portfolio, marketData, baseCurr
                       nameKey="label"
                       cx="50%"
                       cy="50%"
-                      innerRadius={64}
-                      outerRadius={112}
+                      innerRadius={innerRadius}
+                      outerRadius={outerRadius}
                       minAngle={6}
                       paddingAngle={2}
                       activeIndex={activePieIndex >= 0 ? activePieIndex : undefined}
@@ -350,20 +367,20 @@ export default function BankTotals({ bankTotals, portfolio, marketData, baseCurr
                   <div className="relative px-3 text-center">
                     <span className="pointer-events-none absolute inset-x-2 top-1/2 h-14 -translate-y-1/2 rounded-full bg-fuchsia-500/12 blur-2xl" aria-hidden="true" />
                     <p className="relative text-sm font-medium text-slate-400">{centerTitle}</p>
-                    <p className="relative mt-1 text-4xl font-black leading-none tracking-tight text-slate-50 drop-shadow-[0_0_18px_rgba(255,255,255,0.25)]">
+                    <p className="relative mt-1 text-xl font-black leading-none tracking-tight text-slate-50 drop-shadow-[0_0_18px_rgba(255,255,255,0.25)] sm:text-2xl md:text-4xl">
                       {formatTryCurrencyText(centerTotalValue)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="lg:col-span-5">
-                <ul className="space-y-2.5">
+              <div className="w-full md:w-5/12">
+                <ul className="flex w-full flex-col gap-2">
                   {chartData.map((entry) => {
                     const isSelected = selectedPath.length === 0 && selectedBank === entry.label;
 
                     return (
-                      <li key={`legend-${entry.id}`}>
+                      <li key={`legend-${entry.id}`} className="w-full">
                         <button
                           type="button"
                           onClick={() => handleDrill(entry)}

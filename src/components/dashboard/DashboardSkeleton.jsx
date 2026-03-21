@@ -1,7 +1,7 @@
 import React from 'react';
 
 const SkeletonBlock = ({ className = '' }) => (
-  <div className={`animate-pulse rounded-2xl border border-white/10 bg-slate-800/55 ${className}`} />
+  <div className={`skeleton-ui rounded-2xl border border-white/10 ${className}`} />
 );
 
 export default function DashboardSkeleton() {

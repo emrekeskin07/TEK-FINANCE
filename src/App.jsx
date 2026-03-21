@@ -706,9 +706,9 @@ export default function App() {
                   {showDashboardMutationSkeleton ? (
                     <div className="pointer-events-none absolute inset-0 z-20 rounded-2xl bg-slate-950/25 backdrop-blur-[1px]" aria-hidden="true">
                       <div className="grid h-full grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
-                        <div className="col-span-12 h-20 animate-pulse rounded-2xl bg-slate-700/40" />
-                        <div className="col-span-12 md:col-span-8 h-28 animate-pulse rounded-2xl bg-slate-700/35" />
-                        <div className="col-span-12 md:col-span-4 h-28 animate-pulse rounded-2xl bg-slate-700/35" />
+                        <div className="skeleton-ui col-span-12 h-20 rounded-2xl" />
+                        <div className="skeleton-ui col-span-12 md:col-span-8 h-28 rounded-2xl" />
+                        <div className="skeleton-ui col-span-12 md:col-span-4 h-28 rounded-2xl" />
                       </div>
                     </div>
                   ) : null}

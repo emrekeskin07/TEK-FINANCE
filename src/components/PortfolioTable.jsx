@@ -475,12 +475,12 @@ export default function PortfolioTable({
         {showSkeleton ? (
           <div className="space-y-3" aria-hidden="true">
             {Array.from({ length: 4 }).map((_, index) => (
-              <div key={`portfolio-skeleton-${index}`} className="rounded-xl border border-white/10 bg-slate-800/45 p-4">
-                <div className="mb-3 h-3 w-40 animate-pulse rounded bg-slate-700/70" />
+              <div key={`portfolio-skeleton-${index}`} className="rounded-xl border border-white/10 bg-transparent p-4">
+                <div className="skeleton-ui mb-3 h-3 w-40 rounded" />
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-12 md:items-center">
-                  <div className="h-4 w-32 animate-pulse rounded bg-slate-700/65 md:col-span-4" />
-                  <div className="h-4 w-44 animate-pulse rounded bg-slate-700/60 md:col-span-5" />
-                  <div className="h-4 w-24 animate-pulse rounded bg-slate-700/65 md:col-span-2 md:ml-auto" />
+                  <div className="skeleton-ui h-4 w-32 rounded md:col-span-4" />
+                  <div className="skeleton-ui h-4 w-44 rounded md:col-span-5" />
+                  <div className="skeleton-ui h-4 w-24 rounded md:col-span-2 md:ml-auto" />
                 </div>
               </div>
             ))}
