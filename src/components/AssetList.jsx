@@ -26,6 +26,7 @@ export default function AssetList() {
     openEditModal,
     openAddModal,
     onQuickBuyAsset,
+    onIncreaseAsset,
     sellAsset,
     removeAsset,
   } = useDashboardData();
@@ -147,6 +148,7 @@ export default function AssetList() {
         onExportExcelReport={handleExportExcel}
         openEditModal={openEditModal}
         onQuickBuyAsset={onQuickBuyAsset}
+        onIncreaseAsset={onIncreaseAsset}
         onQuickAddPortfolio={(portfolioName) => openAddModal({ portfolioName, forcePrefill: true })}
         handleSellAsset={sellAsset}
         handleRemoveAsset={removeAsset}

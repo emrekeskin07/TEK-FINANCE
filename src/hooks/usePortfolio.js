@@ -10,6 +10,7 @@ import {
   calculateMergedAmount,
   calculateSellSummary,
 } from '../utils/financeUtils';
+import { increaseAssetAmount } from '../services/api';
 
 const CATEGORY_BY_TYPE = {
   stock: 'Hisse Senedi',
@@ -589,5 +590,36 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     return true;
   }, [fetchPortfolio, userId]);
 
-  return { portfolio, addAsset, updateAsset, removeAsset, sellAsset, refreshPortfolio: fetchPortfolio };
+  const increaseAssetHolding = useCallback(async ({ assetId, addedAmount, buyPrice }) => {
+    if (!userId) {
+      toast.error('Kullanici oturumu bulunamadi.');
+      return false;
+    }
+
+    try {
+      await increaseAssetAmount({
+        userId,
+        assetId,
+        addedAmount,
+        buyPrice,
+      });
+
+      await fetchPortfolio();
+      toast.success('Miktar artırıldı, ortalama maliyet güncellendi.');
+      return true;
+    } catch (error) {
+      toast.error(error?.message || 'Miktar artırma işlemi başarısız.');
+      return false;
+    }
+  }, [fetchPortfolio, userId]);
+
+  return {
+    portfolio,
+    addAsset,
+    updateAsset,
+    removeAsset,
+    sellAsset,
+    increaseAssetHolding,
+    refreshPortfolio: fetchPortfolio,
+  };
 };

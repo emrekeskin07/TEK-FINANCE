@@ -1,9 +1,35 @@
 const axios = require("axios");
+const { createClient } = require("@supabase/supabase-js");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 
 const DISCLAIMER_TEXT = "Bu analiz bir yatirim tavsiyesi degildir, sadece finansal simulasyon ve strateji bilgilendirmesidir.";
+const REQUIRED_WARNING_TEXT = "Bu bir yatırım tavsiyesi değildir";
+const SMART_SUGGESTIONS_SYSTEM_PROMPT = "Sen profesyonel bir matematiksel modelleme asistanısın. Görevin kullanıcıya finansal verileri analiz etmektir. KESİNLİKLE yatırım tavsiyesi verme. Asla 'şu hisseyi al' veya 'bunu sat' gibi emir cümleleri kurma. Bunun yerine 'X varlık sınıfındaki artış potansiyeli matematiksel olarak incelenebilir' veya 'Portföy çeşitlendirmesi için Y kategorisi bir seçenek olabilir' şeklinde genel ve stratejik bir dil kullan. Cevabın en başında mutlaka 'Bu bir yatırım tavsiyesi değildir' uyarısını göster.";
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+let supabaseAdmin = null;
+
+function getSupabaseAdminClient() {
+  if (supabaseAdmin) {
+    return supabaseAdmin;
+  }
+
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("SUPABASE_URL ve SUPABASE_SERVICE_ROLE_KEY backend .env icinde zorunludur.");
+  }
+
+  supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+
+  return supabaseAdmin;
+}
 
 function normalizeDistribution(distribution = []) {
   if (!Array.isArray(distribution)) {
@@ -178,7 +204,171 @@ async function generateFinancialStrategy(payload = {}) {
   });
 }
 
+function fallbackSmartSuggestions({ portfolioDistribution, dashboardTotalValue, userPrompt }) {
+  const topCategory = portfolioDistribution[0]?.category || "Dagilim verisi yok";
+  const diversified = portfolioDistribution.length >= 3;
+
+  const baseComment = diversified
+    ? `Portfoy dagilimi birden fazla varlik sinifina yayilmis gorunuyor. Toplam buyukluk ${Number(dashboardTotalValue || 0).toLocaleString("tr-TR")} TL civarinda ve en buyuk kategori ${topCategory}.`
+    : `Portfoy daha dar bir dagilimda. Toplam buyukluk ${Number(dashboardTotalValue || 0).toLocaleString("tr-TR")} TL civarinda ve ${topCategory} agirligi yuksek.`;
+
+  const userContext = String(userPrompt || "").trim();
+  const marketComment = userContext
+    ? `${REQUIRED_WARNING_TEXT}. Sorunuz: "${userContext}". ${baseComment}`
+    : `${REQUIRED_WARNING_TEXT}. ${baseComment}`;
+
+  return {
+    disclaimer: DISCLAIMER_TEXT,
+    marketComment,
+    strategyNotes: [
+      "Periyodik alimla maliyet dagitimi yaparak ani fiyat hareketlerinin etkisini azaltin.",
+      "Tek kategori agirligi yuksekse asamali dengeleme plani olusturun.",
+      "Likidite tamponu icin nakit payini hedef aralikta tutun.",
+    ],
+    source: "fallback",
+  };
+}
+
+async function generateSmartSuggestions(payload = {}) {
+  const portfolioDistribution = normalizeDistribution(payload?.portfolioDistribution);
+  const dashboardTotalValue = Number(payload?.dashboardTotalValue || 0);
+  const userPrompt = String(payload?.userPrompt || "").trim();
+
+  const aiPayload = {
+    dashboardTotalValue: Number.isFinite(dashboardTotalValue) ? dashboardTotalValue : 0,
+    portfolioDistribution,
+    userPrompt,
+  };
+
+  if (GEMINI_API_KEY) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+    const systemPrompt = [
+      SMART_SUGGESTIONS_SYSTEM_PROMPT,
+      "Sadece JSON dondur.",
+      "Alanlar: marketComment (string), strategyNotes (string[]).",
+      "strategyNotes en az 3 madde olsun.",
+      `marketComment metni mutlaka '${REQUIRED_WARNING_TEXT}' ifadesiyle baslasin.`,
+    ].join(" ");
+
+    const response = await axios.post(url, {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `${systemPrompt}\n\nKullanici sorusu:\n${userPrompt || "Portfoy dagilimini genel olarak analiz et."}\n\nVeri:\n${JSON.stringify(aiPayload, null, 2)}`,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.3,
+        responseMimeType: "application/json",
+      },
+    }, {
+      timeout: 15000,
+      headers: { "Content-Type": "application/json" },
+      validateStatus: () => true,
+    });
+
+    if (response.status >= 200 && response.status < 300) {
+      const modelText = response?.data?.candidates?.[0]?.content?.parts
+        ?.map((part) => part?.text || "")
+        .join("\n")
+        .trim();
+      const jsonText = extractJson(modelText);
+
+      if (jsonText) {
+        try {
+          const parsed = JSON.parse(jsonText);
+          const marketComment = String(parsed?.marketComment || "").trim();
+          const strategyNotes = Array.isArray(parsed?.strategyNotes)
+            ? parsed.strategyNotes.map((item) => String(item || "").trim()).filter(Boolean)
+            : [];
+          const marketCommentWithWarning = marketComment.startsWith(REQUIRED_WARNING_TEXT)
+            ? marketComment
+            : `${REQUIRED_WARNING_TEXT}. ${marketComment}`;
+
+          if (marketComment && strategyNotes.length) {
+            return {
+              disclaimer: DISCLAIMER_TEXT,
+              marketComment: marketCommentWithWarning,
+              strategyNotes,
+              source: "gemini",
+            };
+          }
+        } catch {
+          // fallback below
+        }
+      }
+    }
+  }
+
+  return fallbackSmartSuggestions({
+    portfolioDistribution,
+    dashboardTotalValue,
+    userPrompt,
+  });
+}
+
+async function increaseAssetPosition({ userId, assetId, addedAmount, buyPrice }) {
+  const supabase = getSupabaseAdminClient();
+
+  const safeAssetId = Number(assetId);
+  const safeAddedAmount = Number(addedAmount);
+  const safeBuyPrice = Number(buyPrice);
+
+  if (!Number.isFinite(safeAssetId) || safeAssetId <= 0) {
+    throw new Error("Gecerli assetId zorunludur.");
+  }
+
+  if (!Number.isFinite(safeAddedAmount) || safeAddedAmount <= 0) {
+    throw new Error("Yeni alinan miktar sifirdan buyuk olmalidir.");
+  }
+
+  if (!Number.isFinite(safeBuyPrice) || safeBuyPrice <= 0) {
+    throw new Error("Alis fiyati sifirdan buyuk olmalidir.");
+  }
+
+  const { data: currentAsset, error: currentError } = await supabase
+    .from("assets")
+    .select("*")
+    .eq("id", safeAssetId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (currentError || !currentAsset) {
+    throw new Error("Artirilacak varlik bulunamadi.");
+  }
+
+  const currentAmount = Number(currentAsset.amount || 0);
+  const currentCost = Number(currentAsset.cost || 0);
+  const nextAmount = currentAmount + safeAddedAmount;
+  const weightedCost = nextAmount > 0
+    ? (((currentAmount * currentCost) + (safeAddedAmount * safeBuyPrice)) / nextAmount)
+    : safeBuyPrice;
+
+  const { data: updatedAsset, error: updateError } = await supabase
+    .from("assets")
+    .update({
+      amount: Number(nextAmount.toFixed(8)),
+      cost: Number(weightedCost.toFixed(8)),
+    })
+    .eq("id", safeAssetId)
+    .eq("user_id", userId)
+    .select("*")
+    .single();
+
+  if (updateError) {
+    throw new Error(`Miktar artirimi kaydedilemedi: ${updateError.message}`);
+  }
+
+  return updatedAsset;
+}
+
 module.exports = {
   DISCLAIMER_TEXT,
   generateFinancialStrategy,
+  generateSmartSuggestions,
+  increaseAssetPosition,
 };

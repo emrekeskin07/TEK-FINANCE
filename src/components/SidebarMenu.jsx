@@ -1,12 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BrainCircuit, Landmark, LineChart, LogOut, Menu, Settings, Target, UserCircle2, X, Home } from 'lucide-react';
+import { BrainCircuit, Landmark, Lightbulb, LineChart, LogOut, Menu, Settings, Target, UserCircle2, X, Home } from 'lucide-react';
 
 const MENU_ITEMS = [
   { key: 'dashboard', label: 'Ana Sayfa (Dashboard)', icon: Home },
   { key: 'net-worth', label: 'Net Servetim', icon: Landmark },
   { key: 'enflasyon', label: 'Enflasyon Analizi', icon: LineChart },
+  { key: 'smart-suggestions', label: 'Akıllı Öneriler', icon: Lightbulb },
   { key: 'hedeflerim', label: 'Hedeflerim', icon: Target },
   { key: 'strategy-center', label: 'Finansal Strateji Merkezi', icon: BrainCircuit },
   { key: 'ayarlar', label: 'Ayarlar', icon: Settings },

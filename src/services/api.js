@@ -505,3 +505,135 @@ export const fetchAiFinancialStrategy = async ({ monthlyIncome, monthlyExpense, 
     clearTimeout(timeoutId);
   }
 };
+
+export const fetchAiSmartSuggestions = async ({ portfolioDistribution, dashboardTotalValue, userPrompt = '' }) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), BATCH_REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/ai-smart-suggestions`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        portfolioDistribution: Array.isArray(portfolioDistribution) ? portfolioDistribution : [],
+        dashboardTotalValue: Number(dashboardTotalValue || 0),
+        userPrompt: String(userPrompt || '').trim(),
+      }),
+    });
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new ApiError('Akilli oneriler servisi gecersiz cevap dondu.', {
+        status: response.status,
+        code: 'INVALID_JSON',
+      });
+    }
+
+    if (!response.ok || payload?.ok === false) {
+      throw new ApiError(payload?.error || 'Akilli oneriler alinamadi.', {
+        status: response.status,
+        body: payload,
+      });
+    }
+
+    return payload?.data || null;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new ApiError('Akilli oneriler istegi zaman asimina ugradi.', { code: 'TIMEOUT' });
+    }
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError('Akilli oneriler servisine ulasilamadi.', {
+      code: 'NETWORK_ERROR',
+      body: error,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+export const increaseAssetAmount = async ({ userId, assetId, addedAmount, buyPrice }) => {
+  const normalizedUserId = String(userId || '').trim();
+  const safeAssetId = Number(assetId || 0);
+  const safeAddedAmount = Number(addedAmount || 0);
+  const safeBuyPrice = Number(buyPrice || 0);
+
+  if (!normalizedUserId) {
+    throw new ApiError('Kullanici bilgisi bulunamadi.', { code: 'MISSING_USER' });
+  }
+
+  if (!Number.isFinite(safeAssetId) || safeAssetId <= 0) {
+    throw new ApiError('Gecerli varlik secilmedi.', { code: 'INVALID_ASSET' });
+  }
+
+  if (!Number.isFinite(safeAddedAmount) || safeAddedAmount <= 0) {
+    throw new ApiError('Yeni alinan miktar sifirdan buyuk olmali.', { code: 'INVALID_AMOUNT' });
+  }
+
+  if (!Number.isFinite(safeBuyPrice) || safeBuyPrice <= 0) {
+    throw new ApiError('Alis fiyati sifirdan buyuk olmali.', { code: 'INVALID_PRICE' });
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), BATCH_REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/assets/increase`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: normalizedUserId,
+        assetId: safeAssetId,
+        addedAmount: safeAddedAmount,
+        buyPrice: safeBuyPrice,
+      }),
+    });
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new ApiError('Miktar artirma servisi gecersiz cevap dondu.', {
+        status: response.status,
+        code: 'INVALID_JSON',
+      });
+    }
+
+    if (!response.ok || payload?.ok === false) {
+      throw new ApiError(payload?.error || 'Miktar artirma islemi basarisiz.', {
+        status: response.status,
+        body: payload,
+      });
+    }
+
+    return payload?.data || null;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new ApiError('Miktar artirma istegi zaman asimina ugradi.', { code: 'TIMEOUT' });
+    }
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError('Miktar artirma servisine ulasilamadi.', {
+      code: 'NETWORK_ERROR',
+      body: error,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, TrendingUp, TrendingDown, FileText, Download } from 'lucide-react';
+import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, TrendingUp, TrendingDown, FileText, Download, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts, formatTickerName, groupAssetsByPortfolio } from '../utils/helpers';
@@ -53,6 +53,7 @@ export default function PortfolioTable({
   onExportExcelReport,
   openEditModal,
   onQuickBuyAsset,
+  onIncreaseAsset,
   onQuickAddPortfolio,
   handleSellAsset,
   handleRemoveAsset,
@@ -222,6 +223,11 @@ export default function PortfolioTable({
   const [sellAmount, setSellAmount] = useState('');
   const [sellPrice, setSellPrice] = useState('');
   const [sellSubmitting, setSellSubmitting] = useState(false);
+  const [increaseModalOpen, setIncreaseModalOpen] = useState(false);
+  const [increaseTarget, setIncreaseTarget] = useState(null);
+  const [increaseAmount, setIncreaseAmount] = useState('');
+  const [increasePrice, setIncreasePrice] = useState('');
+  const [increaseSubmitting, setIncreaseSubmitting] = useState(false);
   const [isReportMenuOpen, setIsReportMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -266,6 +272,24 @@ export default function PortfolioTable({
     setSellPrice('');
   };
 
+  const openIncreaseModal = (item, activePrice) => {
+    setIncreaseTarget(item);
+    setIncreaseAmount('');
+    setIncreasePrice(Number.isFinite(Number(activePrice)) && Number(activePrice) > 0 ? String(Number(activePrice)) : '');
+    setIncreaseModalOpen(true);
+  };
+
+  const closeIncreaseModal = () => {
+    if (increaseSubmitting) {
+      return;
+    }
+
+    setIncreaseModalOpen(false);
+    setIncreaseTarget(null);
+    setIncreaseAmount('');
+    setIncreasePrice('');
+  };
+
   const handleSellSubmit = async (event) => {
     event.preventDefault();
 
@@ -294,6 +318,37 @@ export default function PortfolioTable({
 
     if (isSuccess) {
       closeSellModal();
+    }
+  };
+
+  const handleIncreaseSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!increaseTarget || typeof onIncreaseAsset !== 'function') {
+      return;
+    }
+
+    const amountNumeric = Number(increaseAmount);
+    const priceNumeric = Number(increasePrice);
+
+    if (!Number.isFinite(amountNumeric) || amountNumeric <= 0) {
+      return;
+    }
+
+    if (!Number.isFinite(priceNumeric) || priceNumeric <= 0) {
+      return;
+    }
+
+    setIncreaseSubmitting(true);
+    const isSuccess = await onIncreaseAsset({
+      assetId: increaseTarget.id,
+      addedAmount: amountNumeric,
+      buyPrice: priceNumeric,
+    });
+    setIncreaseSubmitting(false);
+
+    if (isSuccess) {
+      closeIncreaseModal();
     }
   };
 
@@ -481,37 +536,49 @@ export default function PortfolioTable({
               transition={{ duration: 0.2, ease: 'easeOut' }}
               className="rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl overflow-hidden"
             >
-              <button
-                type="button"
-                onClick={() => handleAccordionToggle(item.id)}
-                className="w-full text-left px-4 py-3 md:px-5 md:py-4 hover:bg-white/[0.04] transition-colors"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-3 md:gap-4">
-                  <div className="md:col-span-4 min-w-0">
-                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Banka / Kurum</p>
-                    <p className="text-sm font-semibold text-slate-200 truncate">{item.bank || 'Banka Belirtilmedi'}</p>
-                  </div>
-                  <div className="md:col-span-5 min-w-0">
-                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Varlık Adı</p>
-                    <p className="text-sm font-semibold text-slate-100 truncate">{getAssetTitle(item)}</p>
-                  </div>
-                  <div className="md:col-span-2 md:text-right min-w-0">
-                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Toplam Değer</p>
-                    <div className="text-sm font-bold text-slate-100">
-                      {showSkeleton ? (
-                        <div className="animate-pulse h-4 bg-white/10 rounded w-24 md:ml-auto" />
-                      ) : (
-                        renderCurrencyWithMutedSymbol(itemTotalValue)
-                      )}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => handleAccordionToggle(item.id)}
+                  className="w-full text-left px-4 py-3 pr-16 md:px-5 md:py-4 md:pr-20 hover:bg-white/[0.04] transition-colors"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-3 md:gap-4">
+                    <div className="md:col-span-4 min-w-0">
+                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Banka / Kurum</p>
+                      <p className="text-sm font-semibold text-slate-200 truncate">{item.bank || 'Banka Belirtilmedi'}</p>
+                    </div>
+                    <div className="md:col-span-5 min-w-0">
+                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Varlık Adı</p>
+                      <p className="text-sm font-semibold text-slate-100 truncate">{getAssetTitle(item)}</p>
+                    </div>
+                    <div className="md:col-span-2 md:text-right min-w-0">
+                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Toplam Değer</p>
+                      <div className="text-sm font-bold text-slate-100">
+                        {showSkeleton ? (
+                          <div className="animate-pulse h-4 bg-white/10 rounded w-24 md:ml-auto" />
+                        ) : (
+                          renderCurrencyWithMutedSymbol(itemTotalValue)
+                        )}
+                      </div>
+                    </div>
+                    <div className="md:col-span-1 flex md:justify-end">
+                      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/5 bg-slate-900/40 backdrop-blur-xl transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
+                        <ChevronDown className="h-4 w-4 text-slate-300" />
+                      </span>
                     </div>
                   </div>
-                  <div className="md:col-span-1 flex md:justify-end">
-                    <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/5 bg-slate-900/40 backdrop-blur-xl transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
-                      <ChevronDown className="h-4 w-4 text-slate-300" />
-                    </span>
-                  </div>
-                </div>
-              </button>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => openIncreaseModal(item, activePrice)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-300/35 bg-emerald-500/15 text-emerald-100 transition-all hover:scale-105 hover:bg-emerald-500/25"
+                  title="Miktar artır"
+                  aria-label="Miktar artır"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
 
               <AnimatePresence initial={false}>
                 {isExpanded ? (
@@ -752,6 +819,92 @@ export default function PortfolioTable({
           </motion.div>
         </motion.div>
       ) : null}
+
+      {increaseModalOpen && increaseTarget ? (
+        <motion.div
+          key="increase-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
+        >
+          <motion.div
+            initial={{ y: 8, opacity: 0, scale: 0.98 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 8, opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="w-full max-w-md rounded-2xl border border-white/5 bg-slate-900/40 backdrop-blur-xl p-5 shadow-[0_24px_70px_rgba(0,0,0,0.55)]"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h4 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-emerald-300" />
+                  Miktar Artır
+                </h4>
+                <p className="mt-1 text-xs text-slate-400">
+                  {increaseTarget.bank || 'Banka Belirtilmedi'} • {increaseTarget.hesapTuru || 'Vadesiz'} • {increaseTarget.symbol}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeIncreaseModal}
+                className="rounded-md p-1 text-slate-400 hover:bg-white/10 hover:text-slate-200"
+                title="Kapat"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleIncreaseSubmit} className="mt-4 space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Yeni Alınan Miktar</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.00000001"
+                  value={increaseAmount}
+                  onChange={(e) => setIncreaseAmount(e.target.value)}
+                  placeholder="Örn: 10"
+                  required
+                  className="w-full rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl p-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Alış Fiyatı</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.00000001"
+                  value={increasePrice}
+                  onChange={(e) => setIncreasePrice(e.target.value)}
+                  placeholder="Örn: 125.45"
+                  required
+                  className="w-full rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl p-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={closeIncreaseModal}
+                  className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
+                  disabled={increaseSubmitting}
+                >
+                  Vazgeç
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-emerald-300/35 bg-emerald-500 px-3 py-2 text-sm font-semibold text-emerald-50 hover:bg-emerald-400 disabled:opacity-60"
+                  disabled={increaseSubmitting}
+                >
+                  {increaseSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      ) : null}
     </AnimatePresence>
     </>
   );
@@ -780,6 +933,7 @@ PortfolioTable.propTypes = {
   onExportExcelReport: PropTypes.func,
   openEditModal: PropTypes.func.isRequired,
   onQuickBuyAsset: PropTypes.func,
+  onIncreaseAsset: PropTypes.func,
   onQuickAddPortfolio: PropTypes.func,
   handleSellAsset: PropTypes.func,
   handleRemoveAsset: PropTypes.func.isRequired,
@@ -799,6 +953,7 @@ PortfolioTable.defaultProps = {
   onExportPdfReport: null,
   onExportExcelReport: null,
   onQuickBuyAsset: null,
+  onIncreaseAsset: null,
   onQuickAddPortfolio: null,
   handleSellAsset: null,
 };

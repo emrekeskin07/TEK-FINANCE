@@ -14,7 +14,11 @@ const {
   normalizeParsedInput,
   autoAddParsedAsset,
 } = require("./services/aiParseService");
-const { generateFinancialStrategy } = require("./services/strategyService");
+const {
+  generateFinancialStrategy,
+  generateSmartSuggestions,
+  increaseAssetPosition,
+} = require("./services/strategyService");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -265,6 +269,74 @@ app.post("/api/ai-strategy", async (req, res) => {
     return res.status(500).json({
       ok: false,
       error: error?.message || "Finansal strateji analizi olusturulamadi.",
+    });
+  }
+});
+
+app.post("/api/ai-smart-suggestions", async (req, res) => {
+  const portfolioDistribution = Array.isArray(req.body?.portfolioDistribution)
+    ? req.body.portfolioDistribution
+    : [];
+  const dashboardTotalValue = Number(req.body?.dashboardTotalValue || 0);
+  const userPrompt = typeof req.body?.userPrompt === "string" ? req.body.userPrompt.trim() : "";
+
+  try {
+    const data = await generateSmartSuggestions({
+      portfolioDistribution,
+      dashboardTotalValue,
+      userPrompt,
+    });
+
+    return res.json({
+      ok: true,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error?.message || "Akilli oneriler olusturulamadi.",
+    });
+  }
+});
+
+app.post("/api/assets/increase", async (req, res) => {
+  const userId = typeof req.body?.userId === "string" ? req.body.userId.trim() : "";
+  const assetId = Number(req.body?.assetId || 0);
+  const addedAmount = Number(req.body?.addedAmount || 0);
+  const buyPrice = Number(req.body?.buyPrice || 0);
+
+  if (!userId) {
+    return res.status(400).json({ ok: false, error: "Body param required: userId" });
+  }
+
+  if (!Number.isFinite(assetId) || assetId <= 0) {
+    return res.status(400).json({ ok: false, error: "Body param required: assetId" });
+  }
+
+  if (!Number.isFinite(addedAmount) || addedAmount <= 0) {
+    return res.status(400).json({ ok: false, error: "Body param required: addedAmount > 0" });
+  }
+
+  if (!Number.isFinite(buyPrice) || buyPrice <= 0) {
+    return res.status(400).json({ ok: false, error: "Body param required: buyPrice > 0" });
+  }
+
+  try {
+    const updatedAsset = await increaseAssetPosition({
+      userId,
+      assetId,
+      addedAmount,
+      buyPrice,
+    });
+
+    return res.json({
+      ok: true,
+      data: updatedAsset,
+    });
+  } catch (error) {
+    return res.status(422).json({
+      ok: false,
+      error: error?.message || "Miktar artirimi yapilamadi.",
     });
   }
 });

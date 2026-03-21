@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import Confetti from 'react-confetti';
 import { usePortfolio } from './hooks/usePortfolio';
@@ -20,6 +19,7 @@ import AuthPage from './components/AuthPage';
 import MalVarligiPage from './components/MalVarligiPage';
 import EnflasyonAnaliziPage from './components/EnflasyonAnaliziPage';
 import FinancialStrategyCenterPage from './components/FinancialStrategyCenterPage';
+import SmartSuggestionsPage from './components/SmartSuggestionsPage';
 import Chart from './components/dashboard/Chart';
 import Stats from './components/dashboard/Stats';
 import { SyncContext } from './context/SyncContext';
@@ -39,6 +39,7 @@ const PAGE_TO_PATH = {
   dashboard: '/',
   'net-worth': '/net-worth',
   enflasyon: '/inflation-analysis',
+  'smart-suggestions': '/smart-suggestions',
   hedeflerim: '/goals',
   'strategy-center': '/strategy-center',
   ayarlar: '/settings',
@@ -51,6 +52,10 @@ const resolvePageFromPath = (pathname) => {
 
   if (pathname === '/inflation-analysis') {
     return 'enflasyon';
+  }
+
+  if (pathname === '/smart-suggestions') {
+    return 'smart-suggestions';
   }
 
   if (pathname === '/goals') {
@@ -106,7 +111,7 @@ export default function App() {
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const athCelebrationTimeoutRef = useRef(null);
 
-  const { portfolio, addAsset, updateAsset, removeAsset, sellAsset, refreshPortfolio } = usePortfolio(authUser?.id, (updatedPort) => {
+  const { portfolio, addAsset, updateAsset, removeAsset, sellAsset, increaseAssetHolding, refreshPortfolio } = usePortfolio(authUser?.id, (updatedPort) => {
     if (authUser) {
       updatePrices(updatedPort);
     }
@@ -437,32 +442,6 @@ export default function App() {
     return isPrivacyActive ? maskValue(percentText) : percentText;
   };
 
-  const alertSummary = useMemo(() => {
-    const seed = {
-      critical: 0,
-      warning: 0,
-      info: 0,
-      topTitle: '',
-    };
-
-    alerts.forEach((item, index) => {
-      const level = String(item?.level || 'info').toLowerCase();
-      if (level === 'critical') {
-        seed.critical += 1;
-      } else if (level === 'warning') {
-        seed.warning += 1;
-      } else {
-        seed.info += 1;
-      }
-
-      if (index === 0 && item?.title) {
-        seed.topTitle = item.title;
-      }
-    });
-
-    return seed;
-  }, [alerts]);
-
   const dashboardContextValue = useMemo(() => ({
     portfolio,
     marketData,
@@ -489,6 +468,7 @@ export default function App() {
     openEditModal,
     openAddModal,
     onQuickBuyAsset: handleQuickBuyAsset,
+    onIncreaseAsset: increaseAssetHolding,
     triggerCelebration,
     sellAsset,
     removeAsset,
@@ -516,6 +496,7 @@ export default function App() {
     openEditModal,
     openAddModal,
     handleQuickBuyAsset,
+    increaseAssetHolding,
     triggerCelebration,
     sellAsset,
     removeAsset,
@@ -523,25 +504,21 @@ export default function App() {
 
   const portfolioDistribution = useMemo(() => {
     const totals = Object.entries(categoryTotals || {})
-      .map(([category, value]) => ({
-        category,
-        value: Number(value || 0),
-      }))
+      .map(([category, value]) => ({ category, value: Number(value || 0) }))
       .filter((item) => Number.isFinite(item.value) && item.value > 0)
       .sort((a, b) => b.value - a.value);
 
-    const totalValueByCategory = totals.reduce((sum, item) => sum + item.value, 0);
-    if (totalValueByCategory <= 0) {
+    const grandTotal = totals.reduce((sum, item) => sum + item.value, 0);
+    if (grandTotal <= 0) {
       return [];
     }
 
     return totals.map((item) => ({
       category: item.category,
       value: Number(item.value.toFixed(2)),
-      percent: Number(((item.value / totalValueByCategory) * 100).toFixed(2)),
+      percent: Number(((item.value / grandTotal) * 100).toFixed(2)),
     }));
   }, [categoryTotals]);
-
 
   if (authLoading) {
     return (
@@ -673,51 +650,6 @@ export default function App() {
 
                 <DistributionCard />
 
-                <motion.section
-                  layout
-                  transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                  className="col-span-12 md:col-span-4 md:order-2 relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-8 shadow-[0_24px_72px_rgba(2,6,23,0.6)] backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-fuchsia-400/35"
-                >
-                  <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-accent/18 blur-3xl" />
-                  <div className="pointer-events-none absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-secondary/18 blur-3xl" />
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-bold uppercase tracking-tight text-slate-50">Akıllı Öneriler</h3>
-                    <button
-                      type="button"
-                      onClick={handleToggleAlertDrawer}
-                      className="min-h-[44px] rounded-md border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 px-2.5 py-1 text-xs font-semibold text-slate-50 transition-colors hover:from-violet-500/35 hover:to-fuchsia-500/35"
-                    >
-                      Hepsini Gör
-                    </button>
-                  </div>
-
-                  <p className="mt-2 text-xs text-slate-400">Dağınık uyarılar tek bir yönetim kartında konsolide edildi.</p>
-
-                  {activeAlertCount > 0 ? (
-                    <div className="mt-4 rounded-2xl border border-white/5 bg-slate-900/40 p-4 backdrop-blur-xl">
-                      <p className="text-sm font-black text-slate-50">Hatalar &amp; Bildirimler ({activeAlertCount} Alerts)</p>
-                      <p className="mt-1 text-xs text-slate-400">{alertSummary.topTitle || 'Panelde incelenmeyi bekleyen bildirimler var.'}</p>
-
-                      <div className="mt-3 grid grid-cols-3 gap-2">
-                        <div className="rounded-xl border border-rose-300/30 bg-rose-500/10 px-2 py-2 text-center">
-                          <p className="text-[10px] uppercase tracking-[0.08em] text-rose-200">Kritik</p>
-                          <p className="text-sm font-black text-rose-100">{alertSummary.critical}</p>
-                        </div>
-                        <div className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-2 py-2 text-center">
-                          <p className="text-[10px] uppercase tracking-[0.08em] text-amber-200">Uyarı</p>
-                          <p className="text-sm font-black text-amber-100">{alertSummary.warning}</p>
-                        </div>
-                        <div className="rounded-xl border border-sky-300/30 bg-sky-500/10 px-2 py-2 text-center">
-                          <p className="text-[10px] uppercase tracking-[0.08em] text-sky-200">Bilgi</p>
-                          <p className="text-sm font-black text-sky-100">{alertSummary.info}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-4 text-sm text-emerald-200">Şu an aktif bir kritik uyarı görünmüyor.</p>
-                  )}
-                </motion.section>
-
                 <AssetList />
               </div>
             </DashboardProvider>
@@ -742,6 +674,11 @@ export default function App() {
           </div>
         ) : activePage === 'strategy-center' ? (
           <FinancialStrategyCenterPage portfolioDistribution={portfolioDistribution} />
+        ) : activePage === 'smart-suggestions' ? (
+          <SmartSuggestionsPage
+            portfolioDistribution={portfolioDistribution}
+            dashboardTotalValue={dashboardTotalValue}
+          />
         ) : activePage === 'ayarlar' ? (
           <section className="mx-auto w-full max-w-5xl rounded-3xl border border-white/10 bg-slate-900/45 p-6 shadow-[0_30px_90px_rgba(2,6,23,0.58)] backdrop-blur-xl md:p-8">
             <h2 className="text-xl font-black text-slate-50">Ayarlar</h2>
