@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import Confetti from 'react-confetti';
+import { Plus } from 'lucide-react';
 import { usePortfolio } from './hooks/usePortfolio';
 import { useMarketPrices } from './hooks/useMarketPrices';
 import { useAuthSession } from './hooks/useAuthSession';
@@ -49,6 +50,16 @@ const PAGE_TO_PATH = {
   hedeflerim: '/goals',
   'strategy-center': '/strategy-center',
   ayarlar: '/settings',
+};
+
+const PAGE_META = {
+  dashboard: { title: 'Dashboard', crumb: 'Dashboard' },
+  'net-worth': { title: 'Varlıklarım', crumb: 'Varlıklarım' },
+  enflasyon: { title: 'Enflasyon Analizi', crumb: 'Enflasyon Analizi' },
+  'smart-suggestions': { title: 'Akıllı Öneriler', crumb: 'Akıllı Öneriler' },
+  hedeflerim: { title: 'Hedef Takibi', crumb: 'Hedef Takibi' },
+  'strategy-center': { title: 'Finansal Strateji Merkezi', crumb: 'Finansal Strateji Merkezi' },
+  ayarlar: { title: 'Ayarlar', crumb: 'Ayarlar' },
 };
 
 const resolvePageFromPath = (pathname) => {
@@ -148,6 +159,11 @@ export default function App() {
     await refreshPortfolio();
     setIsQuickAddModalOpen(false);
   }, [refreshPortfolio]);
+
+  const handleOpenFabQuickAdd = useCallback(() => {
+    setActivePage('dashboard');
+    setIsQuickAddModalOpen(true);
+  }, []);
 
   useEffect(() => {
     if (!authUser) {
@@ -532,6 +548,7 @@ export default function App() {
     && (loading || isPortfolioLoading)
     && portfolio.length === 0;
   const showDashboardMutationSkeleton = activePage === 'dashboard' && isPortfolioMutating;
+  const pageMeta = PAGE_META[activePage] || PAGE_META.dashboard;
 
   const dashboardContextValue = useMemo(() => ({
     portfolio,
@@ -726,6 +743,11 @@ export default function App() {
       </div>
 
       <main className="max-w-7xl mx-auto space-y-6 md:space-y-10">
+        <section className="px-3 pt-1 sm:px-4 md:px-8">
+          <p className="text-xs text-slate-400">Ana Sayfa &gt; {pageMeta.crumb}</p>
+          <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 md:text-4xl">{pageMeta.title}</h2>
+        </section>
+
         {activePage === 'dashboard' ? (
           <>
             {showInitialDashboardSkeleton ? (
@@ -828,6 +850,16 @@ export default function App() {
         alerts={alerts}
         onOpenInflationAnalysis={handleOpenInflationFromAlert}
       />
+
+      <button
+        type="button"
+        onClick={handleOpenFabQuickAdd}
+        className="fixed bottom-6 right-5 z-[85] inline-flex h-14 w-14 items-center justify-center rounded-full border border-purple-400/35 bg-purple-600 text-white shadow-[0_14px_34px_rgba(147,51,234,0.45)] transition-all duration-300 hover:scale-105 hover:bg-purple-700 md:bottom-8 md:right-8"
+        title="AI ile Hızlı Varlık Ekle"
+        aria-label="AI ile Hızlı Varlık Ekle"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
 
       {activePage === 'dashboard' && isQuickAddModalOpen ? (
         <>
