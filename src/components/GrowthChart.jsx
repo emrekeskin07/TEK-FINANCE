@@ -7,106 +7,25 @@ import { MARKET_DATA_ATTRIBUTION } from '../constants/trustContent';
 import { useDashboardData } from '../context/DashboardContext';
 import Button from './common/Button';
 import { convertCurrency, formatCurrencyParts } from '../utils/helpers';
-import { fetchYahooHistoryBatch } from '../services/api';
 
 const RANGE_OPTIONS = [
-  { key: '1G', label: '1G', days: 1, title: '1 Gün' },
-  { key: '1H', label: '1H', days: 7, title: '1 Hafta' },
-  { key: '1A', label: '1A', days: 30, title: '1 Ay' },
-  { key: '3A', label: '3A', days: 90, title: '3 Ay' },
+  { key: '1D', label: '1D', days: 1, title: '1 Gün' },
+  { key: '1W', label: '1W', days: 7, title: '1 Hafta' },
+  { key: '1M', label: '1M', days: 30, title: '1 Ay' },
   { key: '1Y', label: '1Y', days: 365, title: '1 Yıl' },
-  { key: 'TUMU', label: 'TÜMÜ', days: null, title: 'Tüm Zamanlar' },
 ];
-
-const BENCHMARK_RANGE_BY_CHART_RANGE = {
-  '1G': '1mo',
-  '1H': '1mo',
-  '1A': '1mo',
-  '3A': '3mo',
-  'TUMU': '5y',
-};
-
-const BIST_SYMBOL = '^XU100';
-const USD_SYMBOL = 'USDTRY=X';
 
 const toFiniteNumber = (value) => {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 };
 
-const normalizeSeriesBase100 = (values) => {
-  if (!Array.isArray(values) || !values.length) {
-    return [];
-  }
-
-  const baseValue = values.find((value) => Number.isFinite(Number(value)) && Number(value) > 0);
-  const baseNumeric = Number(baseValue || 0);
-  if (!Number.isFinite(baseNumeric) || baseNumeric <= 0) {
-    return values.map(() => null);
-  }
-
-  return values.map((value) => {
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) {
-      return null;
-    }
-
-    return Number(((numeric / baseNumeric) * 100).toFixed(3));
-  });
-};
-
-const resampleSeriesByLength = (series, targetLength) => {
-  if (!Array.isArray(series) || !series.length || !Number.isFinite(Number(targetLength)) || targetLength <= 0) {
-    return [];
-  }
-
-  if (targetLength === 1) {
-    return [toFiniteNumber(series[series.length - 1]?.close)];
-  }
-
-  if (series.length === 1) {
-    return Array.from({ length: targetLength }, () => toFiniteNumber(series[0]?.close));
-  }
-
-  const maxSourceIndex = series.length - 1;
-  const maxTargetIndex = targetLength - 1;
-
-  return Array.from({ length: targetLength }, (_, targetIndex) => {
-    const ratio = targetIndex / maxTargetIndex;
-    const sourceIndex = Math.min(maxSourceIndex, Math.max(0, Math.round(ratio * maxSourceIndex)));
-    return toFiniteNumber(series[sourceIndex]?.close);
-  });
-};
-
-function TooltipContent({ active, payload, formatter, isBenchmarkMode }) {
+function TooltipContent({ active, payload, formatter }) {
   if (!active || !payload || payload.length === 0) {
     return null;
   }
 
   const pointDate = payload[0]?.payload?.date || '-';
-
-  if (isBenchmarkMode) {
-    const rows = payload
-      .filter((item) => typeof item?.dataKey === 'string')
-      .map((item) => ({
-        key: item.dataKey,
-        label: item.name,
-        color: item.color,
-        value: Number(item?.value),
-      }));
-
-    return (
-      <div className="min-w-[150px] rounded-lg border border-white/10 bg-[#0f172a]/95 px-3 py-2 text-xs backdrop-blur-sm">
-        <p className="text-slate-400">{pointDate}</p>
-        {rows.map((row) => (
-          <p key={`tooltip-${row.key}`} className="mt-1 flex items-center gap-2 text-slate-100">
-            <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: row.color }} />
-            <span>{row.label}: {Number.isFinite(row.value) ? `${row.value.toFixed(2)} (100 baz)` : '-'}</span>
-          </p>
-        ))}
-      </div>
-    );
-  }
 
   const point = payload.find((item) => item?.dataKey === 'portfolio') || payload[0];
 
@@ -124,13 +43,7 @@ export default function GrowthChart() {
   const containerRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
   const [isCompactScreen, setIsCompactScreen] = useState(false);
-  const [selectedRange, setSelectedRange] = useState('TUMU');
-  const [isBistBenchmarkEnabled, setIsBistBenchmarkEnabled] = useState(false);
-  const [isUsdBenchmarkEnabled, setIsUsdBenchmarkEnabled] = useState(false);
-  const [benchmarkSeries, setBenchmarkSeries] = useState({
-    [BIST_SYMBOL]: [],
-    [USD_SYMBOL]: [],
-  });
+  const [selectedRange, setSelectedRange] = useState('1M');
 
   const safeLineChartData = useMemo(
     () => (Array.isArray(lineChartData) ? lineChartData : []),
@@ -143,7 +56,7 @@ export default function GrowthChart() {
     }
 
     const selectedOption = RANGE_OPTIONS.find((option) => option.key === selectedRange);
-    if (!selectedOption || selectedOption.days === null) {
+    if (!selectedOption) {
       return safeLineChartData;
     }
 
@@ -175,102 +88,17 @@ export default function GrowthChart() {
     [filteredLineChartData, baseCurrency, rates]
   );
 
-  const isBenchmarkMode = isBistBenchmarkEnabled || isUsdBenchmarkEnabled;
-  const selectedBenchmarkRange = BENCHMARK_RANGE_BY_CHART_RANGE[selectedRange] || '6mo';
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadBenchmarkSeries = async () => {
-      if (!isBenchmarkMode) {
-        if (isMounted) {
-          setBenchmarkSeries({
-            [BIST_SYMBOL]: [],
-            [USD_SYMBOL]: [],
-          });
-        }
-        return;
-      }
-
-      const symbols = [];
-      if (isBistBenchmarkEnabled) {
-        symbols.push(BIST_SYMBOL);
-      }
-      if (isUsdBenchmarkEnabled) {
-        symbols.push(USD_SYMBOL);
-      }
-
-      const data = await fetchYahooHistoryBatch({
-        symbols,
-        range: selectedBenchmarkRange,
-        interval: '1d',
-      });
-
-      if (!isMounted) {
-        return;
-      }
-
-      const bySymbol = {
-        [BIST_SYMBOL]: [],
-        [USD_SYMBOL]: [],
-      };
-
-      (Array.isArray(data) ? data : []).forEach((item) => {
-        const symbol = String(item?.symbol || '').trim().toUpperCase();
-        if (symbol === BIST_SYMBOL || symbol === USD_SYMBOL) {
-          bySymbol[symbol] = Array.isArray(item?.series) ? item.series : [];
-        }
-      });
-
-      setBenchmarkSeries(bySymbol);
-    };
-
-    loadBenchmarkSeries();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isBenchmarkMode, isBistBenchmarkEnabled, isUsdBenchmarkEnabled, selectedBenchmarkRange]);
-
   const chartData = useMemo(() => {
-    const baseSeries = Array.isArray(convertedLineChartData) ? convertedLineChartData : [];
-    if (!baseSeries.length) {
+    if (!Array.isArray(convertedLineChartData) || !convertedLineChartData.length) {
       return [];
     }
 
-    const portfolioValues = baseSeries.map((point) => toFiniteNumber(point?.value));
-    const portfolioValuesNormalized = isBenchmarkMode
-      ? normalizeSeriesBase100(portfolioValues)
-      : portfolioValues;
-
-    const bistResampled = isBistBenchmarkEnabled
-      ? resampleSeriesByLength(benchmarkSeries[BIST_SYMBOL], baseSeries.length)
-      : [];
-    const usdResampled = isUsdBenchmarkEnabled
-      ? resampleSeriesByLength(benchmarkSeries[USD_SYMBOL], baseSeries.length)
-      : [];
-
-    const normalizedBist = isBistBenchmarkEnabled ? normalizeSeriesBase100(bistResampled) : [];
-    const normalizedUsd = isUsdBenchmarkEnabled ? normalizeSeriesBase100(usdResampled) : [];
-
-    return baseSeries.map((point, index) => {
-      const row = {
+    return convertedLineChartData.map((point) => ({
         date: point?.date,
         timestamp: point?.timestamp,
-        portfolio: toFiniteNumber(portfolioValuesNormalized[index]),
-      };
-
-      if (isBistBenchmarkEnabled) {
-        row.bist100 = toFiniteNumber(normalizedBist[index]);
-      }
-
-      if (isUsdBenchmarkEnabled) {
-        row.usdtry = toFiniteNumber(normalizedUsd[index]);
-      }
-
-      return row;
-    });
-  }, [convertedLineChartData, isBenchmarkMode, isBistBenchmarkEnabled, isUsdBenchmarkEnabled, benchmarkSeries]);
+        portfolio: toFiniteNumber(point?.value),
+      }));
+  }, [convertedLineChartData]);
 
   const rangeChangePercent = useMemo(() => {
     if (convertedLineChartData.length < 2) {
@@ -284,7 +112,7 @@ export default function GrowthChart() {
     }
 
     return ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
-  }, [chartData, isBenchmarkMode]);
+  }, [convertedLineChartData]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -378,59 +206,35 @@ export default function GrowthChart() {
           </span>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
-          <div className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-slate-900/40 p-1 backdrop-blur-xl">
-            {RANGE_OPTIONS.map((option) => {
-              const isActive = selectedRange === option.key;
-              return (
-                <Button
-                  key={option.key}
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setSelectedRange(option.key)}
-                  title={option.title}
-                  data-title={option.title}
-                  aria-label={option.title}
-                  onMouseEnter={hideNativeTooltip}
-                  onMouseLeave={restoreNativeTooltip}
-                  onFocus={hideNativeTooltip}
-                  onBlur={restoreNativeTooltip}
-                  className={`chart-range-tooltip relative min-h-[44px] rounded-md px-3 py-2 text-ui-body ${
-                    isActive
-                      ? 'bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 text-slate-50 shadow-[0_0_14px_rgba(217,70,239,0.24)]'
-                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
-                  }`}
-                >
-                  <span>{option.label}</span>
-                  {isActive ? (
-                    <span className="absolute bottom-1 left-2 right-2 h-0.5 rounded-full bg-accent" aria-hidden="true" />
-                  ) : null}
-                </Button>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <label className="inline-flex min-h-[36px] cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-slate-900/50 px-3 py-1.5 text-xs text-slate-200 transition-colors hover:border-slate-300/35">
-              <input
-                type="checkbox"
-                checked={isBistBenchmarkEnabled}
-                onChange={(event) => setIsBistBenchmarkEnabled(Boolean(event.target.checked))}
-                className="h-4 w-4 accent-slate-300"
-              />
-              BIST100 ile Kıyasla
-            </label>
-
-            <label className="inline-flex min-h-[36px] cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-slate-900/50 px-3 py-1.5 text-xs text-slate-200 transition-colors hover:border-yellow-300/35">
-              <input
-                type="checkbox"
-                checked={isUsdBenchmarkEnabled}
-                onChange={(event) => setIsUsdBenchmarkEnabled(Boolean(event.target.checked))}
-                className="h-4 w-4 accent-yellow-300"
-              />
-              USD ile Kıyasla
-            </label>
-          </div>
+        <div className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-slate-900/40 p-1 backdrop-blur-xl">
+          {RANGE_OPTIONS.map((option) => {
+            const isActive = selectedRange === option.key;
+            return (
+              <Button
+                key={option.key}
+                type="button"
+                variant="ghost"
+                onClick={() => setSelectedRange(option.key)}
+                title={option.title}
+                data-title={option.title}
+                aria-label={option.title}
+                onMouseEnter={hideNativeTooltip}
+                onMouseLeave={restoreNativeTooltip}
+                onFocus={hideNativeTooltip}
+                onBlur={restoreNativeTooltip}
+                className={`chart-range-tooltip relative min-h-[44px] rounded-md px-3 py-2 text-ui-body ${
+                  isActive
+                    ? 'bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 text-slate-50 shadow-[0_0_14px_rgba(217,70,239,0.24)]'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
+                }`}
+              >
+                <span>{option.label}</span>
+                {isActive ? (
+                  <span className="absolute bottom-1 left-2 right-2 h-0.5 rounded-full bg-accent" aria-hidden="true" />
+                ) : null}
+              </Button>
+            );
+          })}
         </div>
       </div>
 
@@ -455,19 +259,15 @@ export default function GrowthChart() {
                 axisLine={false}
               />
               <YAxis
-                domain={isBenchmarkMode ? ['auto', 'auto'] : ['auto', 'auto']}
+                domain={['auto', 'auto']}
                 stroke="#cbd5e1"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => (
-                  isBenchmarkMode
-                    ? `%${(Number(value || 0) - 100).toFixed(0)}`
-                    : formatTryValue(value)
-                )}
+                tickFormatter={(value) => formatTryValue(value)}
                 width={78}
               />
-              <Tooltip content={(props) => <TooltipContent {...props} formatter={formatTryValue} isBenchmarkMode={isBenchmarkMode} />} />
+              <Tooltip content={(props) => <TooltipContent {...props} formatter={formatTryValue} />} />
 
               <Line
                 type="monotone"
@@ -480,36 +280,6 @@ export default function GrowthChart() {
                 isAnimationActive
                 animationDuration={500}
               />
-
-              {isBistBenchmarkEnabled ? (
-                <Line
-                  type="monotone"
-                  dataKey="bist100"
-                  name="BIST100"
-                  stroke="#94a3b8"
-                  strokeWidth={2}
-                  strokeDasharray="7 5"
-                  dot={false}
-                  activeDot={{ r: 3 }}
-                  isAnimationActive
-                  animationDuration={500}
-                />
-              ) : null}
-
-              {isUsdBenchmarkEnabled ? (
-                <Line
-                  type="monotone"
-                  dataKey="usdtry"
-                  name="USD/TRY"
-                  stroke="#facc15"
-                  strokeWidth={2}
-                  strokeDasharray="6 4"
-                  dot={false}
-                  activeDot={{ r: 3 }}
-                  isAnimationActive
-                  animationDuration={500}
-                />
-              ) : null}
             </LineChart>
           </ResponsiveContainer>
         ) : (

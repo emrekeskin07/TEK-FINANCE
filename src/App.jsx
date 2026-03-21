@@ -8,7 +8,6 @@ import { useMarketPrices } from './hooks/useMarketPrices';
 import { useAuthSession } from './hooks/useAuthSession';
 import { useManualAssets } from './hooks/useManualAssets';
 import { useCalculations } from './hooks/useCalculations';
-import { useAnimatedCounter } from './hooks/useAnimatedCounter';
 import Header from './components/Header';
 import SidebarMenu from './components/SidebarMenu';
 import AiCommandBar from './components/AiCommandBar';
@@ -25,7 +24,6 @@ import SettingsPage from './components/SettingsPage';
 import OnboardingWizard from './components/OnboardingWizard';
 import GoalSuccessModal from './components/GoalSuccessModal';
 import Chart from './components/dashboard/Chart';
-import Stats from './components/dashboard/Stats';
 import KpiRibbon from './components/dashboard/KpiRibbon';
 import DashboardSkeleton from './components/dashboard/DashboardSkeleton';
 import { SyncContext } from './context/SyncContext';
@@ -545,16 +543,13 @@ export default function App() {
   const {
     totalValue,
     totalProfit,
-    malVarligiManuelToplam,
     dashboardTotalValue,
     dashboardTotalCost,
     profitPercentage,
-    portfolioRealReturnPercent,
     bankTotals,
     categoryTotals,
     portfolioCashTotal,
     lineChartData,
-    selectedInflationSourceLabel,
     alerts,
     activeAlertCount,
     portfolioNameOptions,
@@ -571,8 +566,6 @@ export default function App() {
     manualAssets,
     inflationSource,
   });
-
-  const animatedProfitPercent = useAnimatedCounter(Number(profitPercentage));
 
   const handleAddAssetWithFlow = useCallback(async (payload) => {
     const result = await addAsset(payload);
@@ -650,11 +643,6 @@ export default function App() {
     window.localStorage.setItem(storageKey, String(athStatus.currentValue));
     triggerCelebration();
   }, [activePage, authUser?.id, athStatus, triggerCelebration]);
-
-  const dashboardGreetingName = authUser?.user_metadata?.full_name
-    || authUser?.user_metadata?.name
-    || authUser?.email?.split('@')?.[0]
-    || 'Kullanıcı';
 
   const navigateToPage = useCallback((nextPage) => {
     setActivePage(nextPage);
@@ -1094,16 +1082,16 @@ export default function App() {
     toast('Kurulum simdilik ertelendi.');
   }, []);
 
-  const renderPercentText = (value) => {
-    const numericValue = Number(value || 0);
-    const percentText = `${numericValue >= 0 ? '+' : '-'}%${Math.abs(numericValue).toFixed(2)}`;
-    return isPrivacyActive ? maskValue(percentText) : percentText;
-  };
-
   const showInitialDashboardSkeleton = activePage === 'dashboard'
     && (loading || isPortfolioLoading)
     && portfolio.length === 0;
   const showDashboardMutationSkeleton = activePage === 'dashboard' && isPortfolioMutating;
+  const hasAnyAsset = portfolio.length > 0 || manualAssets.length > 0;
+  const showDashboardEmptyState = activePage === 'dashboard'
+    && !showInitialDashboardSkeleton
+    && !loading
+    && !isPortfolioLoading
+    && !hasAnyAsset;
   const pageMeta = PAGE_META[activePage] || PAGE_META.dashboard;
 
   const dashboardContextValue = useMemo(() => ({
@@ -1361,47 +1349,44 @@ export default function App() {
                       dashboardTotalValue={dashboardTotalValue}
                       totalProfit={totalProfit}
                       profitPercentage={Number(profitPercentage || 0)}
-                      lineChartData={lineChartData}
-                      portfolioRealReturnPercent={portfolioRealReturnPercent}
-                      selectedInflationSourceLabel={selectedInflationSourceLabel}
                       baseCurrency={baseCurrency}
                       rates={rates}
-                      userId={authUser?.id || null}
+                      portfolio={portfolio}
+                      marketData={marketData}
                       isPrivacyActive={isPrivacyActive}
                       maskValue={maskValue}
                       isLoading={loading || isPortfolioLoading}
-                      onGoalNavigate={handleNavigateToAssetsForGoal}
                     />
                   </div>
 
-                  <Stats
-                    greetingName={dashboardGreetingName}
-                    totalProfit={totalProfit}
-                    profitPercentageValue={animatedProfitPercent}
-                    dashboardTotalValue={dashboardTotalValue}
-                    totalValue={totalValue}
-                    malVarligiManuelToplam={malVarligiManuelToplam}
-                    portfolioRealReturnPercent={portfolioRealReturnPercent}
-                    selectedInflationSourceLabel={selectedInflationSourceLabel}
-                    baseCurrency={baseCurrency}
-                    rates={rates}
-                    lineChartData={lineChartData}
-                    insightTone={insightTone}
-                    renderPercent={() => renderPercentText(animatedProfitPercent)}
-                    renderRealReturn={() => (
-                      isPrivacyActive
-                        ? maskValue(`${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`)
-                        : `${portfolioRealReturnPercent >= 0 ? '+' : '-'}%${Math.abs(portfolioRealReturnPercent).toFixed(2)}`
-                    )}
-                    onPrimaryAction={() => openAddModal()}
-                  />
+                  {showDashboardEmptyState ? (
+                    <section className="col-span-12 rounded-2xl border border-dashed border-violet-300/55 bg-violet-100/55 p-8 text-center dark:border-violet-500/35 dark:bg-violet-950/25">
+                      <p className="text-sm font-semibold uppercase tracking-[0.08em] text-violet-600 dark:text-violet-300">Portföy Başlangıcı</p>
+                      <h3 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">Finansal durumunu görmek için ilk varlığını ekle</h3>
+                      <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-300">AI komut satırına bir varlık yazarak başla. Örnek: “5 gram altın ekle” veya “100 dolar aldım”.</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiCommandBarVisible(true);
+                          window.setTimeout(() => {
+                            aiCommandBarRef.current?.focus?.();
+                          }, 80);
+                        }}
+                        className="mt-5 inline-flex min-h-[40px] items-center rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet-50 hover:shadow-md active:translate-y-0 dark:border-violet-400/45 dark:bg-slate-900 dark:text-violet-200 dark:hover:bg-slate-800"
+                      >
+                        AI ile Varlık Ekle
+                      </button>
+                    </section>
+                  ) : (
+                    <>
+                      <div id="dashboard-analysis-section" className="col-span-12 grid grid-cols-12 gap-6 items-start">
+                        <Chart />
+                        <DistributionCard />
+                      </div>
 
-                  <div id="dashboard-analysis-section" className="col-span-12 grid grid-cols-12 gap-6 items-start">
-                    <Chart />
-                    <DistributionCard />
-                  </div>
-
-                  <AssetList />
+                      <AssetList />
+                    </>
+                  )}
 
                   {showDashboardMutationSkeleton ? (
                     <div className="pointer-events-none absolute inset-0 z-20 rounded-2xl bg-slate-950/25 backdrop-blur-[1px]" aria-hidden="true">
