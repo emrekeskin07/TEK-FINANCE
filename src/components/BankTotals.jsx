@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrency } from '../utils/helpers';
-import { resolveAssetLivePrice } from '../utils/assetPricing';
+import { resolveAssetActivePrice } from '../utils/assetPricing';
 import { getCategoryColor } from '../utils/categoryStyles';
 
 const DEFAULT_CATEGORY_COLORS = ['#A78BFA', '#06B6D4', '#FF7F50', '#F59E0B', '#8B5CF6', '#22D3EE', '#FB7185', '#FBBF24'];
@@ -65,9 +65,7 @@ const mapCategoryToFilter = (category) => {
 
 const computeAssetValue = (asset, marketData) => {
   const amount = toPositiveNumber(asset?.amount);
-  const livePrice = resolveAssetLivePrice(asset, marketData);
-  const fallbackPrice = toPositiveNumber(asset?.avgPrice);
-  const activePrice = toPositiveNumber(livePrice) || fallbackPrice;
+  const activePrice = toPositiveNumber(resolveAssetActivePrice(asset, marketData));
   return amount * activePrice;
 };
 
@@ -164,16 +162,31 @@ export default function BankTotals({
       .filter((item) => Number.isFinite(item.value) && item.value > 0)
       .sort((a, b) => b.value - a.value);
 
-    const sum = entries.reduce((accumulator, item) => accumulator + item.value, 0);
+    let normalizedEntries = entries;
+
+    // Fallback: if per-asset valuation cannot be resolved yet, render institution totals to keep donut visible.
+    if (isAllCategoryView && normalizedEntries.length === 0) {
+      normalizedEntries = Object.entries(bankTotals || {})
+        .map(([label, rawValue], index) => ({
+          id: `institution:${label}`,
+          label,
+          value: Number(rawValue || 0),
+          color: DEFAULT_CATEGORY_COLORS[index % DEFAULT_CATEGORY_COLORS.length],
+        }))
+        .filter((item) => Number.isFinite(item.value) && item.value > 0)
+        .sort((a, b) => b.value - a.value);
+    }
+
+    const sum = normalizedEntries.reduce((accumulator, item) => accumulator + item.value, 0);
     if (sum <= 0) {
       return [];
     }
 
-    return entries.map((item) => ({
+    return normalizedEntries.map((item) => ({
       ...item,
       share: (item.value / sum) * 100,
     }));
-  }, [portfolio, marketData, isAllCategoryView, resolvedActiveCategory]);
+  }, [portfolio, marketData, isAllCategoryView, resolvedActiveCategory, bankTotals]);
 
   const centerTotalValue = chartData.length > 0
     ? chartData.reduce((sum, item) => sum + item.value, 0)
@@ -245,7 +258,7 @@ export default function BankTotals({
               transition={{ duration: 0.22, ease: 'easeOut' }}
               className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6"
             >
-              <div className="relative min-h-[260px] w-full md:min-h-[300px] md:w-7/12">
+              <div className="relative h-[260px] w-full md:h-[300px] md:w-7/12">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -277,7 +290,7 @@ export default function BankTotals({
                   </PieChart>
                 </ResponsiveContainer>
 
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
                   <div className="relative px-3 text-center">
                     <span className="pointer-events-none absolute inset-x-2 top-1/2 h-14 -translate-y-1/2 rounded-full bg-fuchsia-500/12 blur-2xl" aria-hidden="true" />
                     <p className="relative text-sm font-medium text-slate-400">{centerTitle}</p>
