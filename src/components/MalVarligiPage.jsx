@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Building2,
   CarFront,
@@ -77,6 +77,12 @@ const CATEGORY_META = {
   },
 };
 
+const CATEGORY_ADD_CONFIG = {
+  vehicle: { label: 'Araç Ekle', type: 'Araç' },
+  realEstate: { label: 'Gayrimenkul Ekle', type: 'Gayrimenkul' },
+  precious: { label: 'Kıymetli Maden Ekle', type: 'Altın (Gram)' },
+  fx: { label: 'Döviz Ekle', type: 'Döviz (USD/EUR)' },
+};
 const BENTO_LAYOUT = [
   { key: 'vehicle', className: 'xl:col-span-6' },
   { key: 'realEstate', className: 'xl:col-span-6' },
@@ -271,6 +277,7 @@ export default function MalVarligiPage({
   marketData = {},
   rates = {},
 }) {
+  const addFormRef = useRef(null);
   const [varlikTuru, setVarlikTuru] = useState('Gayrimenkul');
   const [toplamDeger, setToplamDeger] = useState('');
   const [aracDetay, setAracDetay] = useState(createDefaultVehicle);
@@ -370,6 +377,21 @@ export default function MalVarligiPage({
     setVarlikTuru(nextType);
     setToplamDeger('');
     resetTypeSpecificFields(nextType);
+  };
+
+  const handleCategoryAdd = (categoryKey) => {
+    const config = CATEGORY_ADD_CONFIG[categoryKey];
+    if (!config) {
+      return;
+    }
+
+    handleTypeChange(config.type);
+
+    if (typeof window !== 'undefined') {
+      window.setTimeout(() => {
+        addFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 20);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -564,7 +586,7 @@ export default function MalVarligiPage({
         </div>
       </div>
 
-      <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-xl shadow-[0_22px_70px_rgba(2,6,23,0.58)] md:p-8">
+      <div ref={addFormRef} className="rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-xl shadow-[0_22px_70px_rgba(2,6,23,0.58)] md:p-8">
         <div className="mb-4">
           <h2 className="text-xl font-black text-slate-50">Net Servet Kalemi Ekle</h2>
           <p className="mt-1 text-xs text-slate-400">Yıl ve tutar alanları mobil sayısal klavye için optimize edildi.</p>
@@ -829,9 +851,16 @@ export default function MalVarligiPage({
                   <p className="mt-5 text-3xl font-black text-emerald-300">{formatTl(categoryTotal)}</p>
 
                   {records.length === 0 ? (
-                    <p className="mt-5 rounded-2xl border border-dashed border-white/5 bg-slate-900/40 backdrop-blur-xl p-4 text-sm text-slate-500">
-                      Henüz bu kategoride kayıt yok.
-                    </p>
+                    <div className="mt-5 rounded-2xl border border-dashed border-white/5 bg-slate-900/40 backdrop-blur-xl p-4">
+                      <p className="text-sm text-slate-500">Henüz bu kategoride kayıt yok.</p>
+                      <button
+                        type="button"
+                        onClick={() => handleCategoryAdd(layout.key)}
+                        className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-lg border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/30 to-fuchsia-500/30 px-4 py-2 text-sm font-semibold text-slate-50 shadow-md transition-transform hover:scale-105"
+                      >
+                        + {CATEGORY_ADD_CONFIG[layout.key]?.label || 'Kayıt Ekle'}
+                      </button>
+                    </div>
                   ) : (
                     <ul className="mt-5 space-y-3">
                       {records.map((asset) => {

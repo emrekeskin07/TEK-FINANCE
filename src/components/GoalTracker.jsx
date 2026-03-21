@@ -448,8 +448,17 @@ export default function GoalTracker() {
           </div>
         </div>
       ) : (
-        <div className="mt-5 rounded-2xl border border-dashed border-white/10 bg-slate-950/50 p-8 text-sm text-slate-400">
-          Ilk hedefini olustur, sistem ilerleme orani ve 3 aylik hizina gore tahmini kalan gunu gostersin.
+        <div className="mt-5 rounded-2xl border border-dashed border-white/10 bg-slate-950/50 p-8">
+          <p className="text-sm text-slate-500">
+            Ilk hedefini olustur, sistem ilerleme orani ve 3 aylik hizina gore tahmini kalan gunu gostersin.
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-lg border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/30 to-fuchsia-500/30 px-4 py-2 text-sm font-semibold text-slate-50 shadow-md transition-transform hover:scale-105"
+          >
+            + İlk Hedefini Oluştur
+          </button>
         </div>
       )}
     </motion.section>
