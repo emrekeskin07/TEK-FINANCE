@@ -25,6 +25,7 @@ import OnboardingWizard from './components/OnboardingWizard';
 import GoalSuccessModal from './components/GoalSuccessModal';
 import Chart from './components/dashboard/Chart';
 import KpiRibbon from './components/dashboard/KpiRibbon';
+import AiAssistantBrief from './components/dashboard/AiAssistantBrief';
 import DashboardSkeleton from './components/dashboard/DashboardSkeleton';
 import { SyncContext } from './context/SyncContext';
 import { DashboardProvider } from './context/DashboardContext';
@@ -152,7 +153,9 @@ export default function App() {
   const [weeklyFlowOpen, setWeeklyFlowOpen] = useState(false);
   const [weeklyFlowStep, setWeeklyFlowStep] = useState(0);
   const [isCommandBarVisible, setIsCommandBarVisible] = useState(true);
+  const [isPrivacyTransitioning, setIsPrivacyTransitioning] = useState(false);
   const athCelebrationTimeoutRef = useRef(null);
+  const privacyTransitionTimeoutRef = useRef(null);
   const aiCommandBarRef = useRef(null);
 
   const {
@@ -180,6 +183,22 @@ export default function App() {
     }, 120);
   }, []);
 
+  const handleTogglePrivacyMode = useCallback(() => {
+    setIsPrivacyTransitioning(true);
+    setIsPrivacyActive((prev) => !prev);
+
+    if (privacyTransitionTimeoutRef.current && typeof window !== 'undefined') {
+      window.clearTimeout(privacyTransitionTimeoutRef.current);
+    }
+
+    if (typeof window !== 'undefined') {
+      privacyTransitionTimeoutRef.current = window.setTimeout(() => {
+        setIsPrivacyTransitioning(false);
+        privacyTransitionTimeoutRef.current = null;
+      }, 240);
+    }
+  }, [setIsPrivacyActive]);
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -188,6 +207,13 @@ export default function App() {
     const skipped = window.localStorage.getItem(ONBOARDING_SKIPPED_STORAGE_KEY) === 'true';
     setHasSkippedOnboarding(skipped);
   }, [authUser?.id]);
+
+  useEffect(() => () => {
+    if (privacyTransitionTimeoutRef.current && typeof window !== 'undefined') {
+      window.clearTimeout(privacyTransitionTimeoutRef.current);
+      privacyTransitionTimeoutRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -1227,7 +1253,7 @@ export default function App() {
 
   return (
     <SyncContext.Provider value={{ lastSyncTime, setLastSyncTime }}>
-    <div className="relative min-h-screen overflow-hidden bg-page text-text-main font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10">
+    <div className={`relative min-h-screen overflow-hidden bg-page text-text-main font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10 ${isPrivacyActive ? 'privacy-mode' : ''} ${isPrivacyTransitioning ? 'privacy-transitioning' : ''}`}>
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-24 -top-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
         <div className="absolute right-0 top-16 h-80 w-80 rounded-full bg-secondary/16 blur-3xl" />
@@ -1287,6 +1313,8 @@ export default function App() {
           onSignOut={handleSignOut}
           onOpenSettings={() => navigateToPage('ayarlar')}
           onSearchNavigate={handleHeaderSearchNavigate}
+          isPrivacyActive={isPrivacyActive}
+          onTogglePrivacy={handleTogglePrivacyMode}
         />
       </div>
 
@@ -1379,6 +1407,8 @@ export default function App() {
                     </section>
                   ) : (
                     <>
+                      <AiAssistantBrief />
+
                       <div id="dashboard-analysis-section" className="col-span-12 grid grid-cols-12 gap-6 items-start">
                         <Chart />
                         <DistributionCard />

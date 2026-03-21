@@ -61,6 +61,7 @@ const writeCommandHistory = (history) => {
   }
 
   window.localStorage.setItem(COMMAND_HISTORY_STORAGE_KEY, JSON.stringify(history));
+  window.dispatchEvent(new CustomEvent('tek-finance:ai-command-history-updated'));
 };
 
 const buildPreviewFromParsed = (parsed) => {
