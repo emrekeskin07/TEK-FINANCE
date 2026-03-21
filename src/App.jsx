@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Toaster, toast } from 'react-hot-toast';
 import Confetti from 'react-confetti';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Sparkles } from 'lucide-react';
+import { AlertTriangle, Loader2, Sparkles } from 'lucide-react';
 import { usePortfolio } from './hooks/usePortfolio';
 import { useMarketPrices } from './hooks/useMarketPrices';
 import { useAuthSession } from './hooks/useAuthSession';
@@ -40,6 +40,7 @@ import {
 } from './utils/themePresets';
 import { LEGAL_DISCLAIMER_TEXT } from './constants/trustContent';
 import { supabase } from './supabaseClient';
+import { fetchAiAssetAnalysis } from './services/api';
 
 const LAST_DARK_THEME_STORAGE_KEY = 'tek-finance:last-dark-theme';
 const PRIVACY_STARTUP_STORAGE_KEY = 'tek-finance:privacy-startup-enabled';
@@ -147,6 +148,7 @@ export default function App() {
   });
   const [goalSuccessFlow, setGoalSuccessFlow] = useState(null);
   const [marketDropInsight, setMarketDropInsight] = useState(null);
+  const [isMarketDropInsightLoading, setIsMarketDropInsightLoading] = useState(false);
   const [weeklyFlowOpen, setWeeklyFlowOpen] = useState(false);
   const [weeklyFlowStep, setWeeklyFlowStep] = useState(0);
   const athCelebrationTimeoutRef = useRef(null);
@@ -831,27 +833,52 @@ export default function App() {
   }, [navigateToPage]);
 
   const handleAnalyzeAssetDrop = useCallback(({ asset, changePercent }) => {
-    const assetName = String(asset?.name || asset?.symbol || 'Varlık').trim();
-    const riskProfile = String(onboardingState.riskProfile || 'balanced').trim() || 'balanced';
-    const dropPercent = Number(changePercent || 0);
+    const run = async () => {
+      const symbol = String(asset?.symbol || '').trim().toUpperCase();
+      const assetName = String(asset?.name || symbol || 'Varlık').trim();
 
-    const reason = dropPercent <= -8
-      ? `${assetName} tarafında güçlü bir satış dalgası var. Hacim artışı ve kısa vadeli riskten kaçış etkili görünüyor.`
-      : `${assetName} fiyatında kısa vadeli düzeltme izleniyor. Piyasa haber akışı ve kâr realizasyonu baskı yaratıyor.`;
+      if (!symbol) {
+        toast.error('Analiz icin varlik sembolu bulunamadi.');
+        return;
+      }
 
-    let advice = 'Panik satıştan kaçın, volatilite sakinleşene kadar kademeli izlemeye devam et.';
-    if (riskProfile === 'aggressive') {
-      advice = 'Risk profilin agresif: destek bölgelerinde kademeli ekleme düşünülebilir, ama stop disiplinini koru.';
-    } else if (riskProfile === 'conservative') {
-      advice = 'Risk profilin muhafazakar: yeni alım için acele etme, önce dengelenme sinyalini bekle.';
-    }
+      const riskProfileRaw = String(onboardingState.riskProfile || 'Dengeli').trim();
+      const normalizedRiskProfile = riskProfileRaw === 'aggressive'
+        ? 'Atılgan'
+        : (riskProfileRaw === 'conservative' ? 'Muhafazakar' : (riskProfileRaw || 'Dengeli'));
 
-    setMarketDropInsight({
-      assetName,
-      dropPercent: Math.abs(dropPercent),
-      reason,
-      advice,
-    });
+      setIsMarketDropInsightLoading(true);
+      setMarketDropInsight(null);
+
+      try {
+        const data = await fetchAiAssetAnalysis({
+          symbol,
+          assetName,
+          riskProfile: normalizedRiskProfile,
+        });
+
+        setMarketDropInsight({
+          assetName: data?.assetName || assetName,
+          dropPercent: Math.abs(Number(data?.metrics?.dayChangePercent ?? changePercent ?? 0)),
+          sentimentLabel: String(data?.metrics?.sentiment?.label || 'Nötr'),
+          sentimentIndicator: String(data?.metrics?.sentiment?.indicator || '🟡'),
+          volatilityPercent: Number(data?.metrics?.volatilityPercent || 0),
+          volatilityLabel: String(data?.metrics?.volatilityLabel || 'Orta'),
+          headlines: Array.isArray(data?.headlines) ? data.headlines.slice(0, 3) : [],
+          summary: data?.insight?.summary?.content || '',
+          riskOpportunity: data?.insight?.riskOpportunity?.content || '',
+          strategy: data?.insight?.strategy?.content || '',
+          action: data?.insight?.strategy?.action || 'Bekle',
+          warning: String(data?.warning || 'Bu bir yatırım tavsiyesi değildir. YTD.'),
+        });
+      } catch (error) {
+        toast.error(error?.message || 'Dinamik AI analizi olusturulamadi.');
+      } finally {
+        setIsMarketDropInsightLoading(false);
+      }
+    };
+
+    run();
   }, [onboardingState.riskProfile]);
 
   const handleNavigateToGoalFromAsset = useCallback((goalKey) => {
@@ -1292,9 +1319,9 @@ export default function App() {
           />
         ) : activePage === 'analysis' ? (
           <DashboardProvider value={dashboardContextValue}>
-            <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
+            <div className="grid grid-cols-1 gap-4 p-4 sm:p-6 md:grid-cols-12 md:gap-6 md:p-8">
               <Chart />
-              <div className="col-span-12 rounded-2xl border border-white/10 bg-slate-900/45 p-5 md:p-6">
+              <div className="col-span-12 rounded-2xl border border-white/10 bg-slate-900/45 p-6 md:p-8">
                 <EnflasyonAnaliziPage
                   nominalReturnPercent={Number(profitPercentage || 0)}
                   referenceAmount={dashboardTotalCost}
@@ -1305,7 +1332,7 @@ export default function App() {
             </div>
           </DashboardProvider>
         ) : activePage === 'ai-assistant' ? (
-          <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:gap-6 md:p-8">
+          <div className="grid grid-cols-1 gap-4 p-4 sm:p-6 md:gap-6 md:p-8">
             <SmartSuggestionsPage
               portfolioDistribution={portfolioDistribution}
               dashboardTotalValue={dashboardTotalValue}
@@ -1313,18 +1340,20 @@ export default function App() {
             <FinancialStrategyCenterPage portfolioDistribution={portfolioDistribution} />
           </div>
         ) : activePage === 'ayarlar' ? (
-          <SettingsPage
-            user={authUser}
-            isDarkMode={isDarkThemeId(activeTheme)}
-            setThemeMode={handleSetThemeMode}
-            baseCurrency={baseCurrency}
-            setBaseCurrency={setBaseCurrency}
-            isPrivacyActive={isPrivacyActive}
-            setPrivacyActive={setIsPrivacyActive}
-            insightTone={insightTone}
-            setInsightTone={setInsightTone}
-            onClearAllData={handleClearAllUserData}
-          />
+          <div className="p-4 sm:p-6 md:p-8">
+            <SettingsPage
+              user={authUser}
+              isDarkMode={isDarkThemeId(activeTheme)}
+              setThemeMode={handleSetThemeMode}
+              baseCurrency={baseCurrency}
+              setBaseCurrency={setBaseCurrency}
+              isPrivacyActive={isPrivacyActive}
+              setPrivacyActive={setIsPrivacyActive}
+              insightTone={insightTone}
+              setInsightTone={setInsightTone}
+              onClearAllData={handleClearAllUserData}
+            />
+          </div>
         ) : (
           <div />
         )}
@@ -1355,7 +1384,7 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {marketDropInsight ? (
+        {isMarketDropInsightLoading ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1366,12 +1395,70 @@ export default function App() {
               initial={{ y: 16, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 16, opacity: 0 }}
-              className="w-full max-w-xl rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-2xl"
+              className="w-full max-w-xl rounded-2xl border border-white/10 bg-slate-950/95 p-6 shadow-2xl"
             >
-              <h3 className="text-ui-h2 text-slate-100">AI Düşüş Analizi: {marketDropInsight.assetName}</h3>
-              <p className="mt-1 text-ui-body text-rose-300">Günlük düşüş: %{marketDropInsight.dropPercent.toFixed(2)}</p>
-              <p className="mt-3 text-ui-body text-slate-300">{marketDropInsight.reason}</p>
-              <p className="mt-2 text-ui-body font-semibold text-emerald-300">Öneri: {marketDropInsight.advice}</p>
+              <div className="flex items-center gap-3 rounded-2xl border border-cyan-300/20 bg-cyan-500/10 p-4">
+                <Loader2 className="h-5 w-5 animate-spin text-cyan-300" />
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-100">AI Piyasalari Tariyor...</h3>
+                  <p className="mt-1 text-sm text-slate-400">Fiyat, volatilite, sentiment ve haber akisindan ozet cikartiliyor.</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : marketDropInsight ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[131] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ y: 16, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 16, opacity: 0 }}
+              className="w-full max-w-2xl rounded-2xl border border-white/10 bg-slate-950/95 p-6 shadow-2xl"
+            >
+              <h3 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">AI Analyze: {marketDropInsight.assetName}</h3>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-rose-300/40 bg-rose-500/10 px-3 py-1 text-sm text-rose-200">
+                  Gunluk Dusus: %{marketDropInsight.dropPercent.toFixed(2)}
+                </span>
+                <span className="rounded-full border border-emerald-300/40 bg-emerald-500/10 px-3 py-1 text-sm text-emerald-200">
+                  Sentiment: {marketDropInsight.sentimentLabel} {marketDropInsight.sentimentIndicator}
+                </span>
+                <span className="rounded-full border border-amber-300/40 bg-amber-500/10 px-3 py-1 text-sm text-amber-200">
+                  Volatilite: %{marketDropInsight.volatilityPercent.toFixed(2)} ({marketDropInsight.volatilityLabel})
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <article className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">🔍 Neler Oluyor?</h4>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{marketDropInsight.summary}</p>
+                  {marketDropInsight.headlines?.length ? (
+                    <ul className="mt-2 space-y-1 text-sm text-slate-500 dark:text-slate-400">
+                      {marketDropInsight.headlines.map((headline) => (
+                        <li key={headline}>• {headline}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </article>
+
+                <article className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">⚡ Risk/Fırsat Analizi</h4>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{marketDropInsight.riskOpportunity}</p>
+                </article>
+
+                <article className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">💡 Strateji Önerisi</h4>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{marketDropInsight.strategy}</p>
+                  <p className="mt-2 text-sm font-medium text-emerald-300">Aksiyon: {marketDropInsight.action}</p>
+                </article>
+              </div>
+
+              <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">{marketDropInsight.warning}</p>
 
               <div className="mt-4 flex justify-end">
                 <button

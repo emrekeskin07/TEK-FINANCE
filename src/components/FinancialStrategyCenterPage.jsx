@@ -5,6 +5,44 @@ import toast from 'react-hot-toast';
 import { fetchAiFinancialStrategy } from '../services/api';
 
 const DISCLAIMER = 'Bu analiz bir yatırım tavsiyesi değildir, sadece finansal simülasyon ve strateji bilgilendirmesidir.';
+const NUMBER_PART_REGEX = /(\b\d+(?:[.,]\d+)?%?\b)/g;
+const EXACT_NUMBER_PART_REGEX = /^(\b\d+(?:[.,]\d+)?%?\b)$/;
+
+function renderInlineWithHighlights(text) {
+  return String(text || '').split(NUMBER_PART_REGEX).map((part, index) => {
+    if (EXACT_NUMBER_PART_REGEX.test(part)) {
+      return <span key={`num-${index}`} className="font-medium text-slate-700 dark:text-slate-200">{part}</span>;
+    }
+
+    return <React.Fragment key={`txt-${index}`}>{part}</React.Fragment>;
+  });
+}
+
+function RichAiText({ text }) {
+  const blocks = String(text || '').split(/```([\s\S]*?)```/g);
+
+  return (
+    <>
+      {blocks.map((block, index) => {
+        const isCodeBlock = index % 2 === 1;
+
+        if (isCodeBlock) {
+          return (
+            <pre key={`code-${index}`} className="mt-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/35 p-3 font-mono text-sm text-slate-200">
+              {block.trim()}
+            </pre>
+          );
+        }
+
+        return (
+          <span key={`text-${index}`} className="text-sm text-slate-500 dark:text-slate-400">
+            {renderInlineWithHighlights(block)}
+          </span>
+        );
+      })}
+    </>
+  );
+}
 
 export default function FinancialStrategyCenterPage({ portfolioDistribution }) {
   const [monthlyIncome, setMonthlyIncome] = useState('');
@@ -57,20 +95,20 @@ export default function FinancialStrategyCenterPage({ portfolioDistribution }) {
   };
 
   return (
-    <section className="mx-auto w-full max-w-5xl rounded-3xl border border-white/10 bg-slate-900/45 p-5 shadow-[0_30px_90px_rgba(2,6,23,0.58)] backdrop-blur-xl md:p-8">
+    <section className="mx-auto w-full max-w-5xl rounded-2xl border border-white/10 bg-slate-900/45 p-6 shadow-[0_30px_90px_rgba(2,6,23,0.58)] backdrop-blur-xl md:p-8">
       <div className="mb-4 flex items-center gap-3">
         <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-fuchsia-300/35 bg-fuchsia-500/15">
           <BrainCircuit className="h-5 w-5 text-fuchsia-200" />
         </div>
         <div>
-          <h2 className="text-xl font-black text-slate-50">Finansal Strateji Merkezi</h2>
-          <p className="text-sm text-slate-400">Gelir ve giderinizi girin, yatırılabilir tutarınıza göre AI simülasyonu alın.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Finansal Strateji Merkezi</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Gelir ve giderinizi girin, yatırılabilir tutarınıza göre AI simülasyonu alın.</p>
         </div>
       </div>
 
       <form onSubmit={handleAnalyze} className="grid grid-cols-1 gap-4 rounded-2xl border border-white/10 bg-black/15 p-4 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-semibold text-slate-300">Aylık Gelir (TL)</label>
+          <label className="mb-1 block text-lg font-semibold text-slate-800 dark:text-slate-100">Aylık Gelir (TL)</label>
           <input
             type="number"
             min="0"
@@ -84,7 +122,7 @@ export default function FinancialStrategyCenterPage({ portfolioDistribution }) {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-semibold text-slate-300">Aylık Gider (TL)</label>
+          <label className="mb-1 block text-lg font-semibold text-slate-800 dark:text-slate-100">Aylık Gider (TL)</label>
           <input
             type="number"
             min="0"
@@ -98,7 +136,7 @@ export default function FinancialStrategyCenterPage({ portfolioDistribution }) {
         </div>
 
         <div className="md:col-span-2 rounded-xl border border-emerald-300/30 bg-emerald-500/10 p-3">
-          <p className="text-xs uppercase tracking-[0.08em] text-emerald-200">Yatırılabilir Tutar</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Yatırılabilir Tutar</p>
           <p className="text-2xl font-black text-emerald-100">{investableAmount.toLocaleString('tr-TR')} TL</p>
         </div>
 
@@ -117,32 +155,34 @@ export default function FinancialStrategyCenterPage({ portfolioDistribution }) {
       {analysis ? (
         <div className="mt-5 space-y-4 rounded-2xl border border-white/10 bg-slate-950/65 p-4">
           <div className="rounded-xl border border-amber-300/40 bg-amber-500/12 p-3">
-            <p className="text-xs font-black uppercase tracking-[0.09em] text-amber-200">Önemli Uyarı</p>
-            <p className="mt-1 text-sm text-amber-100">{DISCLAIMER}</p>
+            <p className="text-lg font-semibold text-slate-800 dark:text-slate-100">Önemli Uyarı</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{DISCLAIMER}</p>
           </div>
 
           <div>
-            <h3 className="text-lg font-black text-slate-50">Paranızı Nasıl Yönetmelisiniz?</h3>
-            <p className="mt-1 text-sm text-slate-300">{analysis.summary}</p>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Paranızı Nasıl Yönetmelisiniz?</h3>
+            <div className="mt-1">
+              <RichAiText text={analysis.summary} />
+            </div>
           </div>
 
           <div>
-            <h4 className="text-base font-bold text-fuchsia-200">Potansiyel Stratejiler</h4>
-            <ul className="mt-2 space-y-2 text-sm text-slate-300">
+            <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Potansiyel Stratejiler</h4>
+            <ul className="mt-2 space-y-2 text-sm text-slate-500 dark:text-slate-400">
               {(analysis.strategies || []).map((item, index) => (
                 <li key={`${item}-${index}`} className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
-                  {item}
+                  <RichAiText text={item} />
                 </li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h4 className="text-base font-bold text-rose-200">Dikkat Edilmesi Gereken Riskler</h4>
-            <ul className="mt-2 space-y-2 text-sm text-slate-300">
+            <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Dikkat Edilmesi Gereken Riskler</h4>
+            <ul className="mt-2 space-y-2 text-sm text-slate-500 dark:text-slate-400">
               {(analysis.risks || []).map((item, index) => (
                 <li key={`${item}-${index}`} className="rounded-lg border border-rose-300/20 bg-rose-500/8 px-3 py-2">
-                  {item}
+                  <RichAiText text={item} />
                 </li>
               ))}
             </ul>
@@ -150,7 +190,7 @@ export default function FinancialStrategyCenterPage({ portfolioDistribution }) {
         </div>
       ) : null}
 
-      <div className="mt-6 rounded-xl border border-amber-300/35 bg-amber-500/10 p-3 text-sm text-amber-100">
+      <div className="mt-6 rounded-2xl border border-amber-300/35 bg-amber-500/10 p-3 text-sm text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-2">
           <ShieldAlert className="h-4 w-4" />
           <span className="font-semibold">Bu analiz bir yatırım tavsiyesi değildir, sadece finansal simülasyon ve strateji bilgilendirmesidir.</span>
@@ -172,4 +212,12 @@ FinancialStrategyCenterPage.propTypes = {
 
 FinancialStrategyCenterPage.defaultProps = {
   portfolioDistribution: [],
+};
+
+RichAiText.propTypes = {
+  text: PropTypes.string,
+};
+
+RichAiText.defaultProps = {
+  text: '',
 };

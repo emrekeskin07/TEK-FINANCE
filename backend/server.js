@@ -20,6 +20,7 @@ const {
   generateSmartSuggestions,
   increaseAssetPosition,
 } = require("./services/strategyService");
+const { analyzeAsset } = require("./services/assetAnalysisService");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -327,6 +328,33 @@ app.post("/api/ai-smart-suggestions", async (req, res) => {
     return res.status(500).json({
       ok: false,
       error: error?.message || "Akilli oneriler olusturulamadi.",
+    });
+  }
+});
+
+app.post("/api/analyze-asset", async (req, res) => {
+  const symbol = typeof req.body?.symbol === "string" ? req.body.symbol.trim() : "";
+  const assetName = typeof req.body?.assetName === "string" ? req.body.assetName.trim() : "";
+  const riskProfile = typeof req.body?.riskProfile === "string" ? req.body.riskProfile.trim() : "Dengeli";
+
+  if (!symbol) {
+    return res.status(400).json({
+      ok: false,
+      error: "Body param required: symbol",
+    });
+  }
+
+  try {
+    const data = await analyzeAsset({ symbol, assetName, riskProfile });
+
+    return res.json({
+      ok: true,
+      data,
+    });
+  } catch (error) {
+    return res.status(422).json({
+      ok: false,
+      error: error?.message || "Dinamik varlik analizi olusturulamadi.",
     });
   }
 });

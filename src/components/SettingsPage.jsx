@@ -29,9 +29,9 @@ const writeStoredBoolean = (key, value) => {
   window.localStorage.setItem(key, value ? '1' : '0');
 };
 
-const fieldLabelClass = 'text-xs font-bold uppercase tracking-tight text-slate-400';
-const inputClassName = 'w-full rounded-xl border border-white/10 bg-slate-900/45 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition-colors focus:border-fuchsia-400/60';
-const panelClassName = 'rounded-3xl border border-white/10 bg-slate-900/45 p-6 shadow-[0_30px_90px_rgba(2,6,23,0.58)] backdrop-blur-xl md:p-8';
+const fieldLabelClass = 'text-sm font-medium text-slate-500 dark:text-slate-400';
+const inputClassName = 'w-full rounded-2xl border border-white/10 bg-slate-900/45 px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 outline-none transition-colors focus:border-fuchsia-400/60';
+const panelClassName = 'mx-auto w-full max-w-5xl rounded-2xl border border-white/10 bg-slate-900/45 p-6 shadow-[0_30px_90px_rgba(2,6,23,0.58)] backdrop-blur-xl md:p-8';
 
 export default function SettingsPage({
   user,
@@ -99,15 +99,15 @@ export default function SettingsPage({
   };
 
   return (
-    <section className={`mx-auto w-full max-w-5xl ${panelClassName}`}>
+    <section className={panelClassName}>
       <header className="mb-6 border-b border-white/10 pb-4">
-        <h2 className="text-xl font-black tracking-tight text-slate-50">Ayarlar</h2>
-        <p className="mt-2 text-sm text-slate-400">Hesap, görünüm, gizlilik ve veri yönetimi ayarlarını buradan kontrol edebilirsiniz.</p>
+        <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Ayarlar</h2>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Hesap, görünüm, gizlilik ve veri yönetimi ayarlarını buradan kontrol edebilirsiniz.</p>
       </header>
 
       <div className="space-y-7">
         <section className="border-b border-white/10 pb-6">
-          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.06em] text-slate-200">Hesap Bilgileri</h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">Hesap Bilgileri</h3>
 
           <div className="space-y-3">
             <div className="grid gap-2 md:grid-cols-12 md:items-center md:gap-5">
@@ -141,7 +141,7 @@ export default function SettingsPage({
                 <button
                   type="button"
                   onClick={handleChangePassword}
-                  className="inline-flex min-h-[42px] items-center rounded-xl border border-fuchsia-300/35 bg-fuchsia-500/15 px-4 py-2 text-xs font-semibold text-fuchsia-100 transition-all duration-200 hover:scale-[1.02] hover:bg-fuchsia-500/20"
+                  className="inline-flex min-h-[42px] items-center rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/15 px-4 py-2 text-sm font-semibold text-fuchsia-100 transition-all duration-200 hover:scale-[1.02] hover:bg-fuchsia-500/20"
                 >
                   Şifreyi Değiştir
                 </button>
@@ -151,14 +151,14 @@ export default function SettingsPage({
         </section>
 
         <section className="border-b border-white/10 pb-6">
-          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.06em] text-slate-200">Görünüm</h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">Görünüm</h3>
 
           <div className="space-y-3">
             <div className="grid gap-2 md:grid-cols-12 md:items-center md:gap-5">
               <p className={`md:col-span-4 ${fieldLabelClass}`}>Tema</p>
               <div className="md:col-span-8">
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-200">
                     <input
                       type="radio"
                       name="theme-mode"
@@ -168,7 +168,7 @@ export default function SettingsPage({
                     />
                     Koyu
                   </label>
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-200">
                     <input
                       type="radio"
                       name="theme-mode"
@@ -186,7 +186,7 @@ export default function SettingsPage({
               <p className={`md:col-span-4 ${fieldLabelClass}`}>Para Birimi</p>
               <div className="md:col-span-8">
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-200">
                     <input
                       type="radio"
                       name="base-currency"
@@ -196,7 +196,7 @@ export default function SettingsPage({
                     />
                     TRY
                   </label>
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-200">
                     <input
                       type="radio"
                       name="base-currency"
@@ -214,7 +214,7 @@ export default function SettingsPage({
               <p className={`md:col-span-4 ${fieldLabelClass}`}>Yorum Stili</p>
               <div className="md:col-span-8">
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-200">
                     <input
                       type="radio"
                       name="insight-tone"
@@ -224,7 +224,7 @@ export default function SettingsPage({
                     Koçluk odaklı
                   </label>
 
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-200">
                     <input
                       type="radio"
                       name="insight-tone"
@@ -240,7 +240,7 @@ export default function SettingsPage({
         </section>
 
         <section className="border-b border-white/10 pb-6">
-          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.06em] text-slate-200">Gizlilik</h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">Gizlilik</h3>
 
           <div className="space-y-3">
             <div className="grid gap-2 md:grid-cols-12 md:items-center md:gap-5">
@@ -265,14 +265,14 @@ export default function SettingsPage({
                   </span>
                   Gizlilik Modu her açılışta aktif olsun
                 </button>
-                <p className="mt-1 text-xs text-slate-500">Şu anki durum: {isPrivacyActive ? 'Aktif' : 'Kapalı'}</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Şu anki durum: {isPrivacyActive ? 'Aktif' : 'Kapalı'}</p>
               </div>
             </div>
 
             <div className="grid gap-2 md:grid-cols-12 md:items-center md:gap-5">
               <p className={`md:col-span-4 ${fieldLabelClass}`}>Otomatik Gizle</p>
               <div className="md:col-span-8">
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-200">
                   <input
                     type="checkbox"
                     checked={autoHideEnabled}
@@ -287,7 +287,7 @@ export default function SettingsPage({
         </section>
 
         <section>
-          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.06em] text-rose-200">Veri (Danger Zone)</h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">Veri (Danger Zone)</h3>
 
           <div className="space-y-3">
             <div className="grid gap-2 md:grid-cols-12 md:items-center md:gap-5">
@@ -296,7 +296,7 @@ export default function SettingsPage({
                 <button
                   type="button"
                   onClick={handleDangerClear}
-                  className="inline-flex min-h-[42px] items-center rounded-xl border border-rose-300/45 bg-rose-500/20 px-4 py-2 text-xs font-semibold text-rose-100 transition-all duration-200 hover:scale-[1.02] hover:bg-rose-500/30"
+                  className="inline-flex min-h-[42px] items-center rounded-2xl border border-rose-300/45 bg-rose-500/20 px-4 py-2 text-sm font-semibold text-rose-100 transition-all duration-200 hover:scale-[1.02] hover:bg-rose-500/30"
                 >
                   Tüm Verileri Temizle
                 </button>
@@ -309,7 +309,7 @@ export default function SettingsPage({
                 <button
                   type="button"
                   onClick={handleExportJson}
-                  className="inline-flex min-h-[42px] items-center rounded-xl border border-white/15 bg-slate-900/50 px-4 py-2 text-xs font-semibold text-slate-100 transition-colors hover:bg-slate-800/70"
+                  className="inline-flex min-h-[42px] items-center rounded-2xl border border-white/15 bg-slate-900/50 px-4 py-2 text-sm font-semibold text-slate-100 transition-colors hover:bg-slate-800/70"
                 >
                   JSON Aktar
                 </button>
@@ -319,13 +319,13 @@ export default function SettingsPage({
         </section>
 
         <section className="border-t border-white/10 pt-6">
-          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.06em] text-slate-200">Güven Rozetleri</h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">Güven Rozetleri</h3>
           <TrustBadges />
 
           <button
             type="button"
             onClick={() => setIsTrustModalOpen(true)}
-            className="mt-4 inline-flex min-h-[42px] items-center gap-2 rounded-xl border border-amber-300/35 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-100 transition-colors hover:bg-amber-500/20"
+            className="mt-4 inline-flex min-h-[42px] items-center gap-2 rounded-2xl border border-amber-300/35 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-100 transition-colors hover:bg-amber-500/20"
           >
             <AlertTriangle className="h-4 w-4" />
             Hakkında ve Güvenlik
@@ -343,11 +343,11 @@ export default function SettingsPage({
           />
 
           <div className="relative z-[121] w-full max-w-lg rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-[0_28px_90px_rgba(2,6,23,0.72)] backdrop-blur-xl">
-            <h4 className="text-base font-black text-slate-100">{ABOUT_SECURITY_COPY.title}</h4>
-            <p className="mt-2 text-sm text-slate-300">
+            <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{ABOUT_SECURITY_COPY.title}</h4>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               {ABOUT_SECURITY_COPY.paragraph1}
             </p>
-            <p className="mt-2 text-sm text-slate-300">
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               {ABOUT_SECURITY_COPY.paragraph2}
             </p>
 
@@ -355,7 +355,7 @@ export default function SettingsPage({
               <button
                 type="button"
                 onClick={() => setIsTrustModalOpen(false)}
-                className="rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-800/80"
+                className="rounded-2xl border border-white/10 bg-slate-900/70 px-3 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-800/80"
               >
                 Kapat
               </button>

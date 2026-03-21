@@ -609,6 +609,66 @@ export const fetchAiSmartSuggestions = async ({ portfolioDistribution, dashboard
   }
 };
 
+export const fetchAiAssetAnalysis = async ({ symbol, assetName = '', riskProfile = 'Dengeli' }) => {
+  const normalizedSymbol = String(symbol || '').trim().toUpperCase();
+  if (!normalizedSymbol) {
+    throw new ApiError('Varlik sembolu gereklidir.', { code: 'MISSING_SYMBOL' });
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), BATCH_REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/analyze-asset`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        symbol: normalizedSymbol,
+        assetName: String(assetName || '').trim(),
+        riskProfile: String(riskProfile || 'Dengeli').trim(),
+      }),
+    });
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new ApiError('Dinamik analiz servisi gecersiz cevap dondu.', {
+        status: response.status,
+        code: 'INVALID_JSON',
+      });
+    }
+
+    if (!response.ok || payload?.ok === false) {
+      throw new ApiError(payload?.error || 'Dinamik analiz olusturulamadi.', {
+        status: response.status,
+        body: payload,
+      });
+    }
+
+    return payload?.data || null;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new ApiError('Dinamik analiz istegi zaman asimina ugradi.', { code: 'TIMEOUT' });
+    }
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError('Dinamik analiz servisine ulasilamadi.', {
+      code: 'NETWORK_ERROR',
+      body: error,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
 export const increaseAssetAmount = async ({ userId, assetId, addedAmount, buyPrice }) => {
   const normalizedUserId = String(userId || '').trim();
   const safeAssetId = Number(assetId || 0);

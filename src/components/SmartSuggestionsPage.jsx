@@ -38,6 +38,50 @@ const resolveInitialRiskProfile = () => {
   return RISK_PROFILES.some((profile) => profile.id === stored) ? stored : 'Dengeli';
 };
 
+const NUMBER_HIGHLIGHT_REGEX = /(\b\d+(?:[.,]\d+)?%?\b)/g;
+const EXACT_NUMBER_PART_REGEX = /^(\b\d+(?:[.,]\d+)?%?\b)$/;
+
+function renderInlineWithHighlights(text) {
+  return String(text || '').split(NUMBER_HIGHLIGHT_REGEX).map((part, index) => {
+    if (EXACT_NUMBER_PART_REGEX.test(part)) {
+      return (
+        <span key={`num-${index}`} className="font-medium text-slate-700 dark:text-slate-200">
+          {part}
+        </span>
+      );
+    }
+
+    return <React.Fragment key={`txt-${index}`}>{part}</React.Fragment>;
+  });
+}
+
+function RichAiText({ text }) {
+  const raw = String(text || '');
+  const blocks = raw.split(/```([\s\S]*?)```/g);
+
+  return (
+    <>
+      {blocks.map((block, index) => {
+        const isCodeBlock = index % 2 === 1;
+
+        if (isCodeBlock) {
+          return (
+            <pre key={`code-${index}`} className="mt-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/35 p-3 font-mono text-sm text-slate-200">
+              {block.trim()}
+            </pre>
+          );
+        }
+
+        return (
+          <span key={`text-${index}`} className="text-sm text-slate-500 dark:text-slate-400">
+            {renderInlineWithHighlights(block)}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 export default function SmartSuggestionsPage({ portfolioDistribution, dashboardTotalValue }) {
   const [isLoading, setIsLoading] = useState(false);
   const [promptText, setPromptText] = useState(DEFAULT_PROMPT);
@@ -94,19 +138,19 @@ export default function SmartSuggestionsPage({ portfolioDistribution, dashboardT
   };
 
   return (
-    <section className="mx-auto w-full max-w-5xl rounded-3xl border border-white/10 bg-slate-900/45 p-6 shadow-[0_30px_90px_rgba(2,6,23,0.58)] backdrop-blur-xl md:p-8">
+    <section className="mx-auto w-full max-w-5xl rounded-2xl border border-white/10 bg-slate-900/45 p-6 shadow-[0_30px_90px_rgba(2,6,23,0.58)] backdrop-blur-xl md:p-8">
       <div className="mb-4 flex items-center gap-3">
         <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-amber-300/35 bg-amber-500/15">
           <Lightbulb className="h-5 w-5 text-amber-200" />
         </span>
         <div>
-          <h2 className="text-xl font-black text-slate-50">Akıllı Öneriler</h2>
-          <p className="text-sm text-slate-400">Portföy dağılımınıza göre AI destekli genel piyasa yorumu ve strateji notları.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Akıllı Öneriler</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Portföy dağılımınıza göre AI destekli genel piyasa yorumu ve strateji notları.</p>
         </div>
       </div>
 
-      <section className="mb-5 rounded-xl border border-white/10 bg-slate-950/65 p-4">
-        <h3 className="text-sm font-black uppercase tracking-[0.08em] text-slate-200">Risk Karakterim</h3>
+      <section className="mb-5 rounded-2xl border border-white/10 bg-slate-950/65 p-4">
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Risk Karakterim</h3>
         <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
           {RISK_PROFILES.map((profile) => {
             const isActive = riskProfile === profile.id;
@@ -116,21 +160,21 @@ export default function SmartSuggestionsPage({ portfolioDistribution, dashboardT
                 key={profile.id}
                 type="button"
                 onClick={() => handleRiskProfileChange(profile.id)}
-                className={`rounded-xl border p-3 text-left transition-all ${isActive ? 'border-amber-300/45 bg-amber-500/12 shadow-[0_0_18px_rgba(251,191,36,0.2)]' : 'border-white/10 bg-black/25 hover:border-white/20'}`}
+                className={`rounded-2xl border p-3 text-left transition-all ${isActive ? 'border-amber-300/45 bg-amber-500/12 shadow-[0_0_18px_rgba(251,191,36,0.2)]' : 'border-white/10 bg-black/25 hover:border-white/20'}`}
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">{profile.shortLabel}</p>
-                <p className="mt-1 text-sm font-bold text-slate-100">{profile.title}</p>
-                <p className="mt-1 text-xs text-slate-300">{profile.description}</p>
+                <p className="mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">{profile.title}</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{profile.description}</p>
               </button>
             );
           })}
         </div>
       </section>
 
-      <form onSubmit={handleAnalyze} className="mb-5 rounded-xl border border-white/10 bg-slate-950/65 p-4">
+      <form onSubmit={handleAnalyze} className="mb-5 rounded-2xl border border-white/10 bg-slate-950/65 p-4">
         <div className="mb-2 flex items-center gap-2">
           <MessageSquareText className="h-4 w-4 text-slate-300" />
-          <p className="text-sm font-semibold text-slate-200">Yapay Zeka Analizi</p>
+          <p className="text-lg font-semibold text-slate-800 dark:text-slate-100">Yapay Zeka Analizi</p>
         </div>
         <textarea
           value={promptText}
@@ -151,31 +195,33 @@ export default function SmartSuggestionsPage({ portfolioDistribution, dashboardT
       </form>
 
       {isLoading ? (
-        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">
+        <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
-          AI analiz hazırlanıyor...
+          AI Piyasaları Tarıyor...
         </div>
       ) : history.length > 0 ? (
         <div className="space-y-4">
           {history.map((entry) => (
-            <article key={entry.id} className="rounded-xl border border-white/10 bg-slate-950/65 p-4">
-              <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+            <article key={entry.id} className="rounded-2xl border border-white/10 bg-slate-950/65 p-4">
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Soru</p>
-                <p className="mt-1 text-sm text-slate-200">{entry.prompt}</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{entry.prompt}</p>
                 <p className="mt-2 text-[11px] text-amber-200">Risk Profili: {entry.riskProfile || 'Dengeli'}</p>
               </div>
 
-              <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
-                <h3 className="text-base font-black text-slate-50">Genel Piyasa Yorumu</h3>
-                <p className="mt-2 text-sm text-slate-300">{entry.response?.marketComment}</p>
+              <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Genel Piyasa Yorumu</h3>
+                <div className="mt-2">
+                  <RichAiText text={entry.response?.marketComment} />
+                </div>
               </div>
 
-              <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
-                <h4 className="text-base font-bold text-fuchsia-200">Strateji Notları</h4>
-                <ul className="mt-2 space-y-2 text-sm text-slate-300">
+              <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Strateji Notları</h4>
+                <ul className="mt-2 space-y-2 text-sm text-slate-500 dark:text-slate-400">
                   {(entry.response?.strategyNotes || []).map((note, index) => (
-                    <li key={`${entry.id}-${index}`} className="rounded-lg border border-white/10 bg-slate-900/45 px-3 py-2">
-                      {note}
+                    <li key={`${entry.id}-${index}`} className="rounded-2xl border border-white/10 bg-slate-900/45 px-3 py-2">
+                      <RichAiText text={note} />
                     </li>
                   ))}
                 </ul>
@@ -184,13 +230,13 @@ export default function SmartSuggestionsPage({ portfolioDistribution, dashboardT
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-white/10 bg-slate-950/65 p-4 text-sm text-slate-300">
+        <div className="rounded-2xl border border-white/10 bg-slate-950/65 p-4 text-sm text-slate-500 dark:text-slate-400">
           Henüz analiz yok. Yukarıdaki alana bir soru yazarak başlatabilirsiniz.
         </div>
       )}
 
       <div className="mt-6 border-t border-white/10 pt-3">
-        <p className="text-xs italic text-slate-400">
+        <p className="text-sm italic text-slate-500 dark:text-slate-400">
           {DISCLAIMER}
         </p>
       </div>
@@ -212,4 +258,12 @@ SmartSuggestionsPage.propTypes = {
 SmartSuggestionsPage.defaultProps = {
   portfolioDistribution: [],
   dashboardTotalValue: 0,
+};
+
+RichAiText.propTypes = {
+  text: PropTypes.string,
+};
+
+RichAiText.defaultProps = {
+  text: '',
 };

@@ -273,8 +273,8 @@ export default function EnflasyonAnaliziPage({
     <section className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-300">Enflasyon Analizi</h2>
-          <p className="text-xs text-slate-500 mt-1">Getirinizin enflasyon karşısındaki reel etkisi</p>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Enflasyon Analizi</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Getirinizin enflasyon karşısındaki reel etkisi</p>
         </div>
 
         <div className="inline-flex items-center rounded-full border border-white/5 bg-slate-900/40 p-1 backdrop-blur-xl">
@@ -299,14 +299,14 @@ export default function EnflasyonAnaliziPage({
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl shadow-[0_30px_90px_rgba(15,23,42,0.4)] md:p-10">
+      <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl shadow-[0_30px_90px_rgba(15,23,42,0.4)] md:p-10">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-rose-400/10 blur-3xl" />
         <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-indigo-400/10 blur-3xl" />
 
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-3">
             <ShieldAlert className={`w-4 h-4 ${isLoss ? 'text-rose-300' : 'text-emerald-300'}`} />
-            <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-200">Alım Gücü Durumu</h3>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Alım Gücü Durumu</h3>
           </div>
 
           {analysis ? (
@@ -321,24 +321,24 @@ export default function EnflasyonAnaliziPage({
                   ? 'Paranız enflasyon karşısında eriyor'
                   : 'Paranız enflasyonun üzerinde reel değer kazanımı sağlıyor'}
               </p>
-              <p className="mt-2 text-xs text-slate-300/80">
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                 Reel getiri: {formatPercent(realReturn)} | Kaynak: {SOURCE_LABELS[source]} | Donem: {period.month}.{period.year}
               </p>
-              <p className="mt-1 text-[10px] text-slate-400">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {INFLATION_ENAG_NOTE}
               </p>
 
               <div className="mt-5 rounded-2xl border border-white/5 bg-slate-900/40 p-3 backdrop-blur-xl md:p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-300">Nominal vs Enflasyon Etkisi</p>
+                <p className="text-lg font-semibold text-slate-800 dark:text-slate-100">Nominal vs Enflasyon Etkisi</p>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-3">
-                    <p className="text-[11px] text-emerald-100/90">Nominal Getiri (Saf Kâr)</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Nominal Getiri (Saf Kâr)</p>
                     <p className="mt-1 text-base font-bold text-emerald-200">
                       {TRY_FORMATTER.format(nominalProfitAmount)}
                     </p>
                   </div>
                   <div className="rounded-xl border border-rose-300/25 bg-rose-500/10 p-3">
-                    <p className="text-[11px] text-rose-100/90">Enflasyon Kaybı</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Enflasyon Kaybı</p>
                     <p className="mt-1 text-base font-bold text-rose-200">
                       {TRY_FORMATTER.format(inflationLossAmount)}
                     </p>
@@ -352,9 +352,9 @@ export default function EnflasyonAnaliziPage({
         </div>
       </div>
 
-      <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-xl shadow-[0_24px_72px_rgba(2,6,23,0.62)] md:p-8">
+      <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-xl shadow-[0_24px_72px_rgba(2,6,23,0.62)] md:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-300">Getiri vs Enflasyon</h3>
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Getiri vs Enflasyon</h3>
 
           <div className="relative" onBlur={() => window.setTimeout(() => setIsReportMenuOpen(false), 120)}>
             <button
@@ -403,7 +403,7 @@ export default function EnflasyonAnaliziPage({
                 key={option.key}
                 type="button"
                 onClick={() => setSelectedRange(option.key)}
-                className={`min-h-[40px] rounded-md px-3 py-1.5 text-[11px] font-semibold transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 text-slate-50 shadow-[0_0_14px_rgba(217,70,239,0.24)]' : 'text-slate-400 hover:text-slate-100'}`}
+                className={`min-h-[40px] rounded-md px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 text-slate-50 shadow-[0_0_14px_rgba(217,70,239,0.24)]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-100'}`}
               >
                 {option.label}
               </button>
@@ -494,29 +494,29 @@ export default function EnflasyonAnaliziPage({
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 rounded-lg border border-white/5 bg-slate-900/40 px-2.5 py-1.5 backdrop-blur-xl">
                 <Sparkles className="h-4 w-4 text-fuchsia-300" />
-                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-300">Tahmin</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">Tahmin</span>
               </div>
 
               {prediction ? (
                 <>
-                  <p className="mt-3 text-sm text-slate-200">
+                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                     Enflasyonu aşmaya devam ederseniz tahmini <span className="font-black text-emerald-300">{prediction.monthsToDouble} ay</span> içinde varlığınızı <span className="font-black text-slate-50">2x</span> büyütebilirsiniz.
                   </p>
-                  <p className="mt-2 text-xs text-slate-400">Aylık reel momentum: {formatPercent(prediction.monthlyRealRatePercent)}</p>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Aylık reel momentum: {formatPercent(prediction.monthlyRealRatePercent)}</p>
                 </>
               ) : (
-                <p className="mt-3 text-sm text-slate-300">Reel getiri pozitife geçtiğinde tahmini zenginleşme süresi burada görünecek.</p>
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Reel getiri pozitife geçtiğinde tahmini zenginleşme süresi burada görünecek.</p>
               )}
 
               <div className="mt-4 rounded-xl border border-white/5 bg-slate-900/40 p-3 backdrop-blur-xl">
-                <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.08em] text-slate-400">
+                <p className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
                   Anlık Reel Fark
                   <InfoTooltip content="Portföyünüzün son ay ENAG enflasyonuna karşı reel performans farkı. Negatif değer, enflasyonun getirinizin önünde olduğunu gösterir." />
                 </p>
                 <p className={`mt-1 text-2xl font-black ${currentRealGapPercent >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
                   {formatPercent(currentRealGapPercent)}
                 </p>
-                <p className="mt-1 text-xs text-slate-400">Kaynak: {SOURCE_LABELS[source]}</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Kaynak: {SOURCE_LABELS[source]}</p>
               </div>
             </div>
           </aside>
