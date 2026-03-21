@@ -359,7 +359,7 @@ export default function GrowthChart() {
     <motion.section
       layout
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-      className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-white/5 bg-slate-900/40 p-8 shadow-[0_26px_76px_rgba(2,6,23,0.62)] backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-fuchsia-400/35"
+      className="col-span-12 lg:col-span-7 rounded-2xl border border-white/5 bg-slate-900/40 p-8 shadow-[0_26px_76px_rgba(2,6,23,0.62)] backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-fuchsia-400/35"
     >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-2">

@@ -778,9 +778,10 @@ export default function App() {
 
                   <GoalTracker />
 
-                  <Chart />
-
-                  <DistributionCard />
+                  <div className="col-span-12 grid grid-cols-12 gap-6 items-start">
+                    <Chart />
+                    <DistributionCard />
+                  </div>
 
                   <AssetList />
 

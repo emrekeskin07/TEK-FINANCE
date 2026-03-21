@@ -257,8 +257,22 @@ export default function BankTotals({
   };
 
   const hasData = chartData.length > 0;
-  const innerRadius = isSmallScreen ? 50 : 64;
-  const outerRadius = isSmallScreen ? 92 : 112;
+  const innerRadius = isSmallScreen ? 44 : 52;
+  const outerRadius = isSmallScreen ? 74 : 92;
+  const centerAmountText = formatTryCurrencyText(centerTotalValue);
+  const centerAmountClass = useMemo(() => {
+    const textLength = String(centerAmountText || '').length;
+
+    if (textLength >= 22) {
+      return 'text-sm sm:text-base';
+    }
+
+    if (textLength >= 16) {
+      return 'text-base sm:text-lg';
+    }
+
+    return 'text-lg sm:text-xl';
+  }, [centerAmountText]);
 
   return (
     <div>
@@ -294,9 +308,9 @@ export default function BankTotals({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22, ease: 'easeOut' }}
-              className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6"
+              className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-4"
             >
-              <div className="relative h-[260px] w-full md:h-[300px] md:w-7/12">
+              <div className="relative h-[250px] w-full shrink-0 xl:h-[280px] xl:w-[52%]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -331,16 +345,16 @@ export default function BankTotals({
                 <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
                   <div className="relative px-3 text-center">
                     <span className="pointer-events-none absolute inset-x-2 top-1/2 h-14 -translate-y-1/2 rounded-full bg-fuchsia-500/12 blur-2xl" aria-hidden="true" />
-                    <p className="relative text-sm font-medium text-slate-400">{centerTitle}</p>
-                    <p className="relative mt-1 text-xl font-black leading-none tracking-tight text-slate-50 drop-shadow-[0_0_18px_rgba(255,255,255,0.25)] sm:text-2xl md:text-4xl">
-                      {formatTryCurrencyText(centerTotalValue)}
+                    <p className="relative text-xs font-medium text-slate-400 xl:text-sm">{centerTitle}</p>
+                    <p className={`relative mt-1 max-w-[150px] break-words font-black leading-tight tracking-tight text-slate-50 drop-shadow-[0_0_18px_rgba(255,255,255,0.25)] ${centerAmountClass}`}>
+                      {centerAmountText}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="w-full md:w-5/12">
-                <ul className="flex w-full flex-col gap-2">
+              <div className="w-full xl:w-[48%]">
+                <ul className="flex w-full flex-col gap-4">
                   {chartData.map((entry) => {
                     return (
                       <li key={`legend-${entry.id}`} className="w-full">
