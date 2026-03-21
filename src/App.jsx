@@ -719,6 +719,9 @@ export default function App() {
           onToggleAlerts={handleToggleAlertDrawer}
           hasActiveAlerts={activeAlertCount > 0}
           alertCount={activeAlertCount}
+          user={authUser}
+          onSignOut={handleSignOut}
+          onOpenSettings={() => navigateToPage('ayarlar')}
         />
       </div>
 

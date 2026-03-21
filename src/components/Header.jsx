@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, ChevronDown, Eye, EyeOff, Menu, Moon, Plus, RefreshCw, Sun } from 'lucide-react';
+import { Bell, ChevronDown, Eye, EyeOff, LogOut, Menu, Moon, Plus, RefreshCw, Settings, Sun } from 'lucide-react';
 import { useSyncState } from '../context/SyncContext';
 import { usePrivacy } from '../context/PrivacyContext';
 import SplitText from './ui/SplitText';
@@ -19,12 +19,28 @@ export default function Header({
   onToggleAlerts,
   hasActiveAlerts = false,
   alertCount = 0,
+  user,
+  onSignOut = () => {},
+  onOpenSettings = () => {},
 }) {
   const { isPrivacyActive, togglePrivacy } = usePrivacy();
   const { lastSyncTime } = useSyncState();
   const [now, setNow] = useState(Date.now());
   const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
   const [isAddChoiceOpen, setIsAddChoiceOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  const profileName = user?.user_metadata?.full_name
+    || user?.user_metadata?.name
+    || user?.email?.split('@')?.[0]
+    || 'Kullanıcı';
+  const profileEmail = user?.email || 'mail bilgisi yok';
+  const profileInitials = String(profileName)
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => String(part).charAt(0).toUpperCase())
+    .join('') || 'U';
 
   useEffect(() => {
     const timerId = window.setInterval(() => {
@@ -233,6 +249,56 @@ export default function Header({
             </span>
           ) : null}
         </button>
+
+        <div className="relative z-50" onBlur={() => window.setTimeout(() => setIsUserMenuOpen(false), 120)}>
+          <button
+            type="button"
+            onClick={() => setIsUserMenuOpen((prev) => !prev)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-slate-900/45 text-xs font-bold text-slate-100 transition-all duration-200 hover:scale-105 hover:bg-slate-800/65"
+            title="Kullanıcı menüsü"
+            aria-haspopup="menu"
+            aria-expanded={isUserMenuOpen}
+          >
+            {profileInitials}
+          </button>
+
+          {isUserMenuOpen ? (
+            <div className="absolute right-0 mt-1 w-64 overflow-hidden rounded-xl border border-white/10 bg-slate-950/95 p-2 shadow-2xl backdrop-blur-xl" role="menu">
+              <div className="rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2">
+                <p className="truncate text-sm font-semibold text-slate-100">{profileName}</p>
+                <p className="truncate text-xs text-slate-400">{profileEmail}</p>
+              </div>
+
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  onOpenSettings?.();
+                }}
+                className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-100 transition-colors hover:bg-white/10"
+                role="menuitem"
+              >
+                <Settings className="h-4 w-4 text-sky-300" />
+                Ayarlar
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  onSignOut?.();
+                }}
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-rose-200 transition-colors hover:bg-rose-500/20"
+                role="menuitem"
+              >
+                <LogOut className="h-4 w-4 text-rose-300" />
+                Çıkış Yap
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {isAddChoiceOpen ? (
