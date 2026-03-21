@@ -21,8 +21,45 @@ const TYPE_SPEED_MS = 45;
 const DELETE_SPEED_MS = 26;
 const HOLD_MS = 1100;
 const PRICE_LOOKUP_DEBOUNCE_MS = 360;
+const COMMAND_HISTORY_STORAGE_KEY = 'tek-finance:ai-command-history';
+const MAX_HISTORY_COUNT = 12;
+
+const QUICK_ACTIONS = [
+  { id: 'portfolio', label: '📈 Portföy Özeti', command: 'Portföyüm ne durumda?' },
+  { id: 'gold-add', label: '💰 Altın Ekle', command: '1000 TL altın ekle' },
+  { id: 'goal', label: '🎯 Hedef Durumu', command: 'Hedefime ne kadar kaldı?' },
+  { id: 'thy-price', label: '🔍 THY Fiyatı', command: 'THYAO.IS' },
+];
 
 const normalize = (value) => String(value || '').toLocaleLowerCase('tr-TR').trim();
+
+const readCommandHistory = () => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(COMMAND_HISTORY_STORAGE_KEY);
+    const parsed = JSON.parse(raw || '[]');
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+};
+
+const writeCommandHistory = (history) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.setItem(COMMAND_HISTORY_STORAGE_KEY, JSON.stringify(history));
+};
 
 const parseIntent = (inputValue) => {
   const raw = String(inputValue || '').trim();
@@ -160,6 +197,9 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
   const [resultMessage, setResultMessage] = useState('');
   const [isPriceLoading, setIsPriceLoading] = useState(false);
   const [priceResult, setPriceResult] = useState(null);
+  const [commandHistory, setCommandHistory] = useState([]);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [activeChipId, setActiveChipId] = useState('');
 
   const intent = useMemo(() => parseIntent(value), [value]);
   const previewText = useMemo(() => buildPreview(intent), [intent]);
@@ -170,6 +210,10 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
       inputRef.current?.focus();
     },
   }));
+
+  useEffect(() => {
+    setCommandHistory(readCommandHistory());
+  }, []);
 
   useEffect(() => {
     let timer;
@@ -264,18 +308,67 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
     };
   }, [value]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    if (!value.trim()) {
+  const pushHistory = (commandText) => {
+    const normalizedText = String(commandText || '').trim();
+    if (!normalizedText) {
       return;
     }
 
-    const result = await onExecute?.(intent);
-    if (result?.message) {
-      setResultMessage(result.message);
-      window.setTimeout(() => setResultMessage(''), 3200);
+    setCommandHistory((prev) => {
+      const deduped = prev.filter((entry) => normalize(entry) !== normalize(normalizedText));
+      const next = [normalizedText, ...deduped].slice(0, MAX_HISTORY_COUNT);
+      writeCommandHistory(next);
+      return next;
+    });
+  };
+
+  const isSuccessfulResult = (message, intentKind) => {
+    const normalizedMessage = normalize(message);
+    if (!normalizedMessage) {
+      return false;
     }
+
+    if (intentKind === 'unknown' || intentKind === 'empty') {
+      return false;
+    }
+
+    if (normalizedMessage.includes('anlayamad')) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const executeCommand = async (rawCommand) => {
+    const commandText = String(rawCommand || value || '').trim();
+    if (!commandText) {
+      return;
+    }
+
+    const parsedIntent = parseIntent(commandText);
+
+    if (parsedIntent.kind === 'unknown' && priceResult) {
+      const localPriceMessage = `${priceResult.name} (${priceResult.symbol}) anlık fiyatı: ${formattedPrice} ${priceResult.currency} (${formattedChange})`;
+      setResultMessage(localPriceMessage);
+      pushHistory(commandText);
+      return;
+    }
+
+    const result = await onExecute?.(parsedIntent);
+    const nextMessage = String(result?.message || '');
+    if (nextMessage) {
+      setResultMessage(nextMessage);
+    }
+
+    if (isSuccessfulResult(nextMessage, parsedIntent.kind)) {
+      pushHistory(commandText);
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    await executeCommand(value);
   };
 
   const handleQuickAddFromPrice = () => {
@@ -304,6 +397,34 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
     ? `${priceResult.changePercent >= 0 ? '+' : '-'}%${Math.abs(priceResult.changePercent).toFixed(2)}`
     : '';
 
+  const historyItems = useMemo(() => commandHistory.slice(0, 3), [commandHistory]);
+  const shouldShowHistory = historyItems.length > 0 && (!value.trim() || showHistoryPanel);
+
+  const handleQuickAction = async (chip) => {
+    if (!chip) {
+      return;
+    }
+
+    setActiveChipId(chip.id);
+    setValue(chip.command);
+    setShowHistoryPanel(false);
+    await executeCommand(chip.command);
+  };
+
+  const handleInputKeyDown = (event) => {
+    if (event.key === 'ArrowDown') {
+      if (historyItems.length > 0) {
+        event.preventDefault();
+        setShowHistoryPanel(true);
+      }
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      setShowHistoryPanel(false);
+    }
+  };
+
   return (
     <section className="mx-auto w-full max-w-[960px] px-3 sm:px-4 md:px-8">
       <motion.form
@@ -322,6 +443,7 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
               ref={inputRef}
               value={value}
               onChange={(event) => setValue(event.target.value)}
+              onKeyDown={handleInputKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-500 dark:text-slate-100 dark:placeholder:text-slate-500"
@@ -337,6 +459,64 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
             Çalıştır
           </button>
         </div>
+
+        <AnimatePresence>
+          {shouldShowHistory ? (
+            <motion.div
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="mt-2 overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 dark:border-slate-700 dark:bg-slate-900/70"
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Geçmiş</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {historyItems.map((entry) => (
+                  <button
+                    key={entry}
+                    type="button"
+                    onClick={async () => {
+                      setValue(entry);
+                      setShowHistoryPanel(false);
+                      await executeCommand(entry);
+                    }}
+                    className="rounded-full border border-slate-300/80 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                  >
+                    {entry}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0, y: -8, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -8, height: 0 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="mt-2 overflow-hidden"
+          >
+            <div className="flex flex-wrap gap-2">
+              {QUICK_ACTIONS.map((chip) => {
+                const isActive = activeChipId === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onMouseEnter={() => setActiveChipId(chip.id)}
+                    onFocus={() => setActiveChipId(chip.id)}
+                    onClick={() => handleQuickAction(chip)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${isActive ? 'border-violet-400/80 bg-violet-500/15 text-violet-700 shadow-[0_0_0_1px_rgba(139,92,246,0.35),0_0_18px_rgba(139,92,246,0.24)] dark:text-violet-200' : 'border-slate-300/80 bg-slate-100/70 text-slate-700 hover:border-violet-300/70 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:border-violet-400/60 dark:hover:text-violet-200'}`}
+                  >
+                    {chip.label}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        </AnimatePresence>
 
         <AnimatePresence>
           {priceResult ? (
@@ -385,9 +565,9 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className="mt-2 rounded-lg border border-violet-300/30 bg-violet-500/10 px-3 py-1.5 text-xs text-violet-700 dark:text-violet-200"
+              className="mt-2 rounded-2xl border border-slate-200/80 bg-slate-100 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
             >
-              {resultMessage}
+              {`AI: ${resultMessage}`}
             </motion.div>
           ) : null}
         </AnimatePresence>
