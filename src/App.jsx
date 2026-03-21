@@ -16,6 +16,7 @@ import { useEngagement } from './hooks/useEngagement';
 import { useAppNavigation } from './hooks/useAppNavigation';
 import { useDashboardContextBuilder } from './hooks/useDashboardContextBuilder';
 import DistributionCard from './components/DistributionCard';
+import AssetList from './components/AssetList';
 import AlertDrawer from './components/AlertDrawer';
 import AssetModal from './components/AssetModal';
 import AuthPage from './components/AuthPage';

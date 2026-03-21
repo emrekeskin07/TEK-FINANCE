@@ -15,10 +15,7 @@ export default function AuthPage({
   const canSubmit = email.trim().length > 3 && password.length >= 6;
 
   const handleSignUp = () => {
-    if (!canSubmit) {
-      return;
-    }
-
+    if (!canSubmit) return;
     onEmailSignUp?.({
       fullName: fullName.trim(),
       email: email.trim(),
@@ -27,10 +24,7 @@ export default function AuthPage({
   };
 
   const handleSignIn = () => {
-    if (!canSubmit) {
-      return;
-    }
-
+    if (!canSubmit) return;
     onEmailSignIn?.({
       email: email.trim(),
       password,
@@ -38,86 +32,102 @@ export default function AuthPage({
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[radial-gradient(circle_at_15%_20%,rgba(14,165,233,0.22),transparent_40%),radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.2),transparent_36%),linear-gradient(145deg,#020617,#0b1120_45%,#111827)] flex items-center justify-center px-4 py-10">
-      <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-cyan-500/15 blur-3xl" />
-      <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-emerald-500/15 blur-3xl" />
+    <div className="min-h-screen relative overflow-hidden bg-slate-950 flex items-center justify-center px-4 py-8 sm:py-12">
+      {/* Subtle background glow */}
+      <div className="absolute top-0 w-full h-full overflow-hidden pointer-events-none flex justify-center">
+        <div className="w-[800px] h-[400px] opacity-20 bg-blue-500/30 blur-[120px] rounded-full -translate-y-1/2" />
+      </div>
 
-      <div className="relative z-10 w-full max-w-lg rounded-3xl border border-white/15 bg-white/[0.07] backdrop-blur-2xl shadow-[0_35px_120px_rgba(15,23,42,0.55)] p-7 md:p-9">
-        <div className="mb-8">
-          <p className="text-xs font-semibold tracking-[0.16em] uppercase text-cyan-200/80">TEK Finans</p>
-          <h1 className="mt-2 text-3xl font-extrabold text-slate-100">Portföyüne Güvenli Giriş</h1>
-          <p className="mt-2 text-sm text-slate-300/85">Verilerin kullanıcı bazlı izole edilir ve yalnızca kendi hesabında görünür.</p>
+      <div className="relative z-10 w-full max-w-[440px] rounded-[24px] border border-slate-800 bg-slate-900/80 backdrop-blur-xl shadow-2xl p-8 sm:p-10">
+        <div className="mb-8 text-center sm:text-left">
+          <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20 mb-5">
+            <span className="text-white font-bold text-lg">T</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">TEK Finans'a Giriş Yap</h1>
+          <p className="mt-2.5 text-sm text-slate-400 leading-relaxed">Verileriniz uçtan uca şifrelenir ve yalnızca sizin cihazınızda çözümlenir.</p>
         </div>
 
-        <div className="space-y-3">
-          <label className="block text-xs font-semibold tracking-wide text-slate-300">Ad Soyad (opsiyonel)</label>
-          <div className="relative">
-            <UserCircle2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Örn: Emre Yılmaz"
-              className="w-full bg-black/25 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-cyan-400/60"
-            />
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 ml-1">Ad Soyad (opsiyonel)</label>
+            <div className="relative">
+              <UserCircle2 className="w-4.5 h-4.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Örn: Emre Yılmaz"
+                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm font-medium text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              />
+            </div>
           </div>
 
-          <label className="block text-xs font-semibold tracking-wide text-slate-300 pt-2">E-posta</label>
-          <div className="relative">
-            <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="ornek@mail.com"
-              className="w-full bg-black/25 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-cyan-400/60"
-            />
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 ml-1">E-posta</label>
+            <div className="relative">
+              <Mail className="w-4.5 h-4.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="ornek@mail.com"
+                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm font-medium text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              />
+            </div>
           </div>
 
-          <label className="block text-xs font-semibold tracking-wide text-slate-300 pt-2">Şifre</label>
-          <div className="relative">
-            <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="En az 6 karakter"
-              className="w-full bg-black/25 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-cyan-400/60"
-            />
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 ml-1">Şifre</label>
+            <div className="relative">
+              <KeyRound className="w-4.5 h-4.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="En az 6 karakter"
+                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm font-medium text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="mt-7 space-y-3">
-          <button
-            type="button"
-            onClick={onGoogleSignIn}
-            disabled={submitting}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-300/35 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-100 py-3 text-sm font-semibold transition-colors disabled:opacity-60"
-          >
-            <Chrome className="w-4 h-4" />
-            Google ile Devam Et
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSignUp}
-            disabled={submitting || !canSubmit}
-            className="w-full rounded-xl border border-emerald-300/35 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-100 py-3 text-sm font-semibold transition-colors disabled:opacity-60"
-          >
-            E-posta/Şifre ile Kaydol
-          </button>
-
+        <div className="mt-8 space-y-3 relative">
           <button
             type="button"
             onClick={handleSignIn}
             disabled={submitting || !canSubmit}
-            className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-slate-200 py-3 text-sm font-medium transition-colors disabled:opacity-60"
+            className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 text-white py-3.5 text-sm font-bold shadow-[0_0_20px_rgba(37,99,235,0.2)] transition-all disabled:opacity-50 disabled:hover:bg-blue-600"
           >
-            E-posta/Şifre ile Giriş Yap
+            Giriş Yap
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleSignUp}
+            disabled={submitting || !canSubmit}
+            className="w-full rounded-xl border border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-200 py-3.5 text-sm font-semibold transition-all shadow-sm disabled:opacity-50"
+          >
+            Yeni Hesap Oluştur
+          </button>
+
+          <div className="relative py-3 flex items-center">
+            <div className="flex-grow border-t border-slate-800"></div>
+            <span className="flex-shrink-0 mx-4 text-slate-500 text-xs font-medium">veya</span>
+            <div className="flex-grow border-t border-slate-800"></div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onGoogleSignIn}
+            disabled={submitting}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 py-3.5 text-sm font-semibold transition-all shadow-sm disabled:opacity-50"
+          >
+            <Chrome className="w-4.5 h-4.5" />
+            Google ile Devam Et
           </button>
         </div>
 
-        <TrustBadges compact className="mt-5" />
+        <TrustBadges compact className="mt-8" />
       </div>
     </div>
   );
