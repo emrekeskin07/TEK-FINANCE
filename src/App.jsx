@@ -3,30 +3,28 @@ import { Toaster, toast } from 'react-hot-toast';
 import Confetti from 'react-confetti';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Loader2, Sparkles } from 'lucide-react';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { usePortfolio } from './hooks/usePortfolio';
 import { useMarketPrices } from './hooks/useMarketPrices';
 import { useAuthSession } from './hooks/useAuthSession';
 import { useManualAssets } from './hooks/useManualAssets';
 import { useCalculations } from './hooks/useCalculations';
-import Header from './components/Header';
-import SidebarMenu from './components/SidebarMenu';
-import AiCommandBar from './components/AiCommandBar';
 import DistributionCard from './components/DistributionCard';
 import AssetList from './components/AssetList';
 import AlertDrawer from './components/AlertDrawer';
 import AssetModal from './components/AssetModal';
 import AuthPage from './components/AuthPage';
-import EnflasyonAnaliziPage from './components/EnflasyonAnaliziPage';
 import FinancialStrategyCenterPage from './components/FinancialStrategyCenterPage';
 import SmartSuggestionsPage from './components/SmartSuggestionsPage';
 import OperationsPage from './components/OperationsPage';
-import SettingsPage from './components/SettingsPage';
 import OnboardingWizard from './components/OnboardingWizard';
-import GoalSuccessModal from './components/GoalSuccessModal';
-import Chart from './components/dashboard/Chart';
-import KpiRibbon from './components/dashboard/KpiRibbon';
-import AiAssistantBrief from './components/dashboard/AiAssistantBrief';
-import DashboardSkeleton from './components/dashboard/DashboardSkeleton';
+import AppSidebar from './components/AppSidebar';
+import AppNavbar from './components/AppNavbar';
+import MagicCommandBar from './components/MagicCommandBar';
+import GoalSuccessModalHost from './components/GoalSuccessModalHost';
+import DashboardPage from './pages/DashboardPage';
+import AnalysisPage from './pages/AnalysisPage';
+import SettingsPageRoute from './pages/SettingsPageRoute';
 import { SyncContext } from './context/SyncContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { usePrivacy } from './context/PrivacyContext';
@@ -38,8 +36,6 @@ import {
   isDarkThemeId,
 } from './utils/themePresets';
 import { LEGAL_DISCLAIMER_TEXT } from './constants/trustContent';
-import { supabase } from './supabaseClient';
-import { fetchAiAssetAnalysis } from './services/api';
 
 const LAST_DARK_THEME_STORAGE_KEY = 'tek-finance:last-dark-theme';
 const PRIVACY_STARTUP_STORAGE_KEY = 'tek-finance:privacy-startup-enabled';
@@ -104,7 +100,9 @@ const resolvePageFromPath = (pathname) => {
 const resolvePathFromPage = (page) => PAGE_TO_PATH[page] || '/';
 
 export default function App() {
-  const [activePage, setActivePage] = useState('dashboard');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activePage = resolvePageFromPath(location.pathname);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTheme, setActiveTheme] = useState(DEFAULT_THEME_ID);
   const [insightTone, setInsightTone] = useState('coaching');
@@ -167,6 +165,9 @@ export default function App() {
     removeAsset,
     sellAsset,
     increaseAssetHolding,
+    loadUserPreferences,
+    saveUserPreferences,
+    analyzeAssetDrop,
   } = usePortfolio(authUser?.id, (updatedPort) => {
     if (authUser) {
       updatePrices(updatedPort);
@@ -176,12 +177,12 @@ export default function App() {
   const { marketData, marketChanges, marketMeta, loading, lastUpdated, rates, updatePrices } = useMarketPrices(portfolio);
 
   const handleOpenFabQuickAdd = useCallback(() => {
-    setActivePage('dashboard');
+    navigate('/');
     setIsCommandBarVisible(true);
     window.setTimeout(() => {
       aiCommandBarRef.current?.focus?.();
     }, 120);
-  }, []);
+  }, [navigate]);
 
   const handleTogglePrivacyMode = useCallback(() => {
     setIsPrivacyTransitioning(true);
@@ -235,7 +236,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!supabase || !authUser?.id) {
+    if (!authUser?.id) {
       setOnboardingState({
         loading: false,
         saving: false,
@@ -251,17 +252,25 @@ export default function App() {
     const loadOnboardingState = async () => {
       setOnboardingState((prev) => ({ ...prev, loading: true }));
 
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('has_completed_onboarding,risk_profile')
-        .eq('user_id', authUser.id)
-        .maybeSingle();
+      try {
+        const data = await loadUserPreferences();
 
-      if (isDisposed) {
-        return;
-      }
+        if (isDisposed) {
+          return;
+        }
 
-      if (error) {
+        setOnboardingState((prev) => ({
+          ...prev,
+          loading: false,
+          hasCompleted: Boolean(data?.hasCompleted),
+          hasPreferenceRecord: Boolean(data?.hasPreferenceRecord),
+          riskProfile: String(data?.riskProfile || ''),
+        }));
+
+        if (data?.hasCompleted && String(data?.riskProfile || '') === 'conservative') {
+          setInsightTone('neutral');
+        }
+      } catch (error) {
         console.warn('user_preferences okunamadi:', error?.message || error);
         setOnboardingState((prev) => ({
           ...prev,
@@ -270,23 +279,6 @@ export default function App() {
           hasPreferenceRecord: false,
           riskProfile: '',
         }));
-        return;
-      }
-
-      const hasCompleted = Boolean(data?.has_completed_onboarding);
-      const riskProfile = String(data?.risk_profile || '').trim();
-      const hasPreferenceRecord = Boolean(data);
-
-      setOnboardingState((prev) => ({
-        ...prev,
-        loading: false,
-        hasCompleted,
-        hasPreferenceRecord,
-        riskProfile,
-      }));
-
-      if (hasCompleted && riskProfile === 'conservative') {
-        setInsightTone('neutral');
       }
     };
 
@@ -295,7 +287,7 @@ export default function App() {
     return () => {
       isDisposed = true;
     };
-  }, [authUser?.id]);
+  }, [authUser?.id, loadUserPreferences]);
 
   useEffect(() => {
     if (!authUser) {
@@ -304,37 +296,6 @@ export default function App() {
 
     updatePrices();
   }, [authUser, updatePrices]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined;
-    }
-
-    const syncPageFromLocation = () => {
-      const nextPage = resolvePageFromPath(window.location.pathname);
-      setActivePage(nextPage);
-    };
-
-    syncPageFromLocation();
-    window.addEventListener('popstate', syncPageFromLocation);
-
-    return () => {
-      window.removeEventListener('popstate', syncPageFromLocation);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const nextPath = resolvePathFromPage(activePage);
-    const currentPath = window.location.pathname || '/';
-
-    if (nextPath !== currentPath) {
-      window.history.pushState({}, '', nextPath);
-    }
-  }, [activePage]);
 
   useEffect(() => {
     if (lastUpdated instanceof Date) {
@@ -671,8 +632,8 @@ export default function App() {
   }, [activePage, authUser?.id, athStatus, triggerCelebration]);
 
   const navigateToPage = useCallback((nextPage) => {
-    setActivePage(nextPage);
-  }, []);
+    navigate(resolvePathFromPage(nextPage));
+  }, [navigate]);
 
   const handleToggleAlertDrawer = () => {
     setIsAlertDrawerOpen((prev) => !prev);
@@ -925,43 +886,16 @@ export default function App() {
 
   const handleAnalyzeAssetDrop = useCallback(({ asset, changePercent }) => {
     const run = async () => {
-      const symbol = String(asset?.symbol || '').trim().toUpperCase();
-      const assetName = String(asset?.name || symbol || 'Varlık').trim();
-
-      if (!symbol) {
-        toast.error('Analiz icin varlik sembolu bulunamadi.');
-        return;
-      }
-
-      const riskProfileRaw = String(onboardingState.riskProfile || 'Dengeli').trim();
-      const normalizedRiskProfile = riskProfileRaw === 'aggressive'
-        ? 'Atılgan'
-        : (riskProfileRaw === 'conservative' ? 'Muhafazakar' : (riskProfileRaw || 'Dengeli'));
-
       setIsMarketDropInsightLoading(true);
       setMarketDropInsight(null);
 
       try {
-        const data = await fetchAiAssetAnalysis({
-          symbol,
-          assetName,
-          riskProfile: normalizedRiskProfile,
+        const insight = await analyzeAssetDrop({
+          asset,
+          changePercent,
+          riskProfile: onboardingState.riskProfile,
         });
-
-        setMarketDropInsight({
-          assetName: data?.assetName || assetName,
-          dropPercent: Math.abs(Number(data?.metrics?.dayChangePercent ?? changePercent ?? 0)),
-          sentimentLabel: String(data?.metrics?.sentiment?.label || 'Nötr'),
-          sentimentIndicator: String(data?.metrics?.sentiment?.indicator || '🟡'),
-          volatilityPercent: Number(data?.metrics?.volatilityPercent || 0),
-          volatilityLabel: String(data?.metrics?.volatilityLabel || 'Orta'),
-          headlines: Array.isArray(data?.headlines) ? data.headlines.slice(0, 3) : [],
-          summary: data?.insight?.summary?.content || '',
-          riskOpportunity: data?.insight?.riskOpportunity?.content || '',
-          strategy: data?.insight?.strategy?.content || '',
-          action: data?.insight?.strategy?.action || 'Bekle',
-          warning: String(data?.warning || 'Bu bir yatırım tavsiyesi değildir. YTD.'),
-        });
+        setMarketDropInsight(insight);
       } catch (error) {
         toast.error(error?.message || 'Dinamik AI analizi olusturulamadi.');
       } finally {
@@ -970,7 +904,7 @@ export default function App() {
     };
 
     run();
-  }, [onboardingState.riskProfile]);
+  }, [onboardingState.riskProfile, analyzeAssetDrop]);
 
   const handleNavigateToGoalFromAsset = useCallback((goalKey) => {
     navigateToPage('dashboard');
@@ -1049,27 +983,17 @@ export default function App() {
   }, [authUser?.id, onboardingState.hasCompleted, shouldShowOnboarding]);
 
   const handleCompleteOnboarding = useCallback(async ({ interests, riskProfile, firstAssetCommand }) => {
-    if (!supabase || !authUser?.id) {
+    if (!authUser?.id) {
       toast.error('Kurulum ayarlari kaydedilemedi.');
       return;
     }
 
     setOnboardingState((prev) => ({ ...prev, saving: true }));
 
-    const payload = {
-      user_id: authUser.id,
-      interests: Array.isArray(interests) ? interests : [],
-      risk_profile: String(riskProfile || '').trim() || null,
-      first_asset_command: String(firstAssetCommand || '').trim() || null,
-      has_completed_onboarding: true,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error } = await supabase
-      .from('user_preferences')
-      .upsert(payload, { onConflict: 'user_id' });
-
-    if (error) {
+    let payload;
+    try {
+      payload = await saveUserPreferences({ interests, riskProfile, firstAssetCommand });
+    } catch {
       toast.error('Kurulum tercihleri kaydedilemedi.');
       setOnboardingState((prev) => ({ ...prev, saving: false }));
       return;
@@ -1094,10 +1018,10 @@ export default function App() {
     }
     setHasSkippedOnboarding(false);
 
-    setActivePage('dashboard');
+    navigate('/');
     triggerCelebration();
     toast.success('Kurulum tamamlandı. Hoş geldin!');
-  }, [authUser?.id, triggerCelebration]);
+  }, [authUser?.id, triggerCelebration, saveUserPreferences, navigate]);
 
   const handleSkipOnboarding = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -1295,55 +1219,36 @@ export default function App() {
         onSkip={handleSkipOnboarding}
       />
 
-      <SidebarMenu
+      <AppSidebar
         activePage={activePage}
-        isCollapsed={isSidebarCollapsed}
-        isMobileOpen={isSidebarOpen}
-        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
-        onCloseMobile={() => setIsSidebarOpen(false)}
+        isSidebarCollapsed={isSidebarCollapsed}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarCollapsed={setIsSidebarCollapsed}
+        setIsSidebarOpen={setIsSidebarOpen}
         onNavigate={handleSidebarNavigate}
         user={authUser}
         onSignOut={handleSignOut}
       />
 
-      <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
-        <Header 
-          onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
-          user={authUser}
-          onSignOut={handleSignOut}
-          onOpenSettings={() => navigateToPage('ayarlar')}
-          onSearchNavigate={handleHeaderSearchNavigate}
-          isPrivacyActive={isPrivacyActive}
-          onTogglePrivacy={handleTogglePrivacyMode}
-        />
-      </div>
+      <AppNavbar
+        isSidebarCollapsed={isSidebarCollapsed}
+        setIsSidebarOpen={setIsSidebarOpen}
+        user={authUser}
+        onSignOut={handleSignOut}
+        onOpenSettings={() => navigateToPage('ayarlar')}
+        onSearchNavigate={handleHeaderSearchNavigate}
+        isPrivacyActive={isPrivacyActive}
+        onTogglePrivacy={handleTogglePrivacyMode}
+      />
 
-      <div className={`mb-4 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
-        {isCommandBarVisible ? (
-          <AiCommandBar
-            ref={aiCommandBarRef}
-            onExecute={handleExecuteAiCommand}
-            onQuickAddAsset={handleQuickAddFromPriceResult}
-            onDismiss={() => setIsCommandBarVisible(false)}
-            autoFocusOnMount
-          />
-        ) : (
-          <div className="mx-auto w-full max-w-[960px] px-3 sm:px-4 md:px-8">
-            <button
-              type="button"
-              onClick={() => {
-                setIsCommandBarVisible(true);
-                window.setTimeout(() => {
-                  aiCommandBarRef.current?.focus?.();
-                }, 60);
-              }}
-              className="rounded-2xl border border-slate-300 bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm backdrop-blur-xl transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              Komut Satirini Ac (Ctrl+K)
-            </button>
-          </div>
-        )}
-      </div>
+      <MagicCommandBar
+        isSidebarCollapsed={isSidebarCollapsed}
+        isVisible={isCommandBarVisible}
+        aiCommandBarRef={aiCommandBarRef}
+        onExecute={handleExecuteAiCommand}
+        onQuickAddAsset={handleQuickAddFromPriceResult}
+        setIsVisible={setIsCommandBarVisible}
+      />
 
       <main className={`mx-auto max-w-[1400px] space-y-6 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
         <section className="px-3 pt-1 sm:px-4 md:px-8">
@@ -1365,125 +1270,96 @@ export default function App() {
           </div>
         </section>
 
-        {activePage === 'dashboard' ? (
-          <>
-            {showInitialDashboardSkeleton ? (
-              <DashboardSkeleton />
-            ) : (
+        <Routes>
+          <Route
+            path="/"
+            element={(
+              <DashboardPage
+                dashboardContextValue={dashboardContextValue}
+                showInitialDashboardSkeleton={showInitialDashboardSkeleton}
+                showDashboardMutationSkeleton={showDashboardMutationSkeleton}
+                showDashboardEmptyState={showDashboardEmptyState}
+                dashboardTotalValue={dashboardTotalValue}
+                totalProfit={totalProfit}
+                profitPercentage={profitPercentage}
+                baseCurrency={baseCurrency}
+                rates={rates}
+                portfolio={portfolio}
+                marketData={marketData}
+                isPrivacyActive={isPrivacyActive}
+                maskValue={maskValue}
+                loading={loading}
+                isPortfolioLoading={isPortfolioLoading}
+                setIsCommandBarVisible={setIsCommandBarVisible}
+                aiCommandBarRef={aiCommandBarRef}
+              />
+            )}
+          />
+          <Route
+            path="/portfolio"
+            element={(
               <DashboardProvider value={dashboardContextValue}>
-                <div className="relative grid grid-cols-1 gap-5 p-3 sm:p-4 md:grid-cols-12 md:gap-7 md:p-8">
-                  <div id="dashboard-goal-summary" className="col-span-12">
-                    <KpiRibbon
-                      dashboardTotalValue={dashboardTotalValue}
-                      totalProfit={totalProfit}
-                      profitPercentage={Number(profitPercentage || 0)}
-                      baseCurrency={baseCurrency}
-                      rates={rates}
-                      portfolio={portfolio}
-                      marketData={marketData}
-                      isPrivacyActive={isPrivacyActive}
-                      maskValue={maskValue}
-                      isLoading={loading || isPortfolioLoading}
-                    />
-                  </div>
-
-                  {showDashboardEmptyState ? (
-                    <section className="col-span-12 rounded-2xl border border-dashed border-violet-300/55 bg-violet-100/55 p-8 text-center dark:border-violet-500/35 dark:bg-violet-950/25">
-                      <p className="text-sm font-semibold uppercase tracking-[0.08em] text-violet-600 dark:text-violet-300">Portföy Başlangıcı</p>
-                      <h3 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">Finansal durumunu görmek için ilk varlığını ekle</h3>
-                      <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-300">AI komut satırına bir varlık yazarak başla. Örnek: “5 gram altın ekle” veya “100 dolar aldım”.</p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAiCommandBarVisible(true);
-                          window.setTimeout(() => {
-                            aiCommandBarRef.current?.focus?.();
-                          }, 80);
-                        }}
-                        className="mt-5 inline-flex min-h-[40px] items-center rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet-50 hover:shadow-md active:translate-y-0 dark:border-violet-400/45 dark:bg-slate-900 dark:text-violet-200 dark:hover:bg-slate-800"
-                      >
-                        AI ile Varlık Ekle
-                      </button>
-                    </section>
-                  ) : (
-                    <>
-                      <AiAssistantBrief />
-
-                      <div id="dashboard-analysis-section" className="col-span-12 grid grid-cols-12 gap-6 items-start">
-                        <Chart />
-                        <DistributionCard />
-                      </div>
-
-                      <AssetList />
-                    </>
-                  )}
-
-                  {showDashboardMutationSkeleton ? (
-                    <div className="pointer-events-none absolute inset-0 z-20 rounded-2xl bg-slate-950/25 backdrop-blur-[1px]" aria-hidden="true">
-                      <div className="grid h-full grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
-                        <div className="skeleton-ui col-span-12 h-20 rounded-2xl" />
-                        <div className="skeleton-ui col-span-12 md:col-span-8 h-28 rounded-2xl" />
-                        <div className="skeleton-ui col-span-12 md:col-span-4 h-28 rounded-2xl" />
-                      </div>
-                    </div>
-                  ) : null}
+                <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
+                  <DistributionCard />
+                  <AssetList />
                 </div>
               </DashboardProvider>
             )}
-          </>
-        ) : activePage === 'portfolio' ? (
-          <DashboardProvider value={dashboardContextValue}>
-            <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
-              <DistributionCard />
-              <AssetList />
-            </div>
-          </DashboardProvider>
-        ) : activePage === 'operations' ? (
-          <OperationsPage
-            userId={authUser?.id || null}
-            baseCurrency={baseCurrency}
-            rates={rates}
           />
-        ) : activePage === 'analysis' ? (
-          <DashboardProvider value={dashboardContextValue}>
-            <div className="grid grid-cols-1 gap-4 p-4 sm:p-6 md:grid-cols-12 md:gap-6 md:p-8">
-              <Chart />
-              <div className="col-span-12 rounded-2xl border border-white/10 bg-slate-900/45 p-6 md:p-8">
-                <EnflasyonAnaliziPage
-                  nominalReturnPercent={Number(profitPercentage || 0)}
-                  referenceAmount={dashboardTotalCost}
-                  inflationSource={inflationSource}
-                  onInflationSourceChange={setInflationSource}
+          <Route
+            path="/operations"
+            element={(
+              <OperationsPage
+                userId={authUser?.id || null}
+                baseCurrency={baseCurrency}
+                rates={rates}
+              />
+            )}
+          />
+          <Route
+            path="/analysis"
+            element={(
+              <AnalysisPage
+                dashboardContextValue={dashboardContextValue}
+                profitPercentage={profitPercentage}
+                dashboardTotalCost={dashboardTotalCost}
+                inflationSource={inflationSource}
+                setInflationSource={setInflationSource}
+              />
+            )}
+          />
+          <Route
+            path="/ai-assistant"
+            element={(
+              <div className="grid grid-cols-1 gap-4 p-4 sm:p-6 md:gap-6 md:p-8">
+                <SmartSuggestionsPage
+                  portfolioDistribution={portfolioDistribution}
+                  dashboardTotalValue={dashboardTotalValue}
                 />
+                <FinancialStrategyCenterPage portfolioDistribution={portfolioDistribution} />
               </div>
-            </div>
-          </DashboardProvider>
-        ) : activePage === 'ai-assistant' ? (
-          <div className="grid grid-cols-1 gap-4 p-4 sm:p-6 md:gap-6 md:p-8">
-            <SmartSuggestionsPage
-              portfolioDistribution={portfolioDistribution}
-              dashboardTotalValue={dashboardTotalValue}
-            />
-            <FinancialStrategyCenterPage portfolioDistribution={portfolioDistribution} />
-          </div>
-        ) : activePage === 'ayarlar' ? (
-          <div className="p-4 sm:p-6 md:p-8">
-            <SettingsPage
-              user={authUser}
-              isDarkMode={isDarkThemeId(activeTheme)}
-              setThemeMode={handleSetThemeMode}
-              baseCurrency={baseCurrency}
-              setBaseCurrency={setBaseCurrency}
-              isPrivacyActive={isPrivacyActive}
-              setPrivacyActive={setIsPrivacyActive}
-              insightTone={insightTone}
-              setInsightTone={setInsightTone}
-              onClearAllData={handleClearAllUserData}
-            />
-          </div>
-        ) : (
-          <div />
-        )}
+            )}
+          />
+          <Route
+            path="/settings"
+            element={(
+              <SettingsPageRoute
+                user={authUser}
+                activeTheme={activeTheme}
+                isDarkThemeId={isDarkThemeId}
+                handleSetThemeMode={handleSetThemeMode}
+                baseCurrency={baseCurrency}
+                setBaseCurrency={setBaseCurrency}
+                isPrivacyActive={isPrivacyActive}
+                setIsPrivacyActive={setIsPrivacyActive}
+                insightTone={insightTone}
+                setInsightTone={setInsightTone}
+                handleClearAllUserData={handleClearAllUserData}
+              />
+            )}
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
 
       <footer className={`mx-auto mt-8 max-w-[1400px] transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
@@ -1497,18 +1373,14 @@ export default function App() {
         </div>
       </footer>
 
-      <AnimatePresence>
-        {goalSuccessFlow ? (
-          <GoalSuccessModal
-            flow={goalSuccessFlow}
-            onClose={() => setGoalSuccessFlow(null)}
-            onOpenGoalDetails={() => {
-              setGoalSuccessFlow(null);
-              navigateToPage('analysis');
-            }}
-          />
-        ) : null}
-      </AnimatePresence>
+      <GoalSuccessModalHost
+        flow={goalSuccessFlow}
+        onClose={() => setGoalSuccessFlow(null)}
+        onOpenGoalDetails={() => {
+          setGoalSuccessFlow(null);
+          navigate('/analysis');
+        }}
+      />
 
       <AnimatePresence>
         {isMarketDropInsightLoading ? (

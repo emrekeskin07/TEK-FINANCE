@@ -11,6 +11,7 @@ import {
   calculateSellSummary,
 } from '../utils/financeUtils';
 import { increaseAssetAmount } from '../services/api';
+import { fetchAiAssetAnalysis } from '../services/api';
 
 const CATEGORY_BY_TYPE = {
   stock: 'Hisse Senedi',
@@ -915,6 +916,92 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     }
   }, [fetchPortfolio, userId, portfolio, logTransaction]);
 
+  const loadUserPreferences = useCallback(async () => {
+    if (!supabase || !userId) {
+      return {
+        hasCompleted: false,
+        hasPreferenceRecord: false,
+        riskProfile: '',
+      };
+    }
+
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .select('has_completed_onboarding,risk_profile')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error?.message || 'Kullanıcı tercihleri okunamadı.');
+    }
+
+    return {
+      hasCompleted: Boolean(data?.has_completed_onboarding),
+      hasPreferenceRecord: Boolean(data),
+      riskProfile: String(data?.risk_profile || '').trim(),
+    };
+  }, [userId]);
+
+  const saveUserPreferences = useCallback(async ({ interests, riskProfile, firstAssetCommand }) => {
+    if (!supabase || !userId) {
+      throw new Error('Kurulum ayarları kaydedilemedi.');
+    }
+
+    const payload = {
+      user_id: userId,
+      interests: Array.isArray(interests) ? interests : [],
+      risk_profile: String(riskProfile || '').trim() || null,
+      first_asset_command: String(firstAssetCommand || '').trim() || null,
+      has_completed_onboarding: true,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('user_preferences')
+      .upsert(payload, { onConflict: 'user_id' });
+
+    if (error) {
+      throw new Error(error?.message || 'Kurulum tercihleri kaydedilemedi.');
+    }
+
+    return payload;
+  }, [userId]);
+
+  const analyzeAssetDrop = useCallback(async ({ asset, changePercent, riskProfile }) => {
+    const symbol = String(asset?.symbol || '').trim().toUpperCase();
+    const assetName = String(asset?.name || symbol || 'Varlık').trim();
+
+    if (!symbol) {
+      throw new Error('Analiz için varlık sembolü bulunamadı.');
+    }
+
+    const profileRaw = String(riskProfile || 'Dengeli').trim();
+    const normalizedRiskProfile = profileRaw === 'aggressive'
+      ? 'Atılgan'
+      : (profileRaw === 'conservative' ? 'Muhafazakar' : (profileRaw || 'Dengeli'));
+
+    const data = await fetchAiAssetAnalysis({
+      symbol,
+      assetName,
+      riskProfile: normalizedRiskProfile,
+    });
+
+    return {
+      assetName: data?.assetName || assetName,
+      dropPercent: Math.abs(Number(data?.metrics?.dayChangePercent ?? changePercent ?? 0)),
+      sentimentLabel: String(data?.metrics?.sentiment?.label || 'Nötr'),
+      sentimentIndicator: String(data?.metrics?.sentiment?.indicator || '🟡'),
+      volatilityPercent: Number(data?.metrics?.volatilityPercent || 0),
+      volatilityLabel: String(data?.metrics?.volatilityLabel || 'Orta'),
+      headlines: Array.isArray(data?.headlines) ? data.headlines.slice(0, 3) : [],
+      summary: data?.insight?.summary?.content || '',
+      riskOpportunity: data?.insight?.riskOpportunity?.content || '',
+      strategy: data?.insight?.strategy?.content || '',
+      action: data?.insight?.strategy?.action || 'Bekle',
+      warning: String(data?.warning || 'Bu bir yatırım tavsiyesi değildir. YTD.'),
+    };
+  }, []);
+
   return {
     portfolio,
     isPortfolioLoading,
@@ -924,6 +1011,9 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     removeAsset,
     sellAsset,
     increaseAssetHolding,
+    loadUserPreferences,
+    saveUserPreferences,
+    analyzeAssetDrop,
     refreshPortfolio: fetchPortfolio,
   };
 };
