@@ -13,18 +13,21 @@ const buildPreviewSentence = (draft) => {
   const institution = String(draft?.institution || '').trim() || 'Kurum Belirtilmedi';
   const assetType = String(draft?.assetType || 'Nakit').trim();
   const amount = Number(draft?.amount || 0);
+  const isMetal = assetType === 'Altın' || assetType === 'Gümüş';
+  const unit = String(draft?.unit || (isMetal ? 'gram' : 'adet')).trim().toUpperCase();
   const currency = String(draft?.currency || 'TRY').trim().toUpperCase();
   const formattedAmount = Number.isFinite(amount)
     ? amount.toLocaleString('tr-TR', { maximumFractionDigits: 2 })
     : '0';
 
-  return `${institution} -> ${assetType} -> ${formattedAmount} ${currency}`;
+  return `${institution} -> ${assetType} -> ${formattedAmount} ${isMetal ? unit : currency}`;
 };
 
 const normalizeParsedDraft = (parsed) => {
   const institution = String(parsed?.institution || '').trim() || 'Kurum Belirtilmedi';
   const assetType = String(parsed?.assetType || 'Nakit').trim();
-  const amount = Number(parsed?.amount || 0);
+  const amount = Number(parsed?.quantity || parsed?.amount || 0);
+  const isMetal = assetType === 'Altın' || assetType === 'Gümüş';
   const currency = String(parsed?.currency || 'TRY').trim().toUpperCase() || 'TRY';
   const unit = String(parsed?.unit || (assetType === 'Altın' || assetType === 'Gümüş' ? 'gram' : 'adet')).trim().toLowerCase();
 
@@ -32,7 +35,7 @@ const normalizeParsedDraft = (parsed) => {
     institution,
     assetType,
     amount: Number.isFinite(amount) ? amount : 0,
-    currency,
+    currency: isMetal ? 'TRY' : currency,
     unit,
   };
 };
@@ -88,6 +91,28 @@ export default function MagicAiInput({ userId, onSuccess }) {
   }, []);
 
   const previewSentence = useMemo(() => buildPreviewSentence(draft || {}), [draft]);
+  const isMetalDraft = String(draft?.assetType || '').trim() === 'Altın' || String(draft?.assetType || '').trim() === 'Gümüş';
+  const amountLabel = isMetalDraft ? 'Miktar (count-up)' : 'Tutar (count-up)';
+  const amountSuffix = isMetalDraft
+    ? String(draft?.unit || 'gram').trim().toUpperCase()
+    : String(draft?.currency || 'TRY').trim().toUpperCase();
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+
+    if (!showModal) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showModal]);
 
   const handleParse = async (event) => {
     event.preventDefault();
@@ -215,96 +240,116 @@ export default function MagicAiInput({ userId, onSuccess }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 16 }}
               transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed left-1/2 top-1/2 z-[120] w-[92vw] max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-fuchsia-300/20 bg-slate-900/75 p-6 shadow-[0_26px_100px_rgba(2,6,23,0.72),0_0_40px_rgba(217,70,239,0.2)] backdrop-blur-xl"
+              className="fixed inset-0 z-[120] flex items-center justify-center p-4"
             >
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-slate-950/70 text-slate-300 transition-colors hover:bg-slate-900"
-                aria-label="Modali kapat"
-              >
-                <X className="h-4 w-4" />
-              </button>
-
-              <p className="text-xs uppercase tracking-tight text-slate-400">AI Onay Ekranı</p>
-              <h4 className="mt-1 text-lg font-black text-slate-50">
-                Şunu anladım: {previewSentence}. Doğru mu?
-              </h4>
-
-              <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                <p className="text-xs text-slate-400">Tutar (count-up)</p>
-                <p className="mt-1 text-2xl font-black">
-                  <CountUpAmount value={Number(draft.amount || 0)} />
-                  <span className="ml-2 text-base font-semibold text-slate-200">{draft.currency}</span>
-                </p>
-              </div>
-
-              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-                <input
-                  type="text"
-                  value={draft.institution}
-                  onChange={(event) => setDraft((prev) => ({ ...prev, institution: event.target.value }))}
-                  disabled={!isEditMode}
-                  className={`rounded-xl border px-3 py-2.5 text-sm outline-none transition-colors ${isEditMode ? 'border-fuchsia-300/30 bg-slate-950/65 text-slate-100 focus:border-fuchsia-400/60' : 'border-white/10 bg-slate-950/50 text-slate-300'}`}
-                />
-
-                <select
-                  value={draft.assetType}
-                  onChange={(event) => setDraft((prev) => ({ ...prev, assetType: event.target.value }))}
-                  disabled={!isEditMode}
-                  className={`rounded-xl border px-3 py-2.5 text-sm outline-none transition-colors ${isEditMode ? 'border-fuchsia-300/30 bg-slate-950/65 text-slate-100 focus:border-fuchsia-400/60' : 'border-white/10 bg-slate-950/50 text-slate-300'}`}
-                >
-                  {ASSET_TYPE_OPTIONS.map((option) => (
-                    <option key={option} value={option} className="bg-slate-900">{option}</option>
-                  ))}
-                </select>
-
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  value={draft.amount}
-                  onChange={(event) => setDraft((prev) => ({ ...prev, amount: event.target.value }))}
-                  disabled={!isEditMode}
-                  className={`rounded-xl border px-3 py-2.5 text-sm outline-none transition-colors ${isEditMode ? 'border-fuchsia-300/30 bg-slate-950/65 text-slate-100 focus:border-fuchsia-400/60' : 'border-white/10 bg-slate-950/50 text-slate-300'}`}
-                />
-
-                <select
-                  value={draft.currency}
-                  onChange={(event) => setDraft((prev) => ({ ...prev, currency: event.target.value }))}
-                  disabled={!isEditMode}
-                  className={`rounded-xl border px-3 py-2.5 text-sm outline-none transition-colors ${isEditMode ? 'border-fuchsia-300/30 bg-slate-950/65 text-slate-100 focus:border-fuchsia-400/60' : 'border-white/10 bg-slate-950/50 text-slate-300'}`}
-                >
-                  {CURRENCY_OPTIONS.map((option) => (
-                    <option key={option} value={option} className="bg-slate-900">{option}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mt-5 flex flex-wrap justify-end gap-2">
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+              <div className="relative w-full max-w-xl rounded-3xl border border-fuchsia-300/20 bg-slate-900/75 p-6 shadow-[0_26px_100px_rgba(2,6,23,0.72),0_0_40px_rgba(217,70,239,0.2)] backdrop-blur-xl">
+                <button
                   type="button"
-                  onClick={() => setIsEditMode((prev) => !prev)}
-                  className="inline-flex min-h-[42px] items-center gap-2 rounded-lg border border-white/15 bg-slate-700/35 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-700/55"
+                  onClick={handleCloseModal}
+                  className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-slate-950/70 text-slate-300 transition-colors hover:bg-slate-900"
+                  aria-label="Modali kapat"
                 >
-                  <Pencil className="h-4 w-4" />
-                  {isEditMode ? 'Düzenlemeyi Bitir' : 'Düzenle'}
-                </motion.button>
+                  <X className="h-4 w-4" />
+                </button>
 
-                <motion.button
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.97 }}
-                  type="button"
-                  onClick={handleConfirm}
-                  disabled={isConfirming}
-                  className="inline-flex min-h-[42px] items-center gap-2 rounded-lg border border-emerald-300/35 bg-emerald-500/20 px-4 py-2 text-sm font-bold text-emerald-100 shadow-[0_0_22px_rgba(16,185,129,0.28)] transition-all hover:bg-emerald-500/28 disabled:opacity-65"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  {isConfirming ? 'Onaylanıyor...' : 'Onayla'}
-                </motion.button>
+                <p className="text-xs uppercase tracking-tight text-slate-400">AI Onay Ekranı</p>
+                <h4 className="mt-1 text-lg font-black text-slate-50">
+                  Şunu anladım: {previewSentence}. Doğru mu?
+                </h4>
+
+                <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                  <p className="text-xs text-slate-400">{amountLabel}</p>
+                  <p className="mt-1 text-2xl font-black">
+                    <CountUpAmount value={Number(draft.amount || 0)} />
+                    <span className="ml-2 text-base font-semibold text-slate-200">{amountSuffix}</span>
+                  </p>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <input
+                    type="text"
+                    value={draft.institution}
+                    onChange={(event) => setDraft((prev) => ({ ...prev, institution: event.target.value }))}
+                    disabled={!isEditMode}
+                    className={`rounded-xl border px-3 py-2.5 text-sm outline-none transition-colors ${isEditMode ? 'border-fuchsia-300/30 bg-slate-950/65 text-slate-100 focus:border-fuchsia-400/60' : 'border-white/10 bg-slate-950/50 text-slate-300'}`}
+                  />
+
+                  <select
+                    value={draft.assetType}
+                    onChange={(event) => {
+                      const nextType = event.target.value;
+                      setDraft((prev) => ({
+                        ...prev,
+                        assetType: nextType,
+                        unit: (nextType === 'Altın' || nextType === 'Gümüş') ? 'gram' : (prev.unit || 'adet'),
+                        currency: (nextType === 'Altın' || nextType === 'Gümüş') ? 'TRY' : (prev.currency || 'TRY'),
+                      }));
+                    }}
+                    disabled={!isEditMode}
+                    className={`rounded-xl border px-3 py-2.5 text-sm outline-none transition-colors ${isEditMode ? 'border-fuchsia-300/30 bg-slate-950/65 text-slate-100 focus:border-fuchsia-400/60' : 'border-white/10 bg-slate-950/50 text-slate-300'}`}
+                  >
+                    {ASSET_TYPE_OPTIONS.map((option) => (
+                      <option key={option} value={option} className="bg-slate-900">{option}</option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    value={draft.amount}
+                    onChange={(event) => setDraft((prev) => ({ ...prev, amount: event.target.value }))}
+                    disabled={!isEditMode}
+                    placeholder={isMetalDraft ? 'Miktar / Lot' : 'Tutar'}
+                    className={`rounded-xl border px-3 py-2.5 text-sm outline-none transition-colors ${isEditMode ? 'border-fuchsia-300/30 bg-slate-950/65 text-slate-100 focus:border-fuchsia-400/60' : 'border-white/10 bg-slate-950/50 text-slate-300'}`}
+                  />
+
+                  {isMetalDraft ? (
+                    <input
+                      type="text"
+                      value={String(draft.unit || 'gram').toUpperCase()}
+                      readOnly
+                      className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2.5 text-sm text-slate-300"
+                    />
+                  ) : (
+                    <select
+                      value={draft.currency}
+                      onChange={(event) => setDraft((prev) => ({ ...prev, currency: event.target.value }))}
+                      disabled={!isEditMode}
+                      className={`rounded-xl border px-3 py-2.5 text-sm outline-none transition-colors ${isEditMode ? 'border-fuchsia-300/30 bg-slate-950/65 text-slate-100 focus:border-fuchsia-400/60' : 'border-white/10 bg-slate-950/50 text-slate-300'}`}
+                    >
+                      {CURRENCY_OPTIONS.map((option) => (
+                        <option key={option} value={option} className="bg-slate-900">{option}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div className="mt-5 flex flex-wrap justify-end gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    type="button"
+                    onClick={() => setIsEditMode((prev) => !prev)}
+                    className="inline-flex min-h-[42px] items-center gap-2 rounded-lg border border-white/15 bg-slate-700/35 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-700/55"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    {isEditMode ? 'Düzenlemeyi Bitir' : 'Düzenle'}
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.97 }}
+                    type="button"
+                    onClick={handleConfirm}
+                    disabled={isConfirming}
+                    className="inline-flex min-h-[42px] items-center gap-2 rounded-lg border border-emerald-300/35 bg-emerald-500/20 px-4 py-2 text-sm font-bold text-emerald-100 shadow-[0_0_22px_rgba(16,185,129,0.28)] transition-all hover:bg-emerald-500/28 disabled:opacity-65"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    {isConfirming ? 'Onaylanıyor...' : 'Onayla'}
+                  </motion.button>
+                </div>
               </div>
             </motion.div>
           </>

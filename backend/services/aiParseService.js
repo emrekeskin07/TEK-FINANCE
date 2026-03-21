@@ -160,6 +160,18 @@ function detectAmountFromText(text) {
   return null;
 }
 
+function detectQuantityFromUnitText(text) {
+  const source = String(text || "");
+  const quantityMatch = source.match(/(\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?|\d+(?:[.,]\d+)?)\s*(gram|gr|lot|adet|ons)\b/i);
+
+  if (!quantityMatch?.[1]) {
+    return null;
+  }
+
+  const parsed = parseTrNumber(quantityMatch[1]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 function extractJsonBlock(text) {
   const raw = String(text || "").trim();
   if (!raw) {
@@ -238,7 +250,9 @@ async function callGemini(text) {
 
   const systemPrompt = [
     "Bu Türkçe metindeki finansal varlık girişini JSON olarak parçala:",
-    "Kurum (institution), Tür (assetType), Tutar (amount), Para Birimi (currency), Birim (unit).",
+    "Kurum (institution), Tür (assetType), Miktar (quantity), Tutar (amount), Para Birimi (currency), Birim (unit).",
+    "Eğer kullanıcı gram veya lot belirtiyorsa, bu sayıyı miktar (quantity) alanına ata.",
+    "Eğer sadece TL/Dolar tutarı belirtiyorsa tutar (amount) alanına ata.",
     "assetType değerleri: Nakit, Altın, Gümüş, Döviz.",
     "currency: TRY, USD, EUR, GBP.",
     "unit: adet, gram, ons.",
@@ -289,6 +303,7 @@ async function callGemini(text) {
     return {
       institution: String(parsed?.institution || "").trim(),
       assetType: normalizeAssetType(parsed?.assetType),
+      quantity: parseTrNumber(parsed?.quantity),
       amount: parseTrNumber(parsed?.amount),
       currency: normalizeCurrency(parsed?.currency),
       unit: parsed?.unit,
@@ -301,10 +316,12 @@ async function callGemini(text) {
 
 function parseWithHeuristics(text) {
   const assetType = detectAssetCategory(text);
+  const quantity = detectQuantityFromUnitText(text);
 
   return {
     institution: detectInstitutionFromText(text),
     assetType,
+    quantity,
     amount: detectAmountFromText(text),
     currency: detectCurrencyFromText(text),
     unit: detectUnitFromText(text, assetType),
@@ -318,9 +335,20 @@ async function parseAssetCommand(text) {
 
   const institution = parsed?.institution || detectInstitutionFromText(text);
   const assetType = normalizeAssetType(parsed?.assetType);
-  const amount = Number(parsed?.amount);
-  const currency = normalizeCurrency(parsed?.currency);
   const unit = normalizeUnit(parsed?.unit, assetType, text);
+  const quantityFromText = detectQuantityFromUnitText(text);
+  const parsedQuantity = Number(parsed?.quantity);
+  const parsedAmount = Number(parsed?.amount);
+
+  // gram/lot/ons/adet belirtilmişse miktar alanını önceliklendir.
+  const resolvedAmount = Number.isFinite(parsedQuantity) && parsedQuantity > 0
+    ? parsedQuantity
+    : (Number.isFinite(quantityFromText) && quantityFromText > 0
+      ? quantityFromText
+      : parsedAmount);
+
+  const currency = normalizeCurrency(parsed?.currency);
+  const amount = Number(resolvedAmount);
 
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new Error("Metinden geçerli miktar çıkarılamadı. Örn: 'Ziraat bankasına 50.000 TL ekle'.");
@@ -339,7 +367,7 @@ async function parseAssetCommand(text) {
 function normalizeParsedInput(parsedInput = {}) {
   const institution = String(parsedInput?.institution || "").trim() || "Banka Belirtilmedi";
   const assetType = normalizeAssetType(parsedInput?.assetType);
-  const amount = parseTrNumber(parsedInput?.amount);
+  const amount = parseTrNumber(parsedInput?.quantity) || parseTrNumber(parsedInput?.amount);
   const currency = normalizeCurrency(parsedInput?.currency);
   const unit = normalizeUnit(parsedInput?.unit, assetType, "");
 
