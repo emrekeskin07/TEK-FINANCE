@@ -191,6 +191,34 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     return payload;
   }, [userId]);
 
+  const logTransaction = useCallback(async (entry = {}) => {
+    if (!supabase || !userId) {
+      return;
+    }
+
+    const payload = {
+      user_id: userId,
+      asset_id: Number.isFinite(Number(entry.assetId)) ? Number(entry.assetId) : null,
+      action: String(entry.action || 'update').trim().toLowerCase(),
+      symbol: String(entry.symbol || '').trim() || null,
+      name: String(entry.name || '').trim() || null,
+      category: String(entry.category || '').trim() || null,
+      bank_name: String(entry.bankName || '').trim() || null,
+      quantity: Number.isFinite(Number(entry.quantity)) ? Number(entry.quantity) : null,
+      unit_price: Number.isFinite(Number(entry.unitPrice)) ? Number(entry.unitPrice) : null,
+      total_value: Number.isFinite(Number(entry.totalValue)) ? Number(entry.totalValue) : null,
+      details: entry.details && typeof entry.details === 'object' ? entry.details : {},
+    };
+
+    const { error } = await supabase
+      .from('transaction_log')
+      .insert([payload]);
+
+    if (error) {
+      console.warn('transaction_log insert skipped:', error?.message || error);
+    }
+  }, [userId]);
+
   useEffect(() => {
     fetchPortfolio();
   }, [fetchPortfolio]);
@@ -301,6 +329,23 @@ export const usePortfolio = (userId, onPortfolioChange) => {
         return updated;
       });
 
+      await logTransaction({
+        action: 'buy',
+        assetId: existingAssetRow.id,
+        symbol,
+        name: dbPayload.name,
+        category: normalizedCategory,
+        bankName: resolvedBank,
+        quantity: toFiniteNumber(dbPayload.amount),
+        unitPrice: toFiniteNumber(dbPayload.cost),
+        totalValue: toFiniteNumber(dbPayload.amount) * toFiniteNumber(dbPayload.cost),
+        details: {
+          mode: 'merge-existing',
+          resultingAmount: mergedAmount,
+          resultingAverageCost: mergedCost,
+        },
+      });
+
       toast.success(`${resolvedBank} - ${symbol} mevcut kayitla birlestirildi.`);
       setIsPortfolioMutating(false);
       return true;
@@ -341,6 +386,21 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       const updated = [...prev, normalizedAsset];
       onPortfolioChangeRef.current?.(updated);
       return updated;
+    });
+
+    await logTransaction({
+      action: 'buy',
+      assetId: normalizedAsset.id,
+      symbol,
+      name: dbPayload.name,
+      category: normalizedCategory,
+      bankName: resolvedBank,
+      quantity: toFiniteNumber(dbPayload.amount),
+      unitPrice: toFiniteNumber(dbPayload.cost),
+      totalValue: toFiniteNumber(dbPayload.amount) * toFiniteNumber(dbPayload.cost),
+      details: {
+        mode: 'new-position',
+      },
     });
 
     toast.success(`${resolvedBank} - ${symbol} basariyla eklendi!`);
@@ -412,6 +472,21 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       return updated;
     });
 
+    await logTransaction({
+      action: 'update',
+      assetId: id,
+      symbol,
+      name: dbPayload.name,
+      category: normalizedCategory,
+      bankName: resolvedBank,
+      quantity: toFiniteNumber(dbPayload.amount),
+      unitPrice: toFiniteNumber(dbPayload.cost),
+      totalValue: toFiniteNumber(dbPayload.amount) * toFiniteNumber(dbPayload.cost),
+      details: {
+        mode: 'manual-edit',
+      },
+    });
+
     toast.success(`${resolvedBank} - ${symbol} basariyla guncellendi!`);
     setIsPortfolioMutating(false);
     return true;
@@ -444,6 +519,23 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       onPortfolioChangeRef.current?.(updated);
       return updated;
     });
+
+    if (assetToDelete) {
+      await logTransaction({
+        action: 'delete',
+        assetId: id,
+        symbol: assetToDelete.symbol,
+        name: assetToDelete.name,
+        category: assetToDelete.category,
+        bankName: assetToDelete.bank,
+        quantity: toFiniteNumber(assetToDelete.amount),
+        unitPrice: toFiniteNumber(assetToDelete.avgPrice),
+        totalValue: toFiniteNumber(assetToDelete.amount) * toFiniteNumber(assetToDelete.avgPrice),
+        details: {
+          mode: 'position-removed',
+        },
+      });
+    }
 
     if (assetToDelete) {
       toast.success(`${assetToDelete.bank} - ${assetToDelete.symbol} silindi.`, {
@@ -622,10 +714,27 @@ export const usePortfolio = (userId, onPortfolioChange) => {
     }
 
     await fetchPortfolio();
+
+    await logTransaction({
+      action: 'sell',
+      assetId: sourceAsset.id,
+      symbol: sourceAsset.symbol,
+      name: sourceAsset.name,
+      category: sourceAsset.category,
+      bankName,
+      quantity: safeSellAmount,
+      unitPrice: safeSellPrice,
+      totalValue: proceeds,
+      details: {
+        remainingAmount,
+        transferredToCash: true,
+      },
+    });
+
     toast.success(`${sourceAsset.symbol} satildi. Gelir ${bankName} nakit hesabina aktarildi.`);
     setIsPortfolioMutating(false);
     return true;
-  }, [fetchPortfolio, userId]);
+  }, [fetchPortfolio, userId, logTransaction]);
 
   const increaseAssetHolding = useCallback(async ({ assetId, addedAmount, buyPrice }) => {
     if (!userId) {
@@ -644,6 +753,24 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       });
 
       await fetchPortfolio();
+
+      const sourceAsset = (Array.isArray(portfolio) ? portfolio : []).find((item) => Number(item?.id) === Number(assetId));
+
+      await logTransaction({
+        action: 'buy',
+        assetId,
+        symbol: sourceAsset?.symbol,
+        name: sourceAsset?.name,
+        category: sourceAsset?.category,
+        bankName: sourceAsset?.bank,
+        quantity: toFiniteNumber(addedAmount),
+        unitPrice: toFiniteNumber(buyPrice),
+        totalValue: toFiniteNumber(addedAmount) * toFiniteNumber(buyPrice),
+        details: {
+          mode: 'increase-position',
+        },
+      });
+
       toast.success('Miktar artırıldı, ortalama maliyet güncellendi.');
       setIsPortfolioMutating(false);
       return true;
@@ -652,7 +779,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       setIsPortfolioMutating(false);
       return false;
     }
-  }, [fetchPortfolio, userId]);
+  }, [fetchPortfolio, userId, portfolio, logTransaction]);
 
   return {
     portfolio,

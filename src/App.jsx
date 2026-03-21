@@ -24,6 +24,7 @@ import OperationsPage from './components/OperationsPage';
 import SettingsPage from './components/SettingsPage';
 import Chart from './components/dashboard/Chart';
 import Stats from './components/dashboard/Stats';
+import KpiRibbon from './components/dashboard/KpiRibbon';
 import DashboardSkeleton from './components/dashboard/DashboardSkeleton';
 import { SyncContext } from './context/SyncContext';
 import { DashboardProvider } from './context/DashboardContext';
@@ -819,6 +820,20 @@ export default function App() {
             ) : (
               <DashboardProvider value={dashboardContextValue}>
                 <div className="relative grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
+                  <KpiRibbon
+                    dashboardTotalValue={dashboardTotalValue}
+                    totalProfit={totalProfit}
+                    profitPercentage={Number(profitPercentage || 0)}
+                    lineChartData={lineChartData}
+                    portfolioRealReturnPercent={portfolioRealReturnPercent}
+                    selectedInflationSourceLabel={selectedInflationSourceLabel}
+                    baseCurrency={baseCurrency}
+                    rates={rates}
+                    userId={authUser?.id || null}
+                    isPrivacyActive={isPrivacyActive}
+                    maskValue={maskValue}
+                  />
+
                   <Stats
                     greetingName={dashboardGreetingName}
                     totalProfit={totalProfit}
@@ -840,8 +855,6 @@ export default function App() {
                     )}
                     onPrimaryAction={() => openAddModal()}
                   />
-
-                  <GoalTracker />
 
                   <div className="col-span-12 grid grid-cols-12 gap-6 items-start">
                     <Chart />
@@ -872,8 +885,7 @@ export default function App() {
           </DashboardProvider>
         ) : activePage === 'operations' ? (
           <OperationsPage
-            portfolio={portfolio}
-            marketData={marketData}
+            userId={authUser?.id || null}
             baseCurrency={baseCurrency}
             rates={rates}
           />
