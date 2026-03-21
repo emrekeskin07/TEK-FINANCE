@@ -124,6 +124,7 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       hesapTuru,
       portfolioName,
       unitType,
+      createdAt: asset.created_at || asset.createdAt || null,
       type: category === 'Yatırım Fonu' ? 'fund' : 'custom',
       // Supabase schema key aliases kept for update/inspect compatibility.
       cost: avgPrice,

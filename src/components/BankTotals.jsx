@@ -107,6 +107,7 @@ export default function BankTotals({
   baseCurrency,
   rates,
   totalValue,
+  insightTone,
   activeCategory,
   onResetCategory,
 }) {
@@ -252,15 +253,21 @@ export default function BankTotals({
     const roundedFxShare = Math.round(fxShare);
 
     if (fxShare > 70) {
-      return `İpucu: Portföyünün %${roundedFxShare}'i döviz bazlı varlıklarda, TL devalüasyonuna karşı korumadasın. ✅`;
+      return insightTone === 'neutral'
+        ? `İpucu: Döviz bazlı varlık oranı %${roundedFxShare}. Kur şoklarına karşı koruma katsayısı yüksek.`
+        : `İpucu: Portföyünün %${roundedFxShare}'i döviz bazlı varlıklarda, TL devalüasyonuna karşı korumadasın. ✅`;
     }
 
     if (fxShare < 30) {
-      return 'İpucu: Portföyünün çoğu TL bazlı, enflasyon karşısında alım gücün eriyebilir. ⚠️';
+      return insightTone === 'neutral'
+        ? 'İpucu: TL bazlı ağırlık yüksek. Enflasyon dönemlerinde reel getiri riski artabilir.'
+        : 'İpucu: Portföyünün çoğu TL bazlı, enflasyon karşısında alım gücün eriyebilir. ⚠️';
     }
 
-    return `İpucu: Döviz bazlı varlık oranın %${roundedFxShare}. Koruma ve büyüme dengesini sürdürebilirsin.`;
-  }, [portfolio, marketData]);
+    return insightTone === 'neutral'
+      ? `İpucu: Döviz bazlı varlık oranı %${roundedFxShare}. Risk-getiri dağılımı dengeli görünüyor.`
+      : `İpucu: Döviz bazlı varlık oranın %${roundedFxShare}. Koruma ve büyüme dengesini sürdürebilirsin.`;
+  }, [portfolio, marketData, insightTone]);
 
   const formatTryCurrencyText = (value) => {
     const rawText = formatCurrency(value, baseCurrency, rates);
@@ -433,6 +440,19 @@ BankTotals.propTypes = {
   baseCurrency: PropTypes.string,
   rates: PropTypes.object,
   totalValue: PropTypes.number,
+  insightTone: PropTypes.oneOf(['coaching', 'neutral']),
   activeCategory: PropTypes.string,
   onResetCategory: PropTypes.func,
+};
+
+BankTotals.defaultProps = {
+  bankTotals: {},
+  portfolio: [],
+  marketData: {},
+  baseCurrency: 'TRY',
+  rates: {},
+  totalValue: 0,
+  insightTone: 'coaching',
+  activeCategory: 'Tümü',
+  onResetCategory: () => {},
 };

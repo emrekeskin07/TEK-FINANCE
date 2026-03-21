@@ -12,6 +12,7 @@ export default function DistributionCard() {
     rates,
     totalValue,
     activeAssetCategory,
+    insightTone,
     setActiveAssetCategory,
     selectedInstitution,
     handleInstitutionSelect,
@@ -30,6 +31,7 @@ export default function DistributionCard() {
         baseCurrency={baseCurrency}
         rates={rates}
         totalValue={totalValue}
+        insightTone={insightTone}
         activeCategory={activeAssetCategory}
         onResetCategory={() => setActiveAssetCategory?.('Tümü')}
         selectedBank={selectedInstitution}

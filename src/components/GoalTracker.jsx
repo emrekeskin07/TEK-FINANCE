@@ -108,6 +108,7 @@ export default function GoalTracker() {
     baseCurrency,
     rates,
     lineChartData,
+    insightTone,
     triggerCelebration,
   } = useDashboardData();
   const { isPrivacyActive, maskValue } = usePrivacy();
@@ -241,6 +242,11 @@ export default function GoalTracker() {
   const estimatedMonthsText = estimatedMonthsBySavings === null
     ? null
     : (isPrivacyActive ? maskValue(String(estimatedMonthsBySavings)) : String(estimatedMonthsBySavings));
+  const etaInsightText = estimatedMonthsText
+    ? (insightTone === 'neutral'
+      ? `Projeksiyon: mevcut ortalama birikim hızında hedefe ${estimatedMonthsText} ay.`
+      : `Mevcut birikim hızınla ${estimatedMonthsText} ay sonra hedefine ulaşabilirsin. 🚗`)
+    : null;
 
   useEffect(() => {
     if (!hasGoal || progress < 100 || !triggerCelebration) {
@@ -415,8 +421,8 @@ export default function GoalTracker() {
                 <p className="text-[11px] font-semibold uppercase tracking-tight text-slate-400">Ilerleme</p>
                 <div className="text-right">
                   <p className="text-2xl font-black leading-none text-white drop-shadow-[0_0_14px_rgba(167,139,250,0.45)]">{isPrivacyActive ? maskValue(percentageLabel) : percentageLabel}</p>
-                  {estimatedMonthsText ? (
-                    <p className="mt-1 text-xs text-slate-300">Mevcut birikim hızınla {estimatedMonthsText} ay sonra hedefine ulaşabilirsin. 🚗</p>
+                  {etaInsightText ? (
+                    <p className="mt-1 text-xs text-slate-300">{etaInsightText}</p>
                   ) : null}
                 </div>
               </div>

@@ -38,6 +38,8 @@ export default function SettingsPage({
   setBaseCurrency,
   isPrivacyActive,
   setPrivacyActive,
+  insightTone,
+  setInsightTone,
   onClearAllData,
 }) {
   const [displayName, setDisplayName] = useState('');
@@ -203,6 +205,33 @@ export default function SettingsPage({
                 </div>
               </div>
             </div>
+
+            <div className="grid gap-2 md:grid-cols-12 md:items-center md:gap-5">
+              <p className={`md:col-span-4 ${fieldLabelClass}`}>Yorum Stili</p>
+              <div className="md:col-span-8">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
+                    <input
+                      type="radio"
+                      name="insight-tone"
+                      checked={insightTone === 'coaching'}
+                      onChange={() => setInsightTone?.('coaching')}
+                    />
+                    Koçluk odaklı
+                  </label>
+
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2 text-sm text-slate-100">
+                    <input
+                      type="radio"
+                      name="insight-tone"
+                      checked={insightTone === 'neutral'}
+                      onChange={() => setInsightTone?.('neutral')}
+                    />
+                    Nötr analitik
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -297,10 +326,14 @@ SettingsPage.propTypes = {
   setBaseCurrency: PropTypes.func.isRequired,
   isPrivacyActive: PropTypes.bool.isRequired,
   setPrivacyActive: PropTypes.func.isRequired,
+  insightTone: PropTypes.oneOf(['coaching', 'neutral']),
+  setInsightTone: PropTypes.func,
   onClearAllData: PropTypes.func,
 };
 
 SettingsPage.defaultProps = {
   user: null,
+  insightTone: 'coaching',
+  setInsightTone: () => {},
   onClearAllData: null,
 };

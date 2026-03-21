@@ -17,10 +17,10 @@ import AssetList from './components/AssetList';
 import AlertDrawer from './components/AlertDrawer';
 import AssetModal from './components/AssetModal';
 import AuthPage from './components/AuthPage';
-import MalVarligiPage from './components/MalVarligiPage';
 import EnflasyonAnaliziPage from './components/EnflasyonAnaliziPage';
 import FinancialStrategyCenterPage from './components/FinancialStrategyCenterPage';
 import SmartSuggestionsPage from './components/SmartSuggestionsPage';
+import OperationsPage from './components/OperationsPage';
 import SettingsPage from './components/SettingsPage';
 import Chart from './components/dashboard/Chart';
 import Stats from './components/dashboard/Stats';
@@ -29,7 +29,6 @@ import { SyncContext } from './context/SyncContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { usePrivacy } from './context/PrivacyContext';
 import {
-  THEME_OPTIONS,
   THEME_STORAGE_KEY,
   DEFAULT_THEME_ID,
   resolveThemeId,
@@ -39,48 +38,44 @@ import {
 
 const LAST_DARK_THEME_STORAGE_KEY = 'tek-finance:last-dark-theme';
 const PRIVACY_STARTUP_STORAGE_KEY = 'tek-finance:privacy-startup-enabled';
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'tek-finance:sidebar-collapsed';
+const INSIGHT_TONE_STORAGE_KEY = 'tek-finance:insight-tone';
 
 const ATH_CELEBRATION_STORAGE_PREFIX = 'tek-finance:ath-celebration';
 const ATH_CELEBRATION_DURATION_MS = 3800;
 const PAGE_TO_PATH = {
   dashboard: '/',
-  'net-worth': '/net-worth',
-  enflasyon: '/inflation-analysis',
-  'smart-suggestions': '/smart-suggestions',
-  hedeflerim: '/goals',
-  'strategy-center': '/strategy-center',
+  portfolio: '/portfolio',
+  operations: '/operations',
+  analysis: '/analysis',
+  'ai-assistant': '/ai-assistant',
   ayarlar: '/settings',
 };
 
 const PAGE_META = {
   dashboard: { title: 'Dashboard', crumb: 'Dashboard' },
-  'net-worth': { title: 'Varlıklarım', crumb: 'Varlıklarım' },
-  enflasyon: { title: 'Enflasyon Analizi', crumb: 'Enflasyon Analizi' },
-  'smart-suggestions': { title: 'Akıllı Öneriler', crumb: 'Akıllı Öneriler' },
-  hedeflerim: { title: 'Hedef Takibi', crumb: 'Hedef Takibi' },
-  'strategy-center': { title: 'Finansal Strateji Merkezi', crumb: 'Finansal Strateji Merkezi' },
+  portfolio: { title: 'Portföyüm', crumb: 'Portföyüm' },
+  operations: { title: 'İşlemler', crumb: 'İşlemler' },
+  analysis: { title: 'Analiz', crumb: 'Analiz' },
+  'ai-assistant': { title: 'AI Asistan', crumb: 'AI Asistan' },
   ayarlar: { title: 'Ayarlar', crumb: 'Ayarlar' },
 };
 
 const resolvePageFromPath = (pathname) => {
-  if (pathname === '/net-worth') {
-    return 'net-worth';
+  if (pathname === '/portfolio' || pathname === '/net-worth') {
+    return 'portfolio';
   }
 
-  if (pathname === '/inflation-analysis') {
-    return 'enflasyon';
+  if (pathname === '/operations') {
+    return 'operations';
   }
 
-  if (pathname === '/smart-suggestions') {
-    return 'smart-suggestions';
+  if (pathname === '/analysis' || pathname === '/inflation-analysis') {
+    return 'analysis';
   }
 
-  if (pathname === '/goals') {
-    return 'hedeflerim';
-  }
-
-  if (pathname === '/strategy-center') {
-    return 'strategy-center';
+  if (pathname === '/ai-assistant' || pathname === '/smart-suggestions' || pathname === '/strategy-center') {
+    return 'ai-assistant';
   }
 
   if (pathname === '/settings') {
@@ -94,7 +89,9 @@ const resolvePathFromPage = (page) => PAGE_TO_PATH[page] || '/';
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTheme, setActiveTheme] = useState(DEFAULT_THEME_ID);
+  const [insightTone, setInsightTone] = useState('coaching');
   const [baseCurrency, setBaseCurrency] = useState('TRY');
   const [sortConfig, setSortConfig] = useState({ key: 'profit', direction: 'desc' });
   const [activeAssetCategory, setActiveAssetCategory] = useState('Tümü');
@@ -145,7 +142,7 @@ export default function App() {
     }
   });
   
-  const { marketData, marketChanges, marketMeta, loading, lastUpdated, lastFetchFailed, rates, updatePrices } = useMarketPrices(portfolio);
+  const { marketData, marketChanges, marketMeta, loading, lastUpdated, rates, updatePrices } = useMarketPrices(portfolio);
 
   const openQuickAddModal = useCallback(() => {
     setIsQuickAddModalOpen(true);
@@ -238,6 +235,33 @@ export default function App() {
       window.localStorage.setItem(LAST_DARK_THEME_STORAGE_KEY, resolvedTheme);
     }
   }, [activeTheme]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    setIsSidebarCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === '1');
+
+    const storedTone = String(window.localStorage.getItem(INSIGHT_TONE_STORAGE_KEY) || 'coaching').trim();
+    setInsightTone(storedTone === 'neutral' ? 'neutral' : 'coaching');
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, isSidebarCollapsed ? '1' : '0');
+  }, [isSidebarCollapsed]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(INSIGHT_TONE_STORAGE_KEY, insightTone === 'neutral' ? 'neutral' : 'coaching');
+  }, [insightTone]);
 
   const handleToggleThemeMode = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -525,7 +549,7 @@ export default function App() {
   };
 
   const handleOpenInflationFromAlert = () => {
-    navigateToPage('enflasyon');
+    navigateToPage('analysis');
     setIsSidebarOpen(false);
     setIsAlertDrawerOpen(false);
     window.setTimeout(() => {
@@ -537,6 +561,43 @@ export default function App() {
     navigateToPage(nextPage);
     setIsSidebarOpen(false);
   };
+
+  const handleHeaderSearchNavigate = useCallback((queryText) => {
+    const normalized = String(queryText || '').toLocaleLowerCase('tr-TR').trim();
+
+    if (!normalized) {
+      return;
+    }
+
+    if (normalized.includes('dashboard') || normalized.includes('özet') || normalized.includes('ozet')) {
+      navigateToPage('dashboard');
+      return;
+    }
+
+    if (normalized.includes('portföy') || normalized.includes('portfoy') || normalized.includes('varlık')) {
+      navigateToPage('portfolio');
+      return;
+    }
+
+    if (normalized.includes('işlem') || normalized.includes('islem') || normalized.includes('kayıt') || normalized.includes('kayit')) {
+      navigateToPage('operations');
+      return;
+    }
+
+    if (normalized.includes('analiz') || normalized.includes('enflasyon') || normalized.includes('kıyas') || normalized.includes('kiyas')) {
+      navigateToPage('analysis');
+      return;
+    }
+
+    if (normalized.includes('ai') || normalized.includes('asistan') || normalized.includes('öneri') || normalized.includes('oneri') || normalized.includes('strateji')) {
+      navigateToPage('ai-assistant');
+      return;
+    }
+
+    if (normalized.includes('ayar')) {
+      navigateToPage('ayarlar');
+    }
+  }, [navigateToPage]);
 
   const renderPercentText = (value) => {
     const numericValue = Number(value || 0);
@@ -572,6 +633,7 @@ export default function App() {
     sortConfig,
     setSortConfig,
     lineChartData,
+    insightTone,
     handleInstitutionSelect: handleBankSelect,
     handleBankSelect,
     handleCategorySelect,
@@ -605,6 +667,7 @@ export default function App() {
     sortConfig,
     setSortConfig,
     lineChartData,
+    insightTone,
     handleBankSelect,
     handleCategorySelect,
     setActiveAssetCategory,
@@ -709,43 +772,44 @@ export default function App() {
       />
 
       <SidebarMenu
-        isOpen={isSidebarOpen}
         activePage={activePage}
-        activeTheme={activeTheme}
-        themeOptions={THEME_OPTIONS}
-        onThemeChange={setActiveTheme}
-        onClose={() => setIsSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        isMobileOpen={isSidebarOpen}
+        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+        onCloseMobile={() => setIsSidebarOpen(false)}
         onNavigate={handleSidebarNavigate}
         user={authUser}
         onSignOut={handleSignOut}
       />
 
-      <div>
+      <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
         <Header 
-          activePage={activePage}
           onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
-          baseCurrency={baseCurrency}
-          setBaseCurrency={setBaseCurrency}
-          openAddModal={openAddModal}
-          openQuickAddModal={openQuickAddModal}
-          isDarkMode={isDarkThemeId(activeTheme)}
-          onToggleTheme={handleToggleThemeMode}
-          loading={loading}
-          syncFailed={lastFetchFailed}
-          onRefresh={handleManualRefresh}
-          onToggleAlerts={handleToggleAlertDrawer}
-          hasActiveAlerts={activeAlertCount > 0}
-          alertCount={activeAlertCount}
           user={authUser}
           onSignOut={handleSignOut}
           onOpenSettings={() => navigateToPage('ayarlar')}
+          onSearchNavigate={handleHeaderSearchNavigate}
         />
       </div>
 
-      <main className="max-w-7xl mx-auto space-y-6 md:space-y-10">
+      <main className={`mx-auto max-w-[1400px] space-y-6 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
         <section className="px-3 pt-1 sm:px-4 md:px-8">
-          <p className="text-xs text-slate-400">Ana Sayfa &gt; {pageMeta.crumb}</p>
-          <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 md:text-4xl">{pageMeta.title}</h2>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs text-slate-400">Ana Sayfa &gt; {pageMeta.crumb}</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 md:text-4xl">{pageMeta.title}</h2>
+            </div>
+
+            {activePage === 'dashboard' ? (
+              <button
+                type="button"
+                onClick={() => navigateToPage('portfolio')}
+                className="inline-flex min-h-[40px] items-center rounded-lg border border-purple-300/35 bg-purple-100 px-3 py-2 text-xs font-semibold text-purple-700 transition-colors hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:hover:bg-purple-900/45"
+              >
+                Tümünü Gör
+              </button>
+            ) : null}
+          </div>
         </section>
 
         {activePage === 'dashboard' ? (
@@ -767,6 +831,7 @@ export default function App() {
                     baseCurrency={baseCurrency}
                     rates={rates}
                     lineChartData={lineChartData}
+                    insightTone={insightTone}
                     renderPercent={() => renderPercentText(animatedProfitPercent)}
                     renderRealReturn={() => (
                       isPrivacyActive
@@ -798,31 +863,42 @@ export default function App() {
               </DashboardProvider>
             )}
           </>
-        ) : activePage === 'hedeflerim' ? (
+        ) : activePage === 'portfolio' ? (
           <DashboardProvider value={dashboardContextValue}>
             <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
-              <GoalTracker />
+              <DistributionCard />
+              <AssetList />
             </div>
           </DashboardProvider>
-        ) : activePage === 'net-worth' ? (
-          <div className="w-full max-w-7xl mx-auto">
-            <MalVarligiPage
-              portfolioCashTotal={portfolioCashTotal}
-              manualAssets={manualAssets}
-              manualAssetsLoading={manualAssetsLoading}
-              onManualAssetsChange={setManualAssets}
-              userId={authUser.id}
-              marketData={marketData}
-              rates={rates}
-            />
-          </div>
-        ) : activePage === 'strategy-center' ? (
-          <FinancialStrategyCenterPage portfolioDistribution={portfolioDistribution} />
-        ) : activePage === 'smart-suggestions' ? (
-          <SmartSuggestionsPage
-            portfolioDistribution={portfolioDistribution}
-            dashboardTotalValue={dashboardTotalValue}
+        ) : activePage === 'operations' ? (
+          <OperationsPage
+            portfolio={portfolio}
+            marketData={marketData}
+            baseCurrency={baseCurrency}
+            rates={rates}
           />
+        ) : activePage === 'analysis' ? (
+          <DashboardProvider value={dashboardContextValue}>
+            <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
+              <Chart />
+              <div className="col-span-12 rounded-2xl border border-white/10 bg-slate-900/45 p-5 md:p-6">
+                <EnflasyonAnaliziPage
+                  nominalReturnPercent={Number(profitPercentage || 0)}
+                  referenceAmount={dashboardTotalCost}
+                  inflationSource={inflationSource}
+                  onInflationSourceChange={setInflationSource}
+                />
+              </div>
+            </div>
+          </DashboardProvider>
+        ) : activePage === 'ai-assistant' ? (
+          <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:gap-6 md:p-8">
+            <SmartSuggestionsPage
+              portfolioDistribution={portfolioDistribution}
+              dashboardTotalValue={dashboardTotalValue}
+            />
+            <FinancialStrategyCenterPage portfolioDistribution={portfolioDistribution} />
+          </div>
         ) : activePage === 'ayarlar' ? (
           <SettingsPage
             user={authUser}
@@ -832,17 +908,12 @@ export default function App() {
             setBaseCurrency={setBaseCurrency}
             isPrivacyActive={isPrivacyActive}
             setPrivacyActive={setIsPrivacyActive}
+            insightTone={insightTone}
+            setInsightTone={setInsightTone}
             onClearAllData={handleClearAllUserData}
           />
         ) : (
-          <div>
-            <EnflasyonAnaliziPage
-              nominalReturnPercent={Number(profitPercentage || 0)}
-              referenceAmount={dashboardTotalCost}
-              inflationSource={inflationSource}
-              onInflationSourceChange={setInflationSource}
-            />
-          </div>
+          <div />
         )}
       </main>
 

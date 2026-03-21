@@ -20,6 +20,7 @@ export default function Stats({
   baseCurrency,
   rates,
   lineChartData,
+  insightTone,
   renderPercent,
   renderRealReturn,
   onPrimaryAction,
@@ -53,11 +54,15 @@ export default function Stats({
       : normalizedPercent.toFixed(1);
 
     if (changePercent >= 0) {
-      return `Geçen aya göre %${percentText} daha fazla tasarruf ettin. 🔥`;
+      return insightTone === 'neutral'
+        ? `Önceki aya kıyasla net birikim artışı %${percentText}.`
+        : `Geçen aya göre %${percentText} daha fazla tasarruf ettin. 🔥`;
     }
 
-    return `Geçen aya göre %${percentText} daha az birikim yaptın. 🤔`;
-  }, [lineChartData]);
+    return insightTone === 'neutral'
+      ? `Önceki aya kıyasla net birikim düşüşü %${percentText}.`
+      : `Geçen aya göre %${percentText} daha az birikim yaptın. 🤔`;
+  }, [lineChartData, insightTone]);
 
   return (
     <motion.section
@@ -178,6 +183,7 @@ Stats.propTypes = {
   baseCurrency: PropTypes.string.isRequired,
   rates: PropTypes.object,
   lineChartData: PropTypes.arrayOf(PropTypes.object),
+  insightTone: PropTypes.oneOf(['coaching', 'neutral']),
   renderPercent: PropTypes.func.isRequired,
   renderRealReturn: PropTypes.func.isRequired,
   onPrimaryAction: PropTypes.func,
@@ -186,5 +192,6 @@ Stats.propTypes = {
 Stats.defaultProps = {
   rates: {},
   lineChartData: [],
+  insightTone: 'coaching',
   onPrimaryAction: () => {},
 };
