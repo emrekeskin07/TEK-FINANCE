@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { usePrivacy } from '../context/PrivacyContext';
+import { MARKET_DATA_ATTRIBUTION } from '../constants/trustContent';
 import { useDashboardData } from '../context/DashboardContext';
 import Button from './common/Button';
 import { convertCurrency, formatCurrencyParts } from '../utils/helpers';
@@ -22,7 +23,6 @@ const BENCHMARK_RANGE_BY_CHART_RANGE = {
   '1H': '1mo',
   '1A': '1mo',
   '3A': '3mo',
-  '1Y': '1y',
   'TUMU': '5y',
 };
 
@@ -511,7 +511,7 @@ export default function GrowthChart() {
         )}
 
         <p className="pointer-events-none absolute bottom-2 right-2 text-[10px] text-slate-400">
-          Veriler Yahoo Finance ve Binance API aracılığıyla gecikmeli olarak sağlanmaktadır.
+          {MARKET_DATA_ATTRIBUTION}
         </p>
       </div>
     </motion.section>

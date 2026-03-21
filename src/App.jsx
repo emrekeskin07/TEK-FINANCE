@@ -35,6 +35,7 @@ import {
   applyThemeToRoot,
   isDarkThemeId,
 } from './utils/themePresets';
+import { LEGAL_DISCLAIMER_TEXT } from './constants/trustContent';
 
 const LAST_DARK_THEME_STORAGE_KEY = 'tek-finance:last-dark-theme';
 const PRIVACY_STARTUP_STORAGE_KEY = 'tek-finance:privacy-startup-enabled';
@@ -1070,7 +1071,7 @@ export default function App() {
           <p className="inline-flex items-start gap-2 text-xs text-amber-100">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-200" />
             <span>
-              YASAL UYARI: Bu platform bir finansal simülasyon aracıdır. Burada sunulan hiçbir veri, grafik veya AI yorumu Yatırım Tavsiyesi (YTD) kapsamında değildir.
+              {LEGAL_DISCLAIMER_TEXT}
             </span>
           </p>
         </div>

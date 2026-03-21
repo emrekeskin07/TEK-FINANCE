@@ -4,6 +4,7 @@ import { RotateCcw, Wallet } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
+import { MARKET_DATA_ATTRIBUTION } from '../constants/trustContent';
 import { formatCurrency } from '../utils/helpers';
 import { resolveAssetActivePrice } from '../utils/assetPricing';
 import { getCategoryColor } from '../utils/categoryStyles';
@@ -426,7 +427,7 @@ export default function BankTotals({
                 </div>
 
                 <p className="mt-2 text-right text-[10px] text-slate-400">
-                  Veriler Yahoo Finance ve Binance API aracılığıyla gecikmeli olarak sağlanmaktadır.
+                  {MARKET_DATA_ATTRIBUTION}
                 </p>
               </div>
             </motion.div>

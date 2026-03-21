@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
-import { AlertTriangle, CheckCircle2, Lock, ShieldOff } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import TrustBadges from './common/TrustBadges';
+import { ABOUT_SECURITY_COPY } from '../constants/trustContent';
 
 const PRIVACY_STARTUP_STORAGE_KEY = 'tek-finance:privacy-startup-enabled';
 const PRIVACY_AUTOHIDE_STORAGE_KEY = 'tek-finance:privacy-autohide-enabled';
@@ -318,32 +320,7 @@ export default function SettingsPage({
 
         <section className="border-t border-white/10 pt-6">
           <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.06em] text-slate-200">Güven Rozetleri</h3>
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <article className="rounded-xl border border-white/10 bg-slate-900/45 p-3">
-              <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-100">
-                <Lock className="h-4 w-4 text-emerald-300" />
-                Uçtan Uca Şifreleme
-              </p>
-              <p className="mt-1 text-xs text-slate-400">Verileriniz şifrelenmiş olarak tutulur.</p>
-            </article>
-
-            <article className="rounded-xl border border-white/10 bg-slate-900/45 p-3">
-              <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-100">
-                <ShieldOff className="h-4 w-4 text-sky-300" />
-                Reklamsız Deneyim
-              </p>
-              <p className="mt-1 text-xs text-slate-400">Finansal verileriniz asla 3. taraflarla paylaşılmaz.</p>
-            </article>
-
-            <article className="rounded-xl border border-white/10 bg-slate-900/45 p-3">
-              <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-100">
-                <CheckCircle2 className="h-4 w-4 text-violet-300" />
-                Doğrulanmış Hesaplamalar
-              </p>
-              <p className="mt-1 text-xs text-slate-400">Matematiksel modeller finansal standartlara uygundur.</p>
-            </article>
-          </div>
+          <TrustBadges />
 
           <button
             type="button"
@@ -366,12 +343,12 @@ export default function SettingsPage({
           />
 
           <div className="relative z-[121] w-full max-w-lg rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-[0_28px_90px_rgba(2,6,23,0.72)] backdrop-blur-xl">
-            <h4 className="text-base font-black text-slate-100">Hakkında ve Güvenlik</h4>
+            <h4 className="text-base font-black text-slate-100">{ABOUT_SECURITY_COPY.title}</h4>
             <p className="mt-2 text-sm text-slate-300">
-              TEK Finans, verilerinizi yalnızca kullanıcı hesabınıza bağlı olarak işler; analiz çıktıları şeffaf kaynak notlarıyla gösterilir ve üçüncü taraf reklam ağına aktarılmaz.
+              {ABOUT_SECURITY_COPY.paragraph1}
             </p>
             <p className="mt-2 text-sm text-slate-300">
-              Emre Tuğberk Keskin olarak bu projeyi, Ege Üniversitesi bilgisayar mühendisliği adayı kimliğimle veri gizliliği, doğruluk ve etik sorumluluk değerlerini merkeze alarak geliştiriyorum.
+              {ABOUT_SECURITY_COPY.paragraph2}
             </p>
 
             <div className="mt-4 flex justify-end">

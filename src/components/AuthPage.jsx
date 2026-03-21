@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Chrome, Lock, Mail, KeyRound, ShieldOff, UserCircle2 } from 'lucide-react';
+import { Chrome, Mail, KeyRound, UserCircle2 } from 'lucide-react';
+import TrustBadges from './common/TrustBadges';
 
 export default function AuthPage({
   onGoogleSignIn,
@@ -116,31 +117,7 @@ export default function AuthPage({
           </button>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-2 md:grid-cols-3">
-          <article className="rounded-lg border border-white/15 bg-black/25 p-2.5">
-            <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-200">
-              <Lock className="h-3.5 w-3.5 text-emerald-300" />
-              Uçtan Uca Şifreleme
-            </p>
-            <p className="mt-1 text-[10px] text-slate-400">Verileriniz şifrelenmiş olarak tutulur.</p>
-          </article>
-
-          <article className="rounded-lg border border-white/15 bg-black/25 p-2.5">
-            <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-200">
-              <ShieldOff className="h-3.5 w-3.5 text-sky-300" />
-              Reklamsız Deneyim
-            </p>
-            <p className="mt-1 text-[10px] text-slate-400">Verileriniz asla 3. taraflarla paylaşılmaz.</p>
-          </article>
-
-          <article className="rounded-lg border border-white/15 bg-black/25 p-2.5">
-            <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-200">
-              <CheckCircle2 className="h-3.5 w-3.5 text-violet-300" />
-              Doğrulanmış Hesaplamalar
-            </p>
-            <p className="mt-1 text-[10px] text-slate-400">Modeller finansal standartlara uygundur.</p>
-          </article>
-        </div>
+        <TrustBadges compact className="mt-5" />
       </div>
     </div>
   );

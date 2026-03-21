@@ -14,6 +14,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { inflationData } from '../data/inflationData';
 import { calculatePurchasingPowerChange } from '../utils/financeMath';
+import { INFLATION_ENAG_NOTE, MARKET_DATA_ATTRIBUTION } from '../constants/trustContent';
 
 const SOURCE_LABELS = {
   tuik: 'TÜİK (Resmi)',
@@ -324,7 +325,7 @@ export default function EnflasyonAnaliziPage({
                 Reel getiri: {formatPercent(realReturn)} | Kaynak: {SOURCE_LABELS[source]} | Donem: {period.month}.{period.year}
               </p>
               <p className="mt-1 text-[10px] text-slate-400">
-                Enflasyon verileri ENAG (bağımsız) baz alınarak hesaplanmaktadır.
+                {INFLATION_ENAG_NOTE}
               </p>
 
               <div className="mt-5 rounded-2xl border border-white/5 bg-slate-900/40 p-3 backdrop-blur-xl md:p-4">
@@ -484,7 +485,7 @@ export default function EnflasyonAnaliziPage({
             )}
 
             <p className="pointer-events-none absolute bottom-2 right-2 text-[10px] text-slate-400">
-              Veriler Yahoo Finance ve Binance API aracılığıyla gecikmeli olarak sağlanmaktadır.
+              {MARKET_DATA_ATTRIBUTION}
             </p>
           </div>
 
