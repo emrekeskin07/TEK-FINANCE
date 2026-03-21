@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import Confetti from 'react-confetti';
-import { Plus } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { usePortfolio } from './hooks/usePortfolio';
 import { useMarketPrices } from './hooks/useMarketPrices';
 import { useAuthSession } from './hooks/useAuthSession';
@@ -9,9 +9,8 @@ import { useManualAssets } from './hooks/useManualAssets';
 import { useCalculations } from './hooks/useCalculations';
 import { useAnimatedCounter } from './hooks/useAnimatedCounter';
 import Header from './components/Header';
-import GoalTracker from './components/GoalTracker';
 import SidebarMenu from './components/SidebarMenu';
-import MagicAiInput from './components/MagicAiInput';
+import AiCommandBar from './components/AiCommandBar';
 import DistributionCard from './components/DistributionCard';
 import AssetList from './components/AssetList';
 import AlertDrawer from './components/AlertDrawer';
@@ -116,7 +115,6 @@ export default function App() {
   } = useManualAssets(authUser?.id);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isQuickAddModalOpen, setIsQuickAddModalOpen] = useState(false);
   const [editingAssetId, setEditingAssetId] = useState(null);
   const [editingAssetData, setEditingAssetData] = useState(null);
   const [initialPortfolioName, setInitialPortfolioName] = useState('');
@@ -126,6 +124,7 @@ export default function App() {
   const [showAthCelebration, setShowAthCelebration] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const athCelebrationTimeoutRef = useRef(null);
+  const aiCommandBarRef = useRef(null);
 
   const {
     portfolio,
@@ -136,7 +135,6 @@ export default function App() {
     removeAsset,
     sellAsset,
     increaseAssetHolding,
-    refreshPortfolio,
   } = usePortfolio(authUser?.id, (updatedPort) => {
     if (authUser) {
       updatePrices(updatedPort);
@@ -145,22 +143,11 @@ export default function App() {
   
   const { marketData, marketChanges, marketMeta, loading, lastUpdated, rates, updatePrices } = useMarketPrices(portfolio);
 
-  const openQuickAddModal = useCallback(() => {
-    setIsQuickAddModalOpen(true);
-  }, []);
-
-  const closeQuickAddModal = useCallback(() => {
-    setIsQuickAddModalOpen(false);
-  }, []);
-
-  const handleQuickAddSuccess = useCallback(async () => {
-    await refreshPortfolio();
-    setIsQuickAddModalOpen(false);
-  }, [refreshPortfolio]);
-
   const handleOpenFabQuickAdd = useCallback(() => {
     setActivePage('dashboard');
-    setIsQuickAddModalOpen(true);
+    window.setTimeout(() => {
+      aiCommandBarRef.current?.focus?.();
+    }, 120);
   }, []);
 
   useEffect(() => {
@@ -170,12 +157,6 @@ export default function App() {
 
     updatePrices();
   }, [authUser, updatePrices]);
-
-  useEffect(() => {
-    if (activePage !== 'dashboard' && isQuickAddModalOpen) {
-      setIsQuickAddModalOpen(false);
-    }
-  }, [activePage, isQuickAddModalOpen]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -563,6 +544,129 @@ export default function App() {
     setIsSidebarOpen(false);
   };
 
+  const focusAiBar = useCallback(() => {
+    aiCommandBarRef.current?.focus?.();
+  }, []);
+
+  const handleExecuteAiCommand = useCallback(async (intent) => {
+    const kind = String(intent?.kind || 'unknown');
+
+    if (kind === 'portfolio_status') {
+      navigateToPage('dashboard');
+      window.setTimeout(() => {
+        document.getElementById('dashboard-analysis-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 120);
+
+      return { message: 'Portföy analizine yönlendiriyorum.' };
+    }
+
+    if (kind === 'goal_status') {
+      navigateToPage('dashboard');
+      window.setTimeout(() => {
+        document.getElementById('dashboard-goal-summary')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 120);
+
+      return { message: 'Hedef ilerleme özetini açıyorum.' };
+    }
+
+    if (kind === 'gold_price') {
+      const gramGold = Number(marketData?.['GC=F__GRAM'] || marketData?.GRAM_ALTIN || 0);
+      if (!Number.isFinite(gramGold) || gramGold <= 0) {
+        return { message: 'Anlık Gram Altın fiyatı şu an alınamadı.' };
+      }
+
+      return { message: `Anlık Gram Altın: ${gramGold.toLocaleString('tr-TR', { maximumFractionDigits: 2 })} TL` };
+    }
+
+    if (kind === 'add_asset') {
+      const amountTL = Number(intent?.amount || 0);
+      const assetType = String(intent?.assetType || 'nakit');
+
+      if (!Number.isFinite(amountTL) || amountTL <= 0) {
+        return { message: 'Tutarı anlayamadım, örn: 500 TL nakit ekle.' };
+      }
+
+      const openPrefilledModal = (prefillData) => {
+        openAddModal({ mode: 'buy', prefillData });
+      };
+
+      navigateToPage('dashboard');
+
+      if (assetType === 'altin') {
+        const gramGold = Number(marketData?.['GC=F__GRAM'] || marketData?.GRAM_ALTIN || 0);
+        const quantityGram = gramGold > 0 ? (amountTL / gramGold) : 0;
+
+        window.setTimeout(() => {
+          openPrefilledModal({
+            bank: 'Banka Belirtilmedi',
+            category: 'Değerli Madenler',
+            symbol: 'GRAM_ALTIN',
+            name: 'Gram Altın',
+            amount: quantityGram > 0 ? Number(quantityGram.toFixed(4)) : '',
+            avgPrice: gramGold > 0 ? Number(gramGold.toFixed(2)) : '',
+            unitType: 'gram',
+          });
+        }, 120);
+
+        return { message: `Altın alımı için yaklaşık ${amountTL.toLocaleString('tr-TR')} TL prefill hazırlandı.` };
+      }
+
+      if (assetType === 'gumus') {
+        const silverGram = Number(marketData?.['SI=F__GRAM'] || 0);
+        const quantityGram = silverGram > 0 ? (amountTL / silverGram) : 0;
+
+        window.setTimeout(() => {
+          openPrefilledModal({
+            bank: 'Banka Belirtilmedi',
+            category: 'Değerli Madenler',
+            symbol: 'SI=F',
+            name: 'Gümüş',
+            amount: quantityGram > 0 ? Number(quantityGram.toFixed(4)) : '',
+            avgPrice: silverGram > 0 ? Number(silverGram.toFixed(2)) : '',
+            unitType: 'gram',
+          });
+        }, 120);
+
+        return { message: `Gümüş alımı için yaklaşık ${amountTL.toLocaleString('tr-TR')} TL prefill hazırlandı.` };
+      }
+
+      if (assetType === 'usd') {
+        const usdTryRate = Number(rates?.USD || marketData?.['TRY=X'] || 0);
+        const quantityUsd = usdTryRate > 0 ? (amountTL / usdTryRate) : 0;
+
+        window.setTimeout(() => {
+          openPrefilledModal({
+            bank: 'Banka Belirtilmedi',
+            category: 'Döviz',
+            symbol: 'TRY=X',
+            name: 'ABD Doları',
+            amount: quantityUsd > 0 ? Number(quantityUsd.toFixed(4)) : '',
+            avgPrice: usdTryRate > 0 ? Number(usdTryRate.toFixed(4)) : '',
+            unitType: 'adet',
+          });
+        }, 120);
+
+        return { message: `USD alımı için yaklaşık ${amountTL.toLocaleString('tr-TR')} TL prefill hazırlandı.` };
+      }
+
+      window.setTimeout(() => {
+        openPrefilledModal({
+          bank: 'Banka Belirtilmedi',
+          category: 'Nakit/Banka',
+          symbol: 'CASH_TRY',
+          name: 'Vadesiz Nakit',
+          amount: amountTL,
+          avgPrice: 1,
+          unitType: 'adet',
+        });
+      }, 120);
+
+      return { message: `${amountTL.toLocaleString('tr-TR')} TL nakit ekleme formu hazır.` };
+    }
+
+    return { message: 'Bu komutu anlayamadım. Örn: 1000 TL altın ekle.' };
+  }, [navigateToPage, marketData, rates, openAddModal]);
+
   const handleHeaderSearchNavigate = useCallback((queryText) => {
     const normalized = String(queryText || '').toLocaleLowerCase('tr-TR').trim();
 
@@ -793,6 +897,13 @@ export default function App() {
         />
       </div>
 
+      <div className={`mb-4 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
+        <AiCommandBar
+          ref={aiCommandBarRef}
+          onExecute={handleExecuteAiCommand}
+        />
+      </div>
+
       <main className={`mx-auto max-w-[1400px] space-y-6 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
         <section className="px-3 pt-1 sm:px-4 md:px-8">
           <div className="flex items-center justify-between gap-3">
@@ -820,19 +931,21 @@ export default function App() {
             ) : (
               <DashboardProvider value={dashboardContextValue}>
                 <div className="relative grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
-                  <KpiRibbon
-                    dashboardTotalValue={dashboardTotalValue}
-                    totalProfit={totalProfit}
-                    profitPercentage={Number(profitPercentage || 0)}
-                    lineChartData={lineChartData}
-                    portfolioRealReturnPercent={portfolioRealReturnPercent}
-                    selectedInflationSourceLabel={selectedInflationSourceLabel}
-                    baseCurrency={baseCurrency}
-                    rates={rates}
-                    userId={authUser?.id || null}
-                    isPrivacyActive={isPrivacyActive}
-                    maskValue={maskValue}
-                  />
+                  <div id="dashboard-goal-summary" className="col-span-12">
+                    <KpiRibbon
+                      dashboardTotalValue={dashboardTotalValue}
+                      totalProfit={totalProfit}
+                      profitPercentage={Number(profitPercentage || 0)}
+                      lineChartData={lineChartData}
+                      portfolioRealReturnPercent={portfolioRealReturnPercent}
+                      selectedInflationSourceLabel={selectedInflationSourceLabel}
+                      baseCurrency={baseCurrency}
+                      rates={rates}
+                      userId={authUser?.id || null}
+                      isPrivacyActive={isPrivacyActive}
+                      maskValue={maskValue}
+                    />
+                  </div>
 
                   <Stats
                     greetingName={dashboardGreetingName}
@@ -856,7 +969,7 @@ export default function App() {
                     onPrimaryAction={() => openAddModal()}
                   />
 
-                  <div className="col-span-12 grid grid-cols-12 gap-6 items-start">
+                  <div id="dashboard-analysis-section" className="col-span-12 grid grid-cols-12 gap-6 items-start">
                     <Chart />
                     <DistributionCard />
                   </div>
@@ -938,42 +1051,16 @@ export default function App() {
 
       <button
         type="button"
-        onClick={handleOpenFabQuickAdd}
-        className="fixed bottom-6 right-5 z-[85] inline-flex h-14 w-14 items-center justify-center rounded-full border border-purple-400/35 bg-purple-600 text-white shadow-[0_14px_34px_rgba(147,51,234,0.45)] transition-all duration-300 hover:scale-105 hover:bg-purple-700 md:bottom-8 md:right-8"
-        title="AI ile Hızlı Varlık Ekle"
-        aria-label="AI ile Hızlı Varlık Ekle"
+        onClick={() => {
+          handleOpenFabQuickAdd();
+          focusAiBar();
+        }}
+        className="fixed bottom-6 right-5 z-[85] inline-flex h-14 w-14 animate-pulse items-center justify-center rounded-full border border-purple-300/45 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-[0_0_0_1px_rgba(167,139,250,0.35),0_18px_42px_rgba(147,51,234,0.5)] transition-all duration-300 hover:scale-105 md:bottom-8 md:right-8"
+        title="AI Komut Çubuğuna Git"
+        aria-label="AI Komut Çubuğuna Git"
       >
-        <Plus className="h-6 w-6" />
+        <Sparkles className="h-6 w-6" />
       </button>
-
-      {activePage === 'dashboard' && isQuickAddModalOpen ? (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 z-[90] bg-black/55 backdrop-blur-[2px]"
-            onClick={closeQuickAddModal}
-            aria-label="Hızlı ekle modalini kapat"
-          />
-
-          <div className="fixed left-1/2 top-1/2 z-[100] w-[94vw] max-w-4xl max-h-[88vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-[0_30px_120px_rgba(2,6,23,0.7)] backdrop-blur-xl md:p-6">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h3 className="text-base font-bold text-slate-100">Hızlı Varlık Ekle</h3>
-              <button
-                type="button"
-                onClick={closeQuickAddModal}
-                className="rounded-lg border border-white/10 bg-slate-900/70 px-3 py-1.5 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-800/80"
-              >
-                Kapat
-              </button>
-            </div>
-
-            <MagicAiInput
-              userId={authUser?.id}
-              onSuccess={handleQuickAddSuccess}
-            />
-          </div>
-        </>
-      ) : null}
 
       {activePage === 'dashboard' ? (
         <AssetModal 
