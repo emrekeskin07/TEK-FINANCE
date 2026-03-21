@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import Confetti from 'react-confetti';
 import { usePortfolio } from './hooks/usePortfolio';
 import { useMarketPrices } from './hooks/useMarketPrices';
@@ -20,6 +20,7 @@ import MalVarligiPage from './components/MalVarligiPage';
 import EnflasyonAnaliziPage from './components/EnflasyonAnaliziPage';
 import FinancialStrategyCenterPage from './components/FinancialStrategyCenterPage';
 import SmartSuggestionsPage from './components/SmartSuggestionsPage';
+import SettingsPage from './components/SettingsPage';
 import Chart from './components/dashboard/Chart';
 import Stats from './components/dashboard/Stats';
 import DashboardSkeleton from './components/dashboard/DashboardSkeleton';
@@ -36,6 +37,7 @@ import {
 } from './utils/themePresets';
 
 const LAST_DARK_THEME_STORAGE_KEY = 'tek-finance:last-dark-theme';
+const PRIVACY_STARTUP_STORAGE_KEY = 'tek-finance:privacy-startup-enabled';
 
 const ATH_CELEBRATION_STORAGE_PREFIX = 'tek-finance:ath-celebration';
 const ATH_CELEBRATION_DURATION_MS = 3800;
@@ -87,7 +89,7 @@ export default function App() {
   const [activeAssetCategory, setActiveAssetCategory] = useState('Tümü');
   const [inflationSource, setInflationSource] = useState('enag');
   const [lastSyncTime, setLastSyncTime] = useState(null);
-  const { isPrivacyActive, maskValue } = usePrivacy();
+  const { isPrivacyActive, setIsPrivacyActive, maskValue } = usePrivacy();
 
   const {
     authUser,
@@ -239,6 +241,34 @@ export default function App() {
     setActiveTheme(nextDarkTheme);
   }, [activeTheme]);
 
+  const handleSetThemeMode = useCallback((mode) => {
+    if (mode === 'light') {
+      setActiveTheme(DEFAULT_THEME_ID);
+      return;
+    }
+
+    if (mode === 'dark') {
+      if (typeof window === 'undefined') {
+        setActiveTheme('deep-ocean');
+        return;
+      }
+
+      const savedDarkTheme = resolveThemeId(window.localStorage.getItem(LAST_DARK_THEME_STORAGE_KEY));
+      const nextDarkTheme = isDarkThemeId(savedDarkTheme) ? savedDarkTheme : 'deep-ocean';
+      setActiveTheme(nextDarkTheme);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (window.localStorage.getItem(PRIVACY_STARTUP_STORAGE_KEY) === '1') {
+      setIsPrivacyActive(true);
+    }
+  }, [setIsPrivacyActive]);
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       return undefined;
@@ -347,6 +377,25 @@ export default function App() {
     // Fiyat verisi sadece frontend state'ini gunceller, Supabase'e geri yazilmaz.
     updatePrices(portfolio);
   };
+
+  const handleClearAllUserData = useCallback(async () => {
+    try {
+      const portfolioList = Array.isArray(portfolio) ? portfolio : [];
+      const deleteTasks = portfolioList
+        .map((item) => Number(item?.id))
+        .filter((id) => Number.isFinite(id) && id > 0)
+        .map((id) => removeAsset(id));
+
+      if (deleteTasks.length > 0) {
+        await Promise.allSettled(deleteTasks);
+      }
+
+      setManualAssets([]);
+      toast.success('Tum varlik verileriniz temizlendi.');
+    } catch {
+      toast.error('Veriler temizlenirken bir hata olustu.');
+    }
+  }, [portfolio, removeAsset, setManualAssets]);
 
   const {
     totalValue,
@@ -747,12 +796,16 @@ export default function App() {
             dashboardTotalValue={dashboardTotalValue}
           />
         ) : activePage === 'ayarlar' ? (
-          <section className="mx-auto w-full max-w-5xl rounded-3xl border border-white/10 bg-slate-900/45 p-6 shadow-[0_30px_90px_rgba(2,6,23,0.58)] backdrop-blur-xl md:p-8">
-            <h2 className="text-xl font-black text-text-main">Ayarlar</h2>
-            <p className="mt-2 text-sm text-text-muted">
-              Profil ve oturum islemleri sol menunun alt kismina tasindi. Tema degisikligi ve hesap yonetimi bu panelden kontrol edilebilir.
-            </p>
-          </section>
+          <SettingsPage
+            user={authUser}
+            isDarkMode={isDarkThemeId(activeTheme)}
+            setThemeMode={handleSetThemeMode}
+            baseCurrency={baseCurrency}
+            setBaseCurrency={setBaseCurrency}
+            isPrivacyActive={isPrivacyActive}
+            setPrivacyActive={setIsPrivacyActive}
+            onClearAllData={handleClearAllUserData}
+          />
         ) : (
           <div>
             <EnflasyonAnaliziPage
