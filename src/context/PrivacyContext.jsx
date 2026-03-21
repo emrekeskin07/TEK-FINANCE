@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 const PRIVACY_MODE_STORAGE_KEY = 'tek-finance:privacy-mode';
+const MIN_MASK_LENGTH = 4;
+const MAX_MASK_LENGTH = 8;
 const PrivacyContext = createContext(null);
 
 const readInitialPrivacyState = () => {
@@ -41,7 +43,13 @@ export function PrivacyProvider({ children }) {
       ? ''
       : (typeof value === 'number' ? value.toLocaleString('tr-TR') : String(value));
 
-    return text.replace(/\d/g, '*');
+    if (!/\d/.test(text)) {
+      return text;
+    }
+
+    const compactLength = text.replace(/\s+/g, '').length;
+    const maskLength = Math.min(MAX_MASK_LENGTH, Math.max(MIN_MASK_LENGTH, compactLength));
+    return '*'.repeat(maskLength);
   }, [isPrivacyActive]);
 
   const contextValue = useMemo(() => ({

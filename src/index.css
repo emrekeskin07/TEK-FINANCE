@@ -91,6 +91,58 @@ html[data-theme='light-soft'] body {
 		position: relative;
 	}
 
+		.topbar-tooltip {
+			position: relative;
+		}
+
+		.topbar-tooltip::after {
+			content: attr(data-title);
+			position: absolute;
+			right: 0;
+			top: -0.45rem;
+			transform: translateY(-100%);
+			opacity: 0;
+			pointer-events: none;
+			white-space: nowrap;
+			border-radius: 0.5rem;
+			border: 1px solid rgba(148, 163, 184, 0.42);
+			background: #0f172a;
+			padding: 0.42rem 0.6rem;
+			font-size: 0.68rem;
+			font-weight: 600;
+			line-height: 1;
+			letter-spacing: 0.01em;
+			color: #f8fafc;
+			box-shadow: 0 10px 24px rgba(2, 6, 23, 0.38);
+			z-index: 80;
+			transition: opacity 220ms ease, transform 220ms ease;
+		}
+
+		.topbar-tooltip:hover::after,
+		.topbar-tooltip:focus-visible::after {
+			opacity: 1;
+			transform: translateY(calc(-100% - 0.12rem));
+		}
+
+
+	.privacy-transitioning {
+		animation: privacyPulse 240ms ease;
+	}
+
+	@keyframes privacyPulse {
+		0% {
+			filter: blur(0);
+			opacity: 1;
+		}
+		45% {
+			filter: blur(2px);
+			opacity: 0.9;
+		}
+		100% {
+			filter: blur(0);
+			opacity: 1;
+		}
+	}
 	.chart-range-tooltip::after {
 		content: attr(data-title);
 		position: absolute;

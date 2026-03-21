@@ -1,0 +1,141 @@
+import { useMemo } from 'react';
+
+export function useDashboardContextBuilder(params) {
+  const {
+    portfolio,
+    marketData,
+    marketChanges,
+    marketMeta,
+    loading,
+    isPortfolioLoading,
+    isPortfolioMutating,
+    lastUpdated,
+    baseCurrency,
+    rates,
+    totalValue,
+    dashboardTotalValue,
+    bankTotals,
+    categoryTotals,
+    authUser,
+    selectedBank,
+    selectedCategory,
+    activeAssetCategory,
+    otherBankNames,
+    sortConfig,
+    setSortConfig,
+    lineChartData,
+    insightTone,
+    handleBankSelect,
+    handleCategorySelect,
+    setActiveAssetCategory,
+    clearFilters,
+    openEditModal,
+    openAddModal,
+    handleQuickBuyAsset,
+    increaseAssetHolding,
+    handleAnalyzeAssetDrop,
+    handleNavigateToGoalFromAsset,
+    handleNavigateToAssetsForGoal,
+    triggerCelebration,
+    sellAsset,
+    removeAsset,
+  } = params;
+
+  const dashboardContextValue = useMemo(() => ({
+    portfolio,
+    marketData,
+    marketChanges,
+    marketMeta,
+    loading,
+    portfolioLoading: isPortfolioLoading,
+    portfolioMutating: isPortfolioMutating,
+    lastUpdated,
+    baseCurrency,
+    rates,
+    totalValue,
+    dashboardTotalValue,
+    bankTotals,
+    userId: authUser?.id || null,
+    selectedInstitution: selectedBank,
+    selectedBank,
+    selectedCategory,
+    activeAssetCategory,
+    otherBankNames,
+    sortConfig,
+    setSortConfig,
+    lineChartData,
+    insightTone,
+    handleInstitutionSelect: handleBankSelect,
+    handleBankSelect,
+    handleCategorySelect,
+    setActiveAssetCategory,
+    clearDashboardFilters: clearFilters,
+    openEditModal,
+    openAddModal,
+    onQuickBuyAsset: handleQuickBuyAsset,
+    onIncreaseAsset: increaseAssetHolding,
+    onAnalyzeAssetDrop: handleAnalyzeAssetDrop,
+    onNavigateToGoalFromAsset: handleNavigateToGoalFromAsset,
+    onNavigateToAssetsForGoal: handleNavigateToAssetsForGoal,
+    triggerCelebration,
+    sellAsset,
+    removeAsset,
+  }), [
+    portfolio,
+    marketData,
+    marketChanges,
+    marketMeta,
+    loading,
+    isPortfolioLoading,
+    isPortfolioMutating,
+    lastUpdated,
+    baseCurrency,
+    rates,
+    totalValue,
+    dashboardTotalValue,
+    bankTotals,
+    authUser?.id,
+    selectedBank,
+    selectedCategory,
+    activeAssetCategory,
+    otherBankNames,
+    sortConfig,
+    setSortConfig,
+    lineChartData,
+    insightTone,
+    handleBankSelect,
+    handleCategorySelect,
+    setActiveAssetCategory,
+    clearFilters,
+    openEditModal,
+    openAddModal,
+    handleQuickBuyAsset,
+    increaseAssetHolding,
+    handleAnalyzeAssetDrop,
+    handleNavigateToGoalFromAsset,
+    handleNavigateToAssetsForGoal,
+    triggerCelebration,
+    sellAsset,
+    removeAsset,
+  ]);
+
+  const portfolioDistribution = useMemo(() => {
+    const totals = Object.entries(categoryTotals || {})
+      .map(([category, value]) => ({ category, value: Number(value || 0) }))
+      .filter((item) => Number.isFinite(item.value) && item.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    const grandTotal = totals.reduce((sum, item) => sum + item.value, 0);
+    if (grandTotal <= 0) {
+      return [];
+    }
+
+    return totals.map((item) => ({
+      category: item.category,
+      value: Number(item.value.toFixed(2)),
+      percent: Number(((item.value / grandTotal) * 100).toFixed(2)),
+    }));
+  }, [categoryTotals]);
+
+  return { dashboardContextValue, portfolioDistribution };
+}

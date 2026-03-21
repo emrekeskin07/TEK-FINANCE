@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, Search, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, Search, Settings, LogOut, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import SplitText from './ui/SplitText';
 
 export default function Header({
@@ -8,6 +8,8 @@ export default function Header({
   onSignOut = () => {},
   onOpenSettings = () => {},
   onSearchNavigate = () => {},
+  isPrivacyActive = false,
+  onTogglePrivacy = () => {},
 }) {
   const [query, setQuery] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -59,6 +61,21 @@ export default function Header({
           aria-label="Sayfa arama"
         />
       </form>
+
+      <button
+        type="button"
+        onClick={onTogglePrivacy}
+        aria-pressed={isPrivacyActive}
+        aria-label={isPrivacyActive ? 'Gizlilik modunu kapat' : 'Gizlilik modunu aç'}
+        data-title="Hide your balances in public spaces"
+        className={`topbar-tooltip inline-flex h-10 w-10 items-center justify-center rounded-xl border text-slate-100 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 ${
+          isPrivacyActive
+            ? 'border-emerald-300/40 bg-emerald-500/20 hover:bg-emerald-500/30'
+            : 'border-white/10 bg-slate-900/45 hover:bg-slate-800/70'
+        }`}
+      >
+        {isPrivacyActive ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+      </button>
 
       <div className="relative" onBlur={() => window.setTimeout(() => setIsUserMenuOpen(false), 120)}>
         <button

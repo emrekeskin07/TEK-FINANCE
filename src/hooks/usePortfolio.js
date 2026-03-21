@@ -11,7 +11,7 @@ import {
   calculateSellSummary,
 } from '../utils/financeUtils';
 import { increaseAssetAmount } from '../services/api';
-import { fetchAiAssetAnalysis } from '../services/api';
+import { generateAssetInsight } from '../services/aiAnalyzerService';
 
 const CATEGORY_BY_TYPE = {
   stock: 'Hisse Senedi',
@@ -980,26 +980,15 @@ export const usePortfolio = (userId, onPortfolioChange) => {
       ? 'Atılgan'
       : (profileRaw === 'conservative' ? 'Muhafazakar' : (profileRaw || 'Dengeli'));
 
-    const data = await fetchAiAssetAnalysis({
-      symbol,
+    const insightData = await generateAssetInsight({
+      assetSymbol: symbol,
       assetName,
+      currentPrice: asset?.activePrice || asset?.avgPrice || 0,
+      changePercent,
       riskProfile: normalizedRiskProfile,
     });
 
-    return {
-      assetName: data?.assetName || assetName,
-      dropPercent: Math.abs(Number(data?.metrics?.dayChangePercent ?? changePercent ?? 0)),
-      sentimentLabel: String(data?.metrics?.sentiment?.label || 'Nötr'),
-      sentimentIndicator: String(data?.metrics?.sentiment?.indicator || '🟡'),
-      volatilityPercent: Number(data?.metrics?.volatilityPercent || 0),
-      volatilityLabel: String(data?.metrics?.volatilityLabel || 'Orta'),
-      headlines: Array.isArray(data?.headlines) ? data.headlines.slice(0, 3) : [],
-      summary: data?.insight?.summary?.content || '',
-      riskOpportunity: data?.insight?.riskOpportunity?.content || '',
-      strategy: data?.insight?.strategy?.content || '',
-      action: data?.insight?.strategy?.action || 'Bekle',
-      warning: String(data?.warning || 'Bu bir yatırım tavsiyesi değildir. YTD.'),
-    };
+    return insightData;
   }, []);
 
   return {
