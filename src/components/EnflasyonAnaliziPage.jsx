@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import InfoTooltip from './common/InfoTooltip';
 import { ChevronDown, FileText, ShieldAlert, Sparkles } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -500,7 +501,10 @@ export default function EnflasyonAnaliziPage({
               )}
 
               <div className="mt-4 rounded-xl border border-white/5 bg-slate-900/40 p-3 backdrop-blur-xl">
-                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Anlık Reel Fark</p>
+                <p className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.08em] text-slate-400">
+                  Anlık Reel Fark
+                  <InfoTooltip content="Portföyünüzün son ay ENAG enflasyonuna karşı reel performans farkı. Negatif değer, enflasyonun getirinizin önünde olduğunu gösterir." />
+                </p>
                 <p className={`mt-1 text-2xl font-black ${currentRealGapPercent >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
                   {formatPercent(currentRealGapPercent)}
                 </p>

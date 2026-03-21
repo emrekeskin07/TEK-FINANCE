@@ -5,9 +5,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts, formatTickerName, groupAssetsByPortfolio } from '../utils/helpers';
 import { getMarketPriceKey, resolveAssetLivePrice, unitTypeToLabel } from '../utils/assetPricing';
-import { getCategoryBadgeStyle } from '../utils/categoryStyles';
+import { getCategoryBadgeStyle, getCategoryColor } from '../utils/categoryStyles';
 import { calculateRealReturnPercent, getLatestAnnualInflationRate } from '../utils/financeMath';
 import AssetGroup from './dashboard/AssetGroup';
+import InfoTooltip from './common/InfoTooltip';
 
 const getLatestAnnualEnagRate = () => {
   try {
@@ -20,6 +21,57 @@ const getLatestAnnualEnagRate = () => {
 
 const LATEST_ANNUAL_ENAG_RATE = getLatestAnnualEnagRate();
 const OUNCE_TO_GRAM = 31.1035;
+const DEFAULT_CATEGORY_FILTERS = ['Tümü', 'Hisse Senedi', 'Değerli Maden', 'Döviz', 'Fon', 'Kripto'];
+
+const normalizeCategoryText = (value) => String(value || '').trim().toLocaleLowerCase('tr-TR');
+
+const mapCategoryToFilter = (category) => {
+  const normalized = normalizeCategoryText(category);
+
+  if (normalized.includes('hisse')) {
+    return 'Hisse Senedi';
+  }
+
+  if (
+    normalized.includes('değerli maden')
+    || normalized.includes('degerli maden')
+    || normalized.includes('emtia')
+    || normalized.includes('altın')
+    || normalized.includes('altin')
+  ) {
+    return 'Değerli Maden';
+  }
+
+  if (normalized.includes('döviz') || normalized.includes('doviz')) {
+    return 'Döviz';
+  }
+
+  if (normalized.includes('fon')) {
+    return 'Fon';
+  }
+
+  if (normalized.includes('kripto')) {
+    return 'Kripto';
+  }
+
+  return String(category || 'Diğer');
+};
+
+const getFilterDotColor = (filterLabel) => {
+  if (filterLabel === 'Tümü') {
+    return '#a78bfa';
+  }
+
+  const filterToCategoryMap = {
+    'Hisse Senedi': 'Hisse Senedi',
+    'Değerli Maden': 'Değerli Madenler',
+    'Döviz': 'Döviz',
+    'Fon': 'Yatırım Fonu',
+    'Kripto': 'Kripto',
+  };
+
+  return getCategoryColor(filterToCategoryMap[filterLabel] || filterLabel);
+};
 
 const getInflationScore = (itemCost, itemProfit) => {
   const nominalReturnPercent = itemCost > 0 ? ((itemProfit / itemCost) * 100) : 0;
@@ -45,6 +97,8 @@ export default function PortfolioTable({
   selectedBank,
   otherBankNames,
   selectedCategory,
+  activeCategory,
+  setActiveCategory,
   onSelectCategory,
   sortConfig,
   setSortConfig,
@@ -60,6 +114,16 @@ export default function PortfolioTable({
 }) {
   const { isPrivacyActive, maskValue } = usePrivacy();
   const [searchQuery, setSearchQuery] = useState('');
+  const [localActiveCategory, setLocalActiveCategory] = useState('Tümü');
+  const resolvedActiveCategory = activeCategory || localActiveCategory;
+  const handleCategoryFilterSelect = (nextCategory) => {
+    if (typeof setActiveCategory === 'function') {
+      setActiveCategory(nextCategory);
+      return;
+    }
+
+    setLocalActiveCategory(nextCategory);
+  };
   const filteredPortfolio = portfolio.filter((item) => {
     const bankName = item.bank || 'Banka Belirtilmedi';
     const categoryName = item.category || 'Diğer';
@@ -148,11 +212,48 @@ export default function PortfolioTable({
     });
   }, [displayedPortfolio, searchQuery]);
 
+  const categoryFilterCounts = useMemo(() => {
+    const counts = filteredPortfolio.reduce((accumulator, item) => {
+      const key = mapCategoryToFilter(item?.category);
+      accumulator[key] = Number(accumulator[key] || 0) + 1;
+      return accumulator;
+    }, {});
+
+    counts.Tümü = filteredPortfolio.length;
+    return counts;
+  }, [filteredPortfolio]);
+
+  const categoryFilterOptions = useMemo(() => {
+    const dynamicFilters = Object.keys(categoryFilterCounts)
+      .filter((label) => label !== 'Tümü' && !DEFAULT_CATEGORY_FILTERS.includes(label))
+      .sort((first, second) => first.localeCompare(second, 'tr'));
+
+    return [...DEFAULT_CATEGORY_FILTERS, ...dynamicFilters];
+  }, [categoryFilterCounts]);
+
+  const categoryFilteredPortfolio = useMemo(() => {
+    if (resolvedActiveCategory === 'Tümü') {
+      return searchedDisplayedPortfolio;
+    }
+
+    return searchedDisplayedPortfolio.filter(({ item }) => mapCategoryToFilter(item?.category) === resolvedActiveCategory);
+  }, [searchedDisplayedPortfolio, resolvedActiveCategory]);
+
   const groupedDisplayedPortfolio = useMemo(
-    () => groupAssetsByPortfolio(searchedDisplayedPortfolio)
+    () => groupAssetsByPortfolio(categoryFilteredPortfolio)
       .sort((a, b) => Number(b?.totalValue || 0) - Number(a?.totalValue || 0)),
-    [searchedDisplayedPortfolio]
+    [categoryFilteredPortfolio]
   );
+
+  const handleEmptyCategoryAdd = () => {
+    const firstPortfolioName = String(
+      filteredPortfolio[0]?.portfolioName
+      || categoryFilteredPortfolio[0]?.item?.portfolioName
+      || 'Genel Portföy'
+    );
+
+    onQuickAddPortfolio?.(firstPortfolioName);
+  };
 
   const renderCurrencyWithMutedSymbol = (value) => {
     const plainCurrencyText = formatCurrencyParts(value, baseCurrency, rates)
@@ -503,6 +604,32 @@ export default function PortfolioTable({
           />
         </div>
 
+        <div className="-mx-1 overflow-x-auto pb-1">
+          <div className="inline-flex min-w-full items-center gap-2 px-1">
+            {categoryFilterOptions.map((category) => {
+              const isActive = resolvedActiveCategory === category;
+              const count = Number(categoryFilterCounts[category] || 0);
+              const dotColor = getFilterDotColor(category);
+
+              return (
+                <button
+                  key={`category-filter-${category}`}
+                  type="button"
+                  onClick={() => handleCategoryFilterSelect(category)}
+                  className={`inline-flex min-h-[38px] items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${isActive
+                    ? 'border-fuchsia-300/45 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-[0_10px_26px_rgba(168,85,247,0.38)] hover:scale-[1.03]'
+                    : 'border-slate-300/30 bg-slate-100 text-slate-700 hover:bg-slate-200/90 dark:border-slate-700/60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/80'}`}
+                  title={`${category} filtresi`}
+                >
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
+                  <span>{category}</span>
+                  <span className={`${isActive ? 'text-white/85' : 'text-slate-500 dark:text-slate-400'}`}>({count})</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {showSkeleton ? (
           <div className="space-y-3" aria-hidden="true">
             {Array.from({ length: 4 }).map((_, index) => (
@@ -518,11 +645,25 @@ export default function PortfolioTable({
           </div>
         ) : groupedDisplayedPortfolio.length === 0 ? (
           <div className="p-6 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl text-center text-sm text-slate-500 shadow-2xl">
-            {portfolio.length === 0
-              ? 'Henüz bir varlık eklemediniz.'
-              : (searchedDisplayedPortfolio.length === 0
-                ? 'Eşleşen varlık bulunamadı'
-                : 'Seçili filtreler için varlık bulunamadı.')}
+            {resolvedActiveCategory !== 'Tümü'
+              ? 'Bu kategoride henüz varlığınız bulunmuyor.'
+              : (portfolio.length === 0
+                ? 'Henüz bir varlık eklemediniz.'
+                : (searchedDisplayedPortfolio.length === 0
+                  ? 'Eşleşen varlık bulunamadı'
+                  : 'Seçili filtreler için varlık bulunamadı.'))}
+            {resolvedActiveCategory !== 'Tümü' ? (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={handleEmptyCategoryAdd}
+                  className="inline-flex min-h-[42px] transform-gpu items-center gap-2 rounded-xl border border-fuchsia-300/40 bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-2 text-xs font-semibold text-white shadow-[0_12px_28px_rgba(168,85,247,0.35)] transition-all duration-200 hover:scale-105 active:scale-95"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Ekle
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : (
           <div className="max-h-[62vh] overflow-y-auto pr-1">
@@ -687,7 +828,10 @@ export default function PortfolioTable({
                           <p className="text-sm font-semibold text-slate-200">{renderCurrencyWithMutedSymbol(item.avgPrice)}</p>
                         </div>
                         <div className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2.5" title={inflationScore.tooltip}>
-                          <p className="text-[11px] text-slate-500">Enflasyon Karnesi</p>
+                          <p className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                            Enflasyon Karnesi
+                            <InfoTooltip content="Varlığınızın getirisinin ENAG enflasyonunun altında kaldığını gösterir." />
+                          </p>
                           <div className="mt-1 inline-flex items-center gap-2">
                             <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full border ${inflationScore.isProtected ? 'border-emerald-300/50 bg-emerald-400/10' : 'border-rose-300/55 bg-rose-400/10'}`}>
                               {inflationScore.isProtected ? (
@@ -998,6 +1142,8 @@ PortfolioTable.propTypes = {
   selectedBank: PropTypes.string,
   otherBankNames: PropTypes.arrayOf(PropTypes.string),
   selectedCategory: PropTypes.string,
+  activeCategory: PropTypes.string,
+  setActiveCategory: PropTypes.func,
   onSelectCategory: PropTypes.func,
   sortConfig: PropTypes.shape({
     key: PropTypes.string,
@@ -1024,6 +1170,8 @@ PortfolioTable.defaultProps = {
   selectedBank: null,
   otherBankNames: [],
   selectedCategory: null,
+  activeCategory: 'Tümü',
+  setActiveCategory: null,
   onSelectCategory: null,
   onClearFilter: null,
   onExportPdfReport: null,

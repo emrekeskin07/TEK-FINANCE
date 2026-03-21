@@ -7,6 +7,7 @@ const {
   searchSymbols,
   getQuoteData,
   getQuotesData,
+  getHistoryData,
   fetchTefasFundPrice,
 } = require("./services/priceService");
 const {
@@ -130,6 +131,35 @@ app.get("/api/quotes", async (req, res) => {
     return res.status(500).json({
       ok: false,
       error: error.message || "Internal server error",
+    });
+  }
+});
+
+// Example: /api/history?symbols=^XU100,USDTRY=X&range=6mo&interval=1d
+app.get("/api/history", async (req, res) => {
+  const symbols = parseSymbols(req.query.symbols);
+  const range = typeof req.query.range === "string" ? req.query.range.trim() : "6mo";
+  const interval = typeof req.query.interval === "string" ? req.query.interval.trim() : "1d";
+
+  if (!symbols.length) {
+    return res.status(400).json({
+      ok: false,
+      error: "Query param required: symbols=^XU100,USDTRY=X",
+    });
+  }
+
+  try {
+    const data = await getHistoryData(symbols, { range, interval });
+
+    return res.json({
+      ok: true,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error?.message || "Historical data request failed",
     });
   }
 });

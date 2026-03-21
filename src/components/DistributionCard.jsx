@@ -11,10 +11,10 @@ export default function DistributionCard() {
     baseCurrency,
     rates,
     totalValue,
+    activeAssetCategory,
+    setActiveAssetCategory,
     selectedInstitution,
     handleInstitutionSelect,
-    selectedBank,
-    handleBankSelect,
   } = useDashboardData();
 
   return (
@@ -30,8 +30,10 @@ export default function DistributionCard() {
         baseCurrency={baseCurrency}
         rates={rates}
         totalValue={totalValue}
-        selectedBank={selectedInstitution || selectedBank}
-        onSelectBank={handleInstitutionSelect || handleBankSelect}
+        activeCategory={activeAssetCategory}
+        onResetCategory={() => setActiveAssetCategory?.('Tümü')}
+        selectedBank={selectedInstitution}
+        onSelectBank={handleInstitutionSelect}
       />
     </motion.section>
   );

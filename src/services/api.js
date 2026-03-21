@@ -264,6 +264,53 @@ export const fetchYahooQuotesBatch = async (symbols) => {
   }
 };
 
+export const fetchYahooHistoryBatch = async ({ symbols, range = '6mo', interval = '1d' }) => {
+  const normalizedSymbols = [...new Set(
+    (Array.isArray(symbols) ? symbols : [])
+      .map((symbol) => String(symbol || '').trim().toUpperCase())
+      .filter(Boolean)
+  )];
+
+  if (!normalizedSymbols.length) {
+    return [];
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), BATCH_REQUEST_TIMEOUT_MS);
+  const endpoint = `${API_BASE_URL}/api/history?symbols=${encodeURIComponent(normalizedSymbols.join(','))}&range=${encodeURIComponent(range)}&interval=${encodeURIComponent(interval)}`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json'
+      }
+    });
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch {
+      return [];
+    }
+
+    if (!response.ok || payload?.ok === false) {
+      return [];
+    }
+
+    return Array.isArray(payload?.data) ? payload.data : [];
+  } catch (error) {
+    if (SHOULD_LOG_API_ERRORS && error?.name !== 'AbortError') {
+      console.error('Geçmiş veri isteği hatası:', error);
+    }
+
+    return [];
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
 export const fetchSymbolSuggestions = async (query) => {
   const normalizedQuery = typeof query === 'string' ? query.trim() : '';
   if (normalizedQuery.length < 2) {

@@ -6,6 +6,7 @@ import ShinyText from '../ui/ShinyText';
 import SplitText from '../ui/SplitText';
 import AnimatedCurrencyValue from '../ui/AnimatedCurrencyValue';
 import SpotlightCard from '../SpotlightCard';
+import InfoTooltip from '../common/InfoTooltip';
 
 export default function Stats({
   greetingName,
@@ -96,7 +97,10 @@ export default function Stats({
 
             <div className="mt-5 flex">
               <span className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold tracking-tight ${portfolioRealReturnPercent >= 0 ? 'border-emerald-300/45 bg-emerald-500/16 text-emerald-100' : 'border-pink-300/45 bg-pink-500/14 text-pink-100'}`}>
-                Reel Getiri ({selectedInflationSourceLabel})
+                <span className="inline-flex items-center gap-1">
+                  Reel Getiri ({selectedInflationSourceLabel})
+                  <InfoTooltip content="ENAG bağımsız enflasyon endeksine göre hesaplanan gerçek satın alma gücü getirisi" />
+                </span>
                 <span className="font-bold">{renderRealReturn()}</span>
               </span>
             </div>
@@ -105,7 +109,10 @@ export default function Stats({
           <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-[380px] lg:grid-cols-1">
             <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-5 backdrop-blur-xl">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-bold uppercase tracking-tight text-slate-400">Portföy Gücü</p>
+                <p className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-tight text-slate-400">
+                  Portföy Gücü
+                  <InfoTooltip content="Portföy büyüklüğüne göre otomatik atanan seviye. Yüksek: 50.000 TL+, Orta: 20.000 TL - 50.000 TL, Düşük: 20.000 TL altı" />
+                </p>
                 <Wallet className="h-4 w-4 text-primary" />
               </div>
               <p className="mt-3 text-2xl font-black tracking-tight text-slate-50 drop-shadow-[0_0_14px_rgba(217,70,239,0.32)]">

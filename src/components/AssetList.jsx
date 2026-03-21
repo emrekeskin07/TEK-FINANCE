@@ -19,7 +19,9 @@ export default function AssetList() {
     selectedBank,
     otherBankNames,
     selectedCategory,
+    activeAssetCategory,
     handleCategorySelect,
+    setActiveAssetCategory,
     sortConfig,
     setSortConfig,
     clearDashboardFilters,
@@ -140,6 +142,8 @@ export default function AssetList() {
         selectedBank={activeBankFilter}
         otherBankNames={otherBankNames}
         selectedCategory={selectedCategory}
+        activeCategory={activeAssetCategory}
+        setActiveCategory={setActiveAssetCategory}
         onSelectCategory={handleCategorySelect}
         sortConfig={sortConfig}
         setSortConfig={setSortConfig}

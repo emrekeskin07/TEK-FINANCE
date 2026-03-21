@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { SlidersHorizontal, Wallet } from 'lucide-react';
+import { RotateCcw, Wallet } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrency } from '../utils/helpers';
 import { resolveAssetLivePrice } from '../utils/assetPricing';
+import { getCategoryColor } from '../utils/categoryStyles';
 
-const CATEGORY_COLORS = ['#A78BFA', '#06B6D4', '#FF7F50', '#F59E0B', '#8B5CF6', '#22D3EE', '#FB7185', '#FBBF24'];
+const DEFAULT_CATEGORY_COLORS = ['#A78BFA', '#06B6D4', '#FF7F50', '#F59E0B', '#8B5CF6', '#22D3EE', '#FB7185', '#FBBF24'];
 
 const toPositiveNumber = (value) => {
   const parsed = Number(value);
@@ -28,99 +29,59 @@ const resolveAssetName = (asset) => {
   const category = String(asset?.category || '').trim();
   return category || 'Varlık';
 };
+const normalizeCategoryText = (value) => String(value || '').trim().toLocaleLowerCase('tr-TR');
 
-const sortNodeRecursive = (node) => {
-  const sortedChildren = (node.children || [])
-    .map((child) => sortNodeRecursive(child))
-    .sort((a, b) => b.value - a.value);
+const mapCategoryToFilter = (category) => {
+  const normalized = normalizeCategoryText(category);
 
-  return {
-    ...node,
-    children: sortedChildren,
-  };
-};
-
-const buildNestedPortfolioData = (portfolio, marketData, bankTotals) => {
-  const institutionStore = new Map();
-
-  (Array.isArray(portfolio) ? portfolio : []).forEach((asset, index) => {
-    const institutionName = String(asset?.bank || 'Kurum Belirtilmedi').trim() || 'Kurum Belirtilmedi';
-    const assetClassName = String(asset?.category || 'Diğer').trim() || 'Diğer';
-    const assetName = resolveAssetName(asset);
-    const amount = toPositiveNumber(asset?.amount);
-    const livePrice = resolveAssetLivePrice(asset, marketData);
-    const fallbackPrice = toPositiveNumber(asset?.avgPrice);
-    const activePrice = toPositiveNumber(livePrice) || fallbackPrice;
-    const totalAssetValue = amount * activePrice;
-
-    if (totalAssetValue <= 0) {
-      return;
-    }
-
-    if (!institutionStore.has(institutionName)) {
-      institutionStore.set(institutionName, {
-        node: {
-          id: `institution:${institutionName}`,
-          label: institutionName,
-          value: 0,
-          children: [],
-        },
-        classStore: new Map(),
-      });
-    }
-
-    const institutionEntry = institutionStore.get(institutionName);
-    institutionEntry.node.value += totalAssetValue;
-
-    if (!institutionEntry.classStore.has(assetClassName)) {
-      institutionEntry.classStore.set(assetClassName, {
-        id: `class:${institutionName}:${assetClassName}`,
-        label: assetClassName,
-        value: 0,
-        children: [],
-      });
-    }
-
-    const classNode = institutionEntry.classStore.get(assetClassName);
-    classNode.value += totalAssetValue;
-    classNode.children.push({
-      id: `asset:${asset?.id || `${institutionName}-${assetClassName}-${index}`}`,
-      label: assetName,
-      value: totalAssetValue,
-      children: [],
-    });
-  });
-
-  let institutions = Array.from(institutionStore.values()).map((entry) => ({
-    ...entry.node,
-    children: Array.from(entry.classStore.values()),
-  }));
-
-  // Fallback: portfolio yoksa bankTotals ile en az kurum seviyesini göster.
-  if (!institutions.length) {
-    institutions = Object.entries(bankTotals || {})
-      .map(([name, value]) => ({
-        id: `institution:${name}`,
-        label: name,
-        value: toPositiveNumber(value),
-        children: [],
-      }))
-      .filter((entry) => entry.value > 0);
+  if (normalized.includes('hisse')) {
+    return 'Hisse Senedi';
   }
 
-  const root = {
-    id: 'root',
-    label: 'Portföy',
-    value: institutions.reduce((sum, item) => sum + item.value, 0),
-    children: institutions,
-  };
+  if (
+    normalized.includes('değerli maden')
+    || normalized.includes('degerli maden')
+    || normalized.includes('emtia')
+    || normalized.includes('altın')
+    || normalized.includes('altin')
+  ) {
+    return 'Değerli Maden';
+  }
 
-  return sortNodeRecursive(root);
+  if (normalized.includes('döviz') || normalized.includes('doviz')) {
+    return 'Döviz';
+  }
+
+  if (normalized.includes('fon')) {
+    return 'Fon';
+  }
+
+  if (normalized.includes('kripto')) {
+    return 'Kripto';
+  }
+
+  return String(category || 'Diğer');
 };
 
-export default function BankTotals({ bankTotals, portfolio, marketData, baseCurrency, rates, totalValue, selectedBank, onSelectBank }) {
+const computeAssetValue = (asset, marketData) => {
+  const amount = toPositiveNumber(asset?.amount);
+  const livePrice = resolveAssetLivePrice(asset, marketData);
+  const fallbackPrice = toPositiveNumber(asset?.avgPrice);
+  const activePrice = toPositiveNumber(livePrice) || fallbackPrice;
+  return amount * activePrice;
+};
+
+export default function BankTotals({
+  bankTotals,
+  portfolio,
+  marketData,
+  baseCurrency,
+  rates,
+  totalValue,
+  activeCategory,
+  onResetCategory,
+}) {
   const { isPrivacyActive, maskValue } = usePrivacy();
-  const [selectedPath, setSelectedPath] = useState([]);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   useEffect(() => {
@@ -137,71 +98,93 @@ export default function BankTotals({ bankTotals, portfolio, marketData, baseCurr
     return () => mediaQuery.removeEventListener('change', syncScreenState);
   }, []);
 
-  const nestedData = useMemo(
-    () => buildNestedPortfolioData(portfolio, marketData, bankTotals),
-    [portfolio, marketData, bankTotals]
-  );
+  const resolvedActiveCategory = String(activeCategory || 'Tümü');
+  const isAllCategoryView = resolvedActiveCategory === 'Tümü';
 
-  useEffect(() => {
-    setSelectedPath((previousPath) => {
-      const normalizedPath = [];
-      let currentNode = nestedData;
+  const chartData = useMemo(() => {
+    const source = Array.isArray(portfolio) ? portfolio : [];
 
-      for (const id of previousPath) {
-        const nextNode = (currentNode.children || []).find((child) => child.id === id);
-        if (!nextNode) {
-          break;
-        }
-        normalizedPath.push(id);
-        currentNode = nextNode;
-      }
+    if (!source.length) {
+      return [];
+    }
 
-      return normalizedPath;
-    });
-  }, [nestedData]);
+    const grouped = new Map();
 
-  const { currentNode, pathNodes } = useMemo(() => {
-    let cursor = nestedData;
-    const visitedPath = [];
-
-    selectedPath.forEach((id) => {
-      const nextNode = (cursor.children || []).find((child) => child.id === id);
-      if (!nextNode) {
+    source.forEach((asset, index) => {
+      const assetValue = computeAssetValue(asset, marketData);
+      if (assetValue <= 0) {
         return;
       }
-      visitedPath.push(nextNode);
-      cursor = nextNode;
+
+      if (isAllCategoryView) {
+        const key = mapCategoryToFilter(asset?.category);
+        grouped.set(key, Number(grouped.get(key) || 0) + assetValue);
+        return;
+      }
+
+      if (mapCategoryToFilter(asset?.category) !== resolvedActiveCategory) {
+        return;
+      }
+
+      const key = resolveAssetName(asset);
+      const existing = grouped.get(key) || { value: 0, sourceIndex: index };
+      grouped.set(key, {
+        value: Number(existing.value || 0) + assetValue,
+        sourceIndex: existing.sourceIndex,
+      });
     });
 
-    return {
-      currentNode: cursor,
-      pathNodes: visitedPath,
-    };
-  }, [nestedData, selectedPath]);
+    const entries = Array.from(grouped.entries())
+      .map(([label, value], index) => {
+        if (isAllCategoryView) {
+          const numericValue = Number(value || 0);
+          return {
+            id: `category:${label}`,
+            label,
+            value: numericValue,
+            color: getCategoryColor(
+              label === 'Değerli Maden'
+                ? 'Değerli Madenler'
+                : (label === 'Fon' ? 'Yatırım Fonu' : label)
+            ),
+            sortRef: index,
+          };
+        }
 
-  const currentTotal = toPositiveNumber(currentNode?.value);
-  const chartData = useMemo(() => {
-    return (currentNode?.children || []).map((item, index) => ({
+        const normalized = value || {};
+        const numericValue = Number(normalized.value || 0);
+        return {
+          id: `asset:${label}`,
+          label,
+          value: numericValue,
+          color: DEFAULT_CATEGORY_COLORS[index % DEFAULT_CATEGORY_COLORS.length],
+          sortRef: Number(normalized.sourceIndex || index),
+        };
+      })
+      .filter((item) => Number.isFinite(item.value) && item.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    const sum = entries.reduce((accumulator, item) => accumulator + item.value, 0);
+    if (sum <= 0) {
+      return [];
+    }
+
+    return entries.map((item) => ({
       ...item,
-      color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-      share: currentTotal > 0 ? (item.value / currentTotal) * 100 : 0,
+      share: (item.value / sum) * 100,
     }));
-  }, [currentNode, currentTotal]);
+  }, [portfolio, marketData, isAllCategoryView, resolvedActiveCategory]);
 
-  const centerTotalValue = currentTotal > 0
-    ? currentTotal
+  const centerTotalValue = chartData.length > 0
+    ? chartData.reduce((sum, item) => sum + item.value, 0)
     : (Number(totalValue || 0) > 0 ? Number(totalValue) : 0);
-  const centerTitle = selectedPath.length > 0 ? currentNode?.label : 'Toplam Portföy';
+  const centerTitle = isAllCategoryView ? 'Kategori Dağılımı' : `${resolvedActiveCategory} Toplamı`;
 
   const formatTryCurrencyText = (value) => {
     const rawText = formatCurrency(value, baseCurrency, rates);
 
     return isPrivacyActive ? maskValue(rawText) : rawText;
   };
-
-  const activePieIndex = selectedPath.length === 0
-    ? chartData.findIndex((entry) => entry.label === selectedBank)
-    : -1;
 
   const renderTooltip = ({ active, payload }) => {
     if (!active || !Array.isArray(payload) || payload.length === 0) {
@@ -222,47 +205,7 @@ export default function BankTotals({ bankTotals, portfolio, marketData, baseCurr
     );
   };
 
-  const breadcrumbItems = [
-    { id: 'root', label: 'Portföy', depth: 0 },
-    ...pathNodes.map((node, index) => ({ id: node.id, label: node.label, depth: index + 1 })),
-  ];
-
-  const handleDrill = (childNode) => {
-    if (!childNode) {
-      return;
-    }
-
-    if (childNode.children?.length > 0) {
-      const nextPath = [...selectedPath, childNode.id];
-      setSelectedPath(nextPath);
-
-      // Kurum seviyesindeyken dashboard filtreleri ile senkron kal.
-      if (nextPath.length === 1) {
-        onSelectBank?.(childNode.label);
-      }
-      return;
-    }
-
-    if (selectedPath.length === 0) {
-      onSelectBank?.(childNode.label);
-    }
-  };
-
-  const handleGoUp = () => {
-    if (selectedPath.length === 0) {
-      onSelectBank?.(null);
-      return;
-    }
-
-    const nextPath = selectedPath.slice(0, -1);
-    setSelectedPath(nextPath);
-    if (nextPath.length === 0) {
-      onSelectBank?.(null);
-    }
-  };
-
   const hasData = chartData.length > 0;
-  const filterTitle = selectedPath.length > 0 ? 'Üst seviyeye çık' : 'Filtreyi temizle';
   const innerRadius = isSmallScreen ? 50 : 64;
   const outerRadius = isSmallScreen ? 92 : 112;
 
@@ -270,7 +213,7 @@ export default function BankTotals({ bankTotals, portfolio, marketData, baseCurr
     <div>
       {!hasData ? (
         <div className="rounded-2xl border border-white/5 bg-slate-900 p-8 text-sm text-slate-400 shadow-[0_16px_46px_rgba(2,6,23,0.6)] backdrop-blur-xl">
-          Kayıtlı kurum verisi bulunmuyor.
+          {isAllCategoryView ? 'Kayıtlı dağılım verisi bulunmuyor.' : 'Bu kategoride henüz varlığınız bulunmuyor.'}
         </div>
       ) : (
         <div className="relative rounded-3xl border border-white/5 bg-slate-900 p-8 shadow-[0_20px_58px_rgba(2,6,23,0.72)]">
@@ -279,47 +222,23 @@ export default function BankTotals({ bankTotals, portfolio, marketData, baseCurr
               <Wallet className="h-5 w-5 text-emerald-300" />
             </div>
 
-            <button
-              type="button"
-              onClick={handleGoUp}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-slate-900 text-slate-200 transition-all duration-200 hover:scale-105 hover:border-indigo-300/50 hover:text-slate-50"
-              title={filterTitle}
-              aria-label={filterTitle}
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-            </button>
+            {!isAllCategoryView ? (
+              <button
+                type="button"
+                onClick={() => onResetCategory?.()}
+                className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-fuchsia-300/35 bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 px-3 py-1.5 text-xs font-semibold text-slate-100 transition-all duration-200 hover:scale-105 hover:border-fuchsia-200/45"
+                title="Tüm Portföy"
+                aria-label="Tüm Portföy"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Geri Dön
+              </button>
+            ) : null}
           </div>
-
-          <nav className="mb-4 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
-            {breadcrumbItems.map((item, index) => {
-              const isLast = index === breadcrumbItems.length - 1;
-
-              return (
-                <React.Fragment key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (item.depth === 0) {
-                        setSelectedPath([]);
-                        onSelectBank?.(null);
-                        return;
-                      }
-
-                      setSelectedPath(selectedPath.slice(0, item.depth));
-                    }}
-                    className={`rounded-md px-1.5 py-0.5 transition-colors ${isLast ? 'text-slate-200' : 'hover:text-slate-200'}`}
-                  >
-                    {item.label}
-                  </button>
-                  {!isLast ? <span className="text-slate-500">&gt;</span> : null}
-                </React.Fragment>
-              );
-            })}
-          </nav>
 
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={currentNode.id}
+              key={resolvedActiveCategory}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
@@ -339,25 +258,20 @@ export default function BankTotals({ bankTotals, portfolio, marketData, baseCurr
                       outerRadius={outerRadius}
                       minAngle={6}
                       paddingAngle={2}
-                      activeIndex={activePieIndex >= 0 ? activePieIndex : undefined}
+                      isAnimationActive
+                      animationDuration={500}
                     >
-                      {chartData.map((entry) => {
-                        const isSelected = selectedPath.length === 0 && selectedBank === entry.label;
-
-                        return (
-                          <Cell
-                            key={`drill-slice-${entry.id}`}
-                            fill={entry.color}
-                            stroke={isSelected ? '#f8fafc' : 'rgba(15,23,42,0.5)'}
-                            strokeWidth={isSelected ? 3 : 1.5}
-                            onClick={() => handleDrill(entry)}
-                            style={{
-                              cursor: 'pointer',
-                              filter: `drop-shadow(0 0 12px ${entry.color}55)`,
-                            }}
-                          />
-                        );
-                      })}
+                      {chartData.map((entry) => (
+                        <Cell
+                          key={`category-slice-${entry.id}`}
+                          fill={entry.color}
+                          stroke="rgba(15,23,42,0.5)"
+                          strokeWidth={1.5}
+                          style={{
+                            filter: `drop-shadow(0 0 12px ${entry.color}55)`,
+                          }}
+                        />
+                      ))}
                     </Pie>
                     <Tooltip content={renderTooltip} />
                   </PieChart>
@@ -377,20 +291,9 @@ export default function BankTotals({ bankTotals, portfolio, marketData, baseCurr
               <div className="w-full md:w-5/12">
                 <ul className="flex w-full flex-col gap-2">
                   {chartData.map((entry) => {
-                    const isSelected = selectedPath.length === 0 && selectedBank === entry.label;
-
                     return (
                       <li key={`legend-${entry.id}`} className="w-full">
-                        <button
-                          type="button"
-                          onClick={() => handleDrill(entry)}
-                          aria-pressed={isSelected}
-                          className={`w-full rounded-xl border px-3 py-2.5 text-left transition-all duration-200 ${
-                            isSelected
-                              ? 'border-emerald-300/45 bg-slate-800/95 ring-1 ring-emerald-300/35'
-                              : 'border-white/5 bg-slate-900/80 hover:border-indigo-300/45 hover:bg-slate-800/95'
-                          }`}
-                        >
+                        <div className="w-full rounded-xl border border-white/5 bg-slate-900/80 px-3 py-2.5 text-left transition-all duration-200 hover:border-indigo-300/45 hover:bg-slate-800/95">
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2.5">
@@ -409,7 +312,7 @@ export default function BankTotals({ bankTotals, portfolio, marketData, baseCurr
                               {isPrivacyActive ? maskValue(`%${entry.share.toFixed(1)}`) : `%${entry.share.toFixed(1)}`}
                             </span>
                           </div>
-                        </button>
+                        </div>
                       </li>
                     );
                   })}
@@ -430,6 +333,6 @@ BankTotals.propTypes = {
   baseCurrency: PropTypes.string,
   rates: PropTypes.object,
   totalValue: PropTypes.number,
-  selectedBank: PropTypes.string,
-  onSelectBank: PropTypes.func,
+  activeCategory: PropTypes.string,
+  onResetCategory: PropTypes.func,
 };

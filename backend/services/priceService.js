@@ -258,6 +258,134 @@ async function fetchYahooChartQuote(symbol) {
   return buildQuoteFromChart(symbol, response.data);
 }
 
+function normalizeRangeParam(value) {
+  const allowed = new Set(['1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max']);
+  const normalized = String(value || '6mo').trim().toLowerCase();
+  return allowed.has(normalized) ? normalized : '6mo';
+}
+
+function normalizeIntervalParam(value) {
+  const allowed = new Set(['1d', '1wk', '1mo']);
+  const normalized = String(value || '1d').trim().toLowerCase();
+  return allowed.has(normalized) ? normalized : '1d';
+}
+
+function mapChartPoints(symbol, payload) {
+  const chartResult = payload?.chart?.result?.[0];
+  const chartError = payload?.chart?.error;
+
+  if (chartError) {
+    const error = new Error(chartError.description || chartError.code || 'Yahoo chart response error');
+    error.status = 502;
+    throw error;
+  }
+
+  if (!chartResult) {
+    return [];
+  }
+
+  const timestamps = Array.isArray(chartResult.timestamp) ? chartResult.timestamp : [];
+  const quoteIndicator = Array.isArray(chartResult?.indicators?.quote)
+    ? chartResult.indicators.quote[0]
+    : null;
+  const closeList = Array.isArray(quoteIndicator?.close) ? quoteIndicator.close : [];
+
+  const points = [];
+  const maxLength = Math.min(timestamps.length, closeList.length);
+  for (let index = 0; index < maxLength; index += 1) {
+    const timestampSeconds = Number(timestamps[index]);
+    const closeValue = Number(closeList[index]);
+
+    if (!Number.isFinite(timestampSeconds) || timestampSeconds <= 0 || !Number.isFinite(closeValue) || closeValue <= 0) {
+      continue;
+    }
+
+    const timestampMs = timestampSeconds * 1000;
+    const date = new Date(timestampMs);
+    points.push({
+      timestamp: timestampMs,
+      date: date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }),
+      close: Number(closeValue.toFixed(6)),
+      symbol,
+    });
+  }
+
+  return points;
+}
+
+async function fetchYahooHistorySeries(symbol, options = {}) {
+  const normalizedSymbol = String(symbol || '').trim().toUpperCase();
+  if (!normalizedSymbol) {
+    throw new Error('Symbol is required.');
+  }
+
+  const range = normalizeRangeParam(options.range);
+  const interval = normalizeIntervalParam(options.interval);
+  const endpoint = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(normalizedSymbol)}`;
+
+  const response = await axios.get(endpoint, {
+    params: {
+      interval,
+      range,
+      includePrePost: 'false',
+      events: 'div,splits',
+    },
+    headers: {
+      'User-Agent': BROWSER_USER_AGENT,
+      Accept: 'application/json, text/plain, */*',
+      'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+      Referer: 'https://finance.yahoo.com/',
+      Origin: 'https://finance.yahoo.com',
+    },
+    timeout: YAHOO_TIMEOUT_MS,
+    validateStatus: () => true,
+  });
+
+  if (response.status === 429) {
+    const error = new Error('Yahoo rate limit (429) nedeniyle geçmiş veri alınamadı.');
+    error.status = 429;
+    throw error;
+  }
+
+  if (response.status < 200 || response.status >= 300) {
+    const error = new Error(`Yahoo history request failed. HTTP ${response.status}`);
+    error.status = 502;
+    throw error;
+  }
+
+  return mapChartPoints(normalizedSymbol, response.data);
+}
+
+async function getHistoryData(symbols, options = {}) {
+  const normalizedSymbols = (Array.isArray(symbols) ? symbols : [])
+    .map((symbol) => String(symbol || '').trim().toUpperCase())
+    .filter(Boolean);
+
+  if (!normalizedSymbols.length) {
+    return [];
+  }
+
+  return Promise.all(normalizedSymbols.map(async (symbol) => {
+    try {
+      const series = await runYahooRequest(() => fetchYahooHistorySeries(symbol, options));
+      return {
+        symbol,
+        range: normalizeRangeParam(options.range),
+        interval: normalizeIntervalParam(options.interval),
+        series,
+      };
+    } catch (error) {
+      return {
+        symbol,
+        range: normalizeRangeParam(options.range),
+        interval: normalizeIntervalParam(options.interval),
+        series: [],
+        error: error.message || 'Failed to fetch history',
+      };
+    }
+  }));
+}
+
 function formatTefasDate(date) {
   const d = date instanceof Date ? date : new Date(date);
   const day = String(d.getDate()).padStart(2, "0");
@@ -612,5 +740,6 @@ module.exports = {
   searchSymbols,
   getQuoteData,
   getQuotesData,
+  getHistoryData,
   fetchTefasFundPrice,
 };

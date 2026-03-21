@@ -84,6 +84,7 @@ export default function App() {
   const [activeTheme, setActiveTheme] = useState(DEFAULT_THEME_ID);
   const [baseCurrency, setBaseCurrency] = useState('TRY');
   const [sortConfig, setSortConfig] = useState({ key: 'profit', direction: 'desc' });
+  const [activeAssetCategory, setActiveAssetCategory] = useState('Tümü');
   const [inflationSource, setInflationSource] = useState('enag');
   const [lastSyncTime, setLastSyncTime] = useState(null);
   const { isPrivacyActive, maskValue } = usePrivacy();
@@ -500,6 +501,7 @@ export default function App() {
     selectedInstitution: selectedBank,
     selectedBank,
     selectedCategory,
+    activeAssetCategory,
     otherBankNames,
     sortConfig,
     setSortConfig,
@@ -507,6 +509,7 @@ export default function App() {
     handleInstitutionSelect: handleBankSelect,
     handleBankSelect,
     handleCategorySelect,
+    setActiveAssetCategory,
     clearDashboardFilters: clearFilters,
     openEditModal,
     openAddModal,
@@ -531,12 +534,14 @@ export default function App() {
     authUser?.id,
     selectedBank,
     selectedCategory,
+    activeAssetCategory,
     otherBankNames,
     sortConfig,
     setSortConfig,
     lineChartData,
     handleBankSelect,
     handleCategorySelect,
+    setActiveAssetCategory,
     clearFilters,
     openEditModal,
     openAddModal,

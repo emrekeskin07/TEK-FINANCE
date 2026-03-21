@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AreaChart, Area, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { usePrivacy } from '../context/PrivacyContext';
 import { useDashboardData } from '../context/DashboardContext';
 import Button from './common/Button';
 import { convertCurrency, formatCurrencyParts } from '../utils/helpers';
+import { fetchYahooHistoryBatch } from '../services/api';
 
 const RANGE_OPTIONS = [
   { key: '1G', label: '1G', days: 1, title: '1 Gün' },
@@ -16,12 +17,98 @@ const RANGE_OPTIONS = [
   { key: 'TUMU', label: 'TÜMÜ', days: null, title: 'Tüm Zamanlar' },
 ];
 
-function TooltipContent({ active, payload, formatter }) {
+const BENCHMARK_RANGE_BY_CHART_RANGE = {
+  '1G': '1mo',
+  '1H': '1mo',
+  '1A': '1mo',
+  '3A': '3mo',
+  '1Y': '1y',
+  'TUMU': '5y',
+};
+
+const BIST_SYMBOL = '^XU100';
+const USD_SYMBOL = 'USDTRY=X';
+
+const toFiniteNumber = (value) => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const normalizeSeriesBase100 = (values) => {
+  if (!Array.isArray(values) || !values.length) {
+    return [];
+  }
+
+  const baseValue = values.find((value) => Number.isFinite(Number(value)) && Number(value) > 0);
+  const baseNumeric = Number(baseValue || 0);
+  if (!Number.isFinite(baseNumeric) || baseNumeric <= 0) {
+    return values.map(() => null);
+  }
+
+  return values.map((value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return null;
+    }
+
+    return Number(((numeric / baseNumeric) * 100).toFixed(3));
+  });
+};
+
+const resampleSeriesByLength = (series, targetLength) => {
+  if (!Array.isArray(series) || !series.length || !Number.isFinite(Number(targetLength)) || targetLength <= 0) {
+    return [];
+  }
+
+  if (targetLength === 1) {
+    return [toFiniteNumber(series[series.length - 1]?.close)];
+  }
+
+  if (series.length === 1) {
+    return Array.from({ length: targetLength }, () => toFiniteNumber(series[0]?.close));
+  }
+
+  const maxSourceIndex = series.length - 1;
+  const maxTargetIndex = targetLength - 1;
+
+  return Array.from({ length: targetLength }, (_, targetIndex) => {
+    const ratio = targetIndex / maxTargetIndex;
+    const sourceIndex = Math.min(maxSourceIndex, Math.max(0, Math.round(ratio * maxSourceIndex)));
+    return toFiniteNumber(series[sourceIndex]?.close);
+  });
+};
+
+function TooltipContent({ active, payload, formatter, isBenchmarkMode }) {
   if (!active || !payload || payload.length === 0) {
     return null;
   }
 
-  const point = payload[0];
+  const pointDate = payload[0]?.payload?.date || '-';
+
+  if (isBenchmarkMode) {
+    const rows = payload
+      .filter((item) => typeof item?.dataKey === 'string')
+      .map((item) => ({
+        key: item.dataKey,
+        label: item.name,
+        color: item.color,
+        value: Number(item?.value),
+      }));
+
+    return (
+      <div className="min-w-[150px] rounded-lg border border-white/10 bg-[#0f172a]/95 px-3 py-2 text-xs backdrop-blur-sm">
+        <p className="text-slate-400">{pointDate}</p>
+        {rows.map((row) => (
+          <p key={`tooltip-${row.key}`} className="mt-1 flex items-center gap-2 text-slate-100">
+            <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: row.color }} />
+            <span>{row.label}: {Number.isFinite(row.value) ? `${row.value.toFixed(2)} (100 baz)` : '-'}</span>
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  const point = payload.find((item) => item?.dataKey === 'portfolio') || payload[0];
 
   return (
     <div className="min-w-[130px] rounded-lg border border-white/10 bg-[#0f172a]/95 px-3 py-2 text-xs backdrop-blur-sm">
@@ -38,6 +125,12 @@ export default function GrowthChart() {
   const [isReady, setIsReady] = useState(false);
   const [isCompactScreen, setIsCompactScreen] = useState(false);
   const [selectedRange, setSelectedRange] = useState('TUMU');
+  const [isBistBenchmarkEnabled, setIsBistBenchmarkEnabled] = useState(false);
+  const [isUsdBenchmarkEnabled, setIsUsdBenchmarkEnabled] = useState(false);
+  const [benchmarkSeries, setBenchmarkSeries] = useState({
+    [BIST_SYMBOL]: [],
+    [USD_SYMBOL]: [],
+  });
 
   const safeLineChartData = useMemo(
     () => (Array.isArray(lineChartData) ? lineChartData : []),
@@ -82,6 +175,103 @@ export default function GrowthChart() {
     [filteredLineChartData, baseCurrency, rates]
   );
 
+  const isBenchmarkMode = isBistBenchmarkEnabled || isUsdBenchmarkEnabled;
+  const selectedBenchmarkRange = BENCHMARK_RANGE_BY_CHART_RANGE[selectedRange] || '6mo';
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadBenchmarkSeries = async () => {
+      if (!isBenchmarkMode) {
+        if (isMounted) {
+          setBenchmarkSeries({
+            [BIST_SYMBOL]: [],
+            [USD_SYMBOL]: [],
+          });
+        }
+        return;
+      }
+
+      const symbols = [];
+      if (isBistBenchmarkEnabled) {
+        symbols.push(BIST_SYMBOL);
+      }
+      if (isUsdBenchmarkEnabled) {
+        symbols.push(USD_SYMBOL);
+      }
+
+      const data = await fetchYahooHistoryBatch({
+        symbols,
+        range: selectedBenchmarkRange,
+        interval: '1d',
+      });
+
+      if (!isMounted) {
+        return;
+      }
+
+      const bySymbol = {
+        [BIST_SYMBOL]: [],
+        [USD_SYMBOL]: [],
+      };
+
+      (Array.isArray(data) ? data : []).forEach((item) => {
+        const symbol = String(item?.symbol || '').trim().toUpperCase();
+        if (symbol === BIST_SYMBOL || symbol === USD_SYMBOL) {
+          bySymbol[symbol] = Array.isArray(item?.series) ? item.series : [];
+        }
+      });
+
+      setBenchmarkSeries(bySymbol);
+    };
+
+    loadBenchmarkSeries();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isBenchmarkMode, isBistBenchmarkEnabled, isUsdBenchmarkEnabled, selectedBenchmarkRange]);
+
+  const chartData = useMemo(() => {
+    const baseSeries = Array.isArray(convertedLineChartData) ? convertedLineChartData : [];
+    if (!baseSeries.length) {
+      return [];
+    }
+
+    const portfolioValues = baseSeries.map((point) => toFiniteNumber(point?.value));
+    const portfolioValuesNormalized = isBenchmarkMode
+      ? normalizeSeriesBase100(portfolioValues)
+      : portfolioValues;
+
+    const bistResampled = isBistBenchmarkEnabled
+      ? resampleSeriesByLength(benchmarkSeries[BIST_SYMBOL], baseSeries.length)
+      : [];
+    const usdResampled = isUsdBenchmarkEnabled
+      ? resampleSeriesByLength(benchmarkSeries[USD_SYMBOL], baseSeries.length)
+      : [];
+
+    const normalizedBist = isBistBenchmarkEnabled ? normalizeSeriesBase100(bistResampled) : [];
+    const normalizedUsd = isUsdBenchmarkEnabled ? normalizeSeriesBase100(usdResampled) : [];
+
+    return baseSeries.map((point, index) => {
+      const row = {
+        date: point?.date,
+        timestamp: point?.timestamp,
+        portfolio: toFiniteNumber(portfolioValuesNormalized[index]),
+      };
+
+      if (isBistBenchmarkEnabled) {
+        row.bist100 = toFiniteNumber(normalizedBist[index]);
+      }
+
+      if (isUsdBenchmarkEnabled) {
+        row.usdtry = toFiniteNumber(normalizedUsd[index]);
+      }
+
+      return row;
+    });
+  }, [convertedLineChartData, isBenchmarkMode, isBistBenchmarkEnabled, isUsdBenchmarkEnabled, benchmarkSeries]);
+
   const rangeChangePercent = useMemo(() => {
     if (convertedLineChartData.length < 2) {
       return null;
@@ -94,7 +284,7 @@ export default function GrowthChart() {
     }
 
     return ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
-  }, [convertedLineChartData]);
+  }, [chartData, isBenchmarkMode]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -148,32 +338,6 @@ export default function GrowthChart() {
     : `${rangeChangePercent >= 0 ? '+' : '-'}%${Math.abs(rangeChangePercent).toFixed(1)}`;
   const displayedRangeChangeText = isPrivacyActive ? maskValue(rangeChangeText) : rangeChangeText;
 
-  const resolveAggressiveDomainPadding = (minValue, maxValue) => {
-    const safeMin = Number.isFinite(Number(minValue)) ? Number(minValue) : 0;
-    const safeMax = Number.isFinite(Number(maxValue)) ? Number(maxValue) : safeMin;
-    const range = Math.max(Math.abs(safeMax - safeMin), Math.abs(safeMax), Math.abs(safeMin), 1);
-
-    return Math.max(range * 0.18, 1000);
-  };
-
-  const getAreaDomainMin = (dataMin) => {
-    const dataMax = convertedLineChartData.reduce((maxValue, point) => {
-      const value = Number(point?.value);
-      return Number.isFinite(value) ? Math.max(maxValue, value) : maxValue;
-    }, Number(dataMin || 0));
-
-    return Number(dataMin || 0) - resolveAggressiveDomainPadding(dataMin, dataMax);
-  };
-
-  const getAreaDomainMax = (dataMax) => {
-    const dataMin = convertedLineChartData.reduce((minValue, point) => {
-      const value = Number(point?.value);
-      return Number.isFinite(value) ? Math.min(minValue, value) : minValue;
-    }, Number(dataMax || 0));
-
-    return Number(dataMax || 0) + resolveAggressiveDomainPadding(dataMin, dataMax);
-  };
-
   const hideNativeTooltip = (event) => {
     const button = event.currentTarget;
     if (button.hasAttribute('title')) {
@@ -197,7 +361,7 @@ export default function GrowthChart() {
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
       className="col-span-12 md:col-span-8 md:order-1 rounded-2xl border border-white/5 bg-slate-900/40 p-8 shadow-[0_26px_76px_rgba(2,6,23,0.62)] backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-fuchsia-400/35"
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-tight text-slate-50">
             <TrendingUp className="h-4 w-4 text-primary" />
@@ -214,61 +378,66 @@ export default function GrowthChart() {
           </span>
         </div>
 
-        <div className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-slate-900/40 p-1 backdrop-blur-xl">
-          {RANGE_OPTIONS.map((option) => {
-            const isActive = selectedRange === option.key;
-            return (
-              <Button
-                key={option.key}
-                type="button"
-                variant="ghost"
-                onClick={() => setSelectedRange(option.key)}
-                title={option.title}
-                data-title={option.title}
-                aria-label={option.title}
-                onMouseEnter={hideNativeTooltip}
-                onMouseLeave={restoreNativeTooltip}
-                onFocus={hideNativeTooltip}
-                onBlur={restoreNativeTooltip}
-                className={`chart-range-tooltip relative min-h-[44px] rounded-md px-3 py-2 text-[11px] ${
-                  isActive
-                    ? 'bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 text-slate-50 shadow-[0_0_14px_rgba(217,70,239,0.24)]'
-                    : 'text-slate-400 hover:text-slate-100'
-                }`}
-              >
-                <span>{option.label}</span>
-                {isActive ? (
-                  <span className="absolute bottom-1 left-2 right-2 h-0.5 rounded-full bg-accent" aria-hidden="true" />
-                ) : null}
-              </Button>
-            );
-          })}
+        <div className="flex flex-col items-end gap-2">
+          <div className="inline-flex items-center gap-1 rounded-lg border border-white/5 bg-slate-900/40 p-1 backdrop-blur-xl">
+            {RANGE_OPTIONS.map((option) => {
+              const isActive = selectedRange === option.key;
+              return (
+                <Button
+                  key={option.key}
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSelectedRange(option.key)}
+                  title={option.title}
+                  data-title={option.title}
+                  aria-label={option.title}
+                  onMouseEnter={hideNativeTooltip}
+                  onMouseLeave={restoreNativeTooltip}
+                  onFocus={hideNativeTooltip}
+                  onBlur={restoreNativeTooltip}
+                  className={`chart-range-tooltip relative min-h-[44px] rounded-md px-3 py-2 text-[11px] ${
+                    isActive
+                      ? 'bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 text-slate-50 shadow-[0_0_14px_rgba(217,70,239,0.24)]'
+                      : 'text-slate-400 hover:text-slate-100'
+                  }`}
+                >
+                  <span>{option.label}</span>
+                  {isActive ? (
+                    <span className="absolute bottom-1 left-2 right-2 h-0.5 rounded-full bg-accent" aria-hidden="true" />
+                  ) : null}
+                </Button>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <label className="inline-flex min-h-[36px] cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-slate-900/50 px-3 py-1.5 text-xs text-slate-200 transition-colors hover:border-slate-300/35">
+              <input
+                type="checkbox"
+                checked={isBistBenchmarkEnabled}
+                onChange={(event) => setIsBistBenchmarkEnabled(Boolean(event.target.checked))}
+                className="h-4 w-4 accent-slate-300"
+              />
+              BIST100 ile Kıyasla
+            </label>
+
+            <label className="inline-flex min-h-[36px] cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-slate-900/50 px-3 py-1.5 text-xs text-slate-200 transition-colors hover:border-yellow-300/35">
+              <input
+                type="checkbox"
+                checked={isUsdBenchmarkEnabled}
+                onChange={(event) => setIsUsdBenchmarkEnabled(Boolean(event.target.checked))}
+                className="h-4 w-4 accent-yellow-300"
+              />
+              USD ile Kıyasla
+            </label>
+          </div>
         </div>
       </div>
 
       <div ref={containerRef} className="relative h-[260px] min-h-[260px] w-full min-w-0 sm:h-[320px] md:h-[360px]">
-        {isReady && convertedLineChartData.length > 0 ? (
+        {isReady && chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%" aspect={isCompactScreen ? 1 : undefined}>
-            <AreaChart data={convertedLineChartData}>
-              <defs>
-                <linearGradient id="growthChartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#A78BFA" stopOpacity={0.34} />
-                  <stop offset="48%" stopColor="#EC4899" stopOpacity={0.2} />
-                  <stop offset="100%" stopColor="#10B981" stopOpacity={0.08} />
-                </linearGradient>
-                <linearGradient id="growthChartStroke" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#A78BFA" />
-                  <stop offset="50%" stopColor="#EC4899" />
-                  <stop offset="100%" stopColor="#10B981" />
-                </linearGradient>
-                <filter id="growthChartGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="5" result="coloredBlur" />
-                  <feMerge>
-                    <feMergeNode in="coloredBlur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
+            <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(203,213,225,0.2)" vertical={false} />
               <XAxis
                 dataKey="date"
@@ -278,27 +447,62 @@ export default function GrowthChart() {
                 axisLine={false}
               />
               <YAxis
-                domain={[getAreaDomainMin, getAreaDomainMax]}
-                allowDataOverflow
+                domain={isBenchmarkMode ? ['auto', 'auto'] : ['auto', 'auto']}
                 stroke="#cbd5e1"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={formatTryValue}
+                tickFormatter={(value) => (
+                  isBenchmarkMode
+                    ? `%${(Number(value || 0) - 100).toFixed(0)}`
+                    : formatTryValue(value)
+                )}
                 width={78}
               />
-              <Tooltip content={(props) => <TooltipContent {...props} formatter={formatTryValue} />} />
-              <Area
+              <Tooltip content={(props) => <TooltipContent {...props} formatter={formatTryValue} isBenchmarkMode={isBenchmarkMode} />} />
+
+              <Line
                 type="monotone"
-                dataKey="value"
-                stroke="url(#growthChartStroke)"
-                strokeWidth={3}
-                fillOpacity={1}
-                fill="url(#growthChartGradient)"
-                filter="url(#growthChartGlow)"
-                activeDot={{ r: 4, stroke: '#10141d', strokeWidth: 2, fill: '#10b981' }}
+                dataKey="portfolio"
+                name="Portföy"
+                stroke="#A78BFA"
+                strokeWidth={3.5}
+                dot={false}
+                activeDot={{ r: 4, stroke: '#10141d', strokeWidth: 2, fill: '#A78BFA' }}
+                isAnimationActive
+                animationDuration={500}
               />
-            </AreaChart>
+
+              {isBistBenchmarkEnabled ? (
+                <Line
+                  type="monotone"
+                  dataKey="bist100"
+                  name="BIST100"
+                  stroke="#94a3b8"
+                  strokeWidth={2}
+                  strokeDasharray="7 5"
+                  dot={false}
+                  activeDot={{ r: 3 }}
+                  isAnimationActive
+                  animationDuration={500}
+                />
+              ) : null}
+
+              {isUsdBenchmarkEnabled ? (
+                <Line
+                  type="monotone"
+                  dataKey="usdtry"
+                  name="USD/TRY"
+                  stroke="#facc15"
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                  dot={false}
+                  activeDot={{ r: 3 }}
+                  isAnimationActive
+                  animationDuration={500}
+                />
+              ) : null}
+            </LineChart>
           </ResponsiveContainer>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-500">
