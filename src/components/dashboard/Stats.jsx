@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -19,11 +19,34 @@ export default function Stats({
   selectedInflationSourceLabel,
   baseCurrency,
   rates,
+  lineChartData,
   renderPercent,
   renderRealReturn,
   onPrimaryAction,
 }) {
   const profitPercentColorClass = profitPercentageValue >= 0 ? 'text-emerald-500' : 'text-red-500';
+  const monthlyChangeNote = useMemo(() => {
+    const series = Array.isArray(lineChartData) ? lineChartData : [];
+    if (series.length < 31) {
+      return 'Geçen aya göre değişim için veri toplanıyor.';
+    }
+
+    const latestValue = Number(series[series.length - 1]?.value || 0);
+    const monthAgoValue = Number(series[series.length - 31]?.value || 0);
+
+    if (!Number.isFinite(latestValue) || !Number.isFinite(monthAgoValue) || Math.abs(monthAgoValue) < 0.01) {
+      return 'Geçen aya göre değişim için veri toplanıyor.';
+    }
+
+    const changePercent = ((latestValue - monthAgoValue) / Math.abs(monthAgoValue)) * 100;
+    const absPercent = Math.abs(changePercent).toFixed(1);
+
+    if (changePercent >= 0) {
+      return `Geçen aya göre %${absPercent} daha fazla tasarruf ettin.`;
+    }
+
+    return `Geçen aya göre %${absPercent} daha düşük birikim var; ritmi toparlayabilirsin.`;
+  }, [lineChartData]);
 
   return (
     <motion.section
@@ -81,8 +104,16 @@ export default function Stats({
 
               <div className="space-y-2 text-left">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-slate-900/55">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Kâr / Zarar</p>
-                  <p className={`text-sm font-bold ${profitPercentColorClass}`}>{renderPercent()}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Net Değişim</p>
+                  <p className={`text-sm font-bold ${profitPercentColorClass}`}>
+                    <AnimatedCurrencyValue
+                      value={totalProfit}
+                      baseCurrency={baseCurrency}
+                      rates={rates}
+                      showPositiveSign
+                    />
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{monthlyChangeNote}</p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-slate-900/55">
                   <p className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
@@ -135,6 +166,7 @@ Stats.propTypes = {
   selectedInflationSourceLabel: PropTypes.string.isRequired,
   baseCurrency: PropTypes.string.isRequired,
   rates: PropTypes.object,
+  lineChartData: PropTypes.arrayOf(PropTypes.object),
   renderPercent: PropTypes.func.isRequired,
   renderRealReturn: PropTypes.func.isRequired,
   onPrimaryAction: PropTypes.func,
@@ -142,5 +174,6 @@ Stats.propTypes = {
 
 Stats.defaultProps = {
   rates: {},
+  lineChartData: [],
   onPrimaryAction: () => {},
 };

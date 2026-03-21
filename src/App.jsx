@@ -766,6 +766,7 @@ export default function App() {
                     selectedInflationSourceLabel={selectedInflationSourceLabel}
                     baseCurrency={baseCurrency}
                     rates={rates}
+                    lineChartData={lineChartData}
                     renderPercent={() => renderPercentText(animatedProfitPercent)}
                     renderRealReturn={() => (
                       isPrivacyActive

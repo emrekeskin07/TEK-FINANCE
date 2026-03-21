@@ -193,6 +193,44 @@ export default function BankTotals({
     : (Number(totalValue || 0) > 0 ? Number(totalValue) : 0);
   const centerTitle = isAllCategoryView ? 'Kategori Dağılımı' : `${resolvedActiveCategory} Toplamı`;
 
+  const distributionTip = useMemo(() => {
+    const source = Array.isArray(portfolio) ? portfolio : [];
+    if (!source.length) {
+      return 'Portföy dağılımı oluştuğunda burada koruma ve denge ipuçları göreceksin.';
+    }
+
+    const totals = source.reduce((accumulator, asset) => {
+      const value = computeAssetValue(asset, marketData);
+      if (value <= 0) {
+        return accumulator;
+      }
+
+      const key = mapCategoryToFilter(asset?.category);
+      accumulator.total += value;
+      if (key === 'Döviz') {
+        accumulator.fx += value;
+      }
+
+      return accumulator;
+    }, { total: 0, fx: 0 });
+
+    if (totals.total <= 0) {
+      return 'Portföy dağılımı oluştuğunda burada koruma ve denge ipuçları göreceksin.';
+    }
+
+    const fxShare = (totals.fx / totals.total) * 100;
+
+    if (fxShare >= 80) {
+      return 'İpucu: Portföyünün %80\'i döviz bazlı varlıklarda, TL devalüasyonuna karşı korumadasın.';
+    }
+
+    if (fxShare >= 50) {
+      return 'İpucu: Döviz ağırlığın güçlü. Kur riskine karşı koruman dengeli seviyede.';
+    }
+
+    return 'İpucu: Döviz ağırlığın düşük. Kur oynaklığına karşı koruma için dağılımı dengeleyebilirsin.';
+  }, [portfolio, marketData]);
+
   const formatTryCurrencyText = (value) => {
     const rawText = formatCurrency(value, baseCurrency, rates);
 
@@ -330,6 +368,10 @@ export default function BankTotals({
                     );
                   })}
                 </ul>
+
+                <div className="mt-3 rounded-xl border border-indigo-300/25 bg-indigo-500/10 px-3 py-2 text-xs text-indigo-100">
+                  {distributionTip}
+                </div>
               </div>
             </motion.div>
           </AnimatePresence>

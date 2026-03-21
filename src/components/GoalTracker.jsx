@@ -191,6 +191,9 @@ export default function GoalTracker() {
   const remainingAmount = Math.max(0, targetAmount - currentValue);
   const parsedTargetMonths = Math.max(1, Number(targetMonths || 0));
   const monthlyContributionNeeded = remainingAmount / parsedTargetMonths;
+  const estimatedMonthsToGoal = prediction.status === 'on-track' && Number.isFinite(Number(prediction.daysLeft))
+    ? Math.max(1, Math.ceil(Number(prediction.daysLeft) / 30))
+    : null;
 
   useEffect(() => {
     if (!hasGoal || progress < 100 || !triggerCelebration) {
@@ -387,6 +390,11 @@ export default function GoalTracker() {
                 <span>Mevcut: <AnimatedCurrencyValue value={currentValue} baseCurrency={baseCurrency} rates={rates} /></span>
                 <span>Hedef: <AnimatedCurrencyValue value={targetAmount} baseCurrency={baseCurrency} rates={rates} /></span>
               </div>
+
+              <p className="mt-2 text-xs text-slate-300">
+                {`${goal.name} hedefinin %${progress.toFixed(0)}'ı tamamlandı.`}
+                {estimatedMonthsToGoal ? ` Mevcut birikim hızınla ${estimatedMonthsToGoal} ay sonra hedefine ulaşabilirsin.` : ''}
+              </p>
             </div>
           </div>
 
