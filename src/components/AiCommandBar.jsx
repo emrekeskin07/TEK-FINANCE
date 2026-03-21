@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import PropTypes from 'prop-types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Command, Loader2, Plus, Sparkles } from 'lucide-react';
+import { Command, Loader2, Plus, Sparkles, X } from 'lucide-react';
 import { fetchSymbolSuggestions, fetchYahooData } from '../services/api';
 
 const PLACEHOLDER_HINTS = [
@@ -187,7 +187,7 @@ const inferCategoryFromSymbol = (symbol, name) => {
   return 'Hisse Senedi';
 };
 
-const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAsset }, ref) {
+const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAsset, onDismiss, autoFocusOnMount }, ref) {
   const inputRef = useRef(null);
   const [value, setValue] = useState('');
   const [typedHint, setTypedHint] = useState('');
@@ -210,6 +210,15 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
       inputRef.current?.focus();
     },
   }));
+
+  useEffect(() => {
+    if (!autoFocusOnMount) {
+      return;
+    }
+
+    setIsFocused(true);
+    inputRef.current?.focus();
+  }, [autoFocusOnMount]);
 
   useEffect(() => {
     setCommandHistory(readCommandHistory());
@@ -421,7 +430,9 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
     }
 
     if (event.key === 'Escape') {
+      event.preventDefault();
       setShowHistoryPanel(false);
+      onDismiss?.();
     }
   };
 
@@ -457,6 +468,14 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
           >
             <Command className="h-3.5 w-3.5" />
             Çalıştır
+          </button>
+          <button
+            type="button"
+            onClick={() => onDismiss?.()}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            aria-label="Komut satirini kapat"
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -579,11 +598,15 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
 AiCommandBar.propTypes = {
   onExecute: PropTypes.func,
   onQuickAddAsset: PropTypes.func,
+  onDismiss: PropTypes.func,
+  autoFocusOnMount: PropTypes.bool,
 };
 
 AiCommandBar.defaultProps = {
   onExecute: async () => ({ message: '' }),
   onQuickAddAsset: () => {},
+  onDismiss: () => {},
+  autoFocusOnMount: true,
 };
 
 export default AiCommandBar;

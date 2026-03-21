@@ -50,6 +50,7 @@ const INSIGHT_TONE_STORAGE_KEY = 'tek-finance:insight-tone';
 const ATH_CELEBRATION_STORAGE_PREFIX = 'tek-finance:ath-celebration';
 const ATH_CELEBRATION_DURATION_MS = 3800;
 const WEEKLY_FLOW_STORAGE_PREFIX = 'tek-finance:weekly-flow';
+const ONBOARDING_SKIPPED_STORAGE_KEY = 'onboarding_skipped';
 
 const resolveIsoWeekKey = (date = new Date()) => {
   const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -146,11 +147,13 @@ export default function App() {
     hasPreferenceRecord: false,
     riskProfile: '',
   });
+  const [hasSkippedOnboarding, setHasSkippedOnboarding] = useState(false);
   const [goalSuccessFlow, setGoalSuccessFlow] = useState(null);
   const [marketDropInsight, setMarketDropInsight] = useState(null);
   const [isMarketDropInsightLoading, setIsMarketDropInsightLoading] = useState(false);
   const [weeklyFlowOpen, setWeeklyFlowOpen] = useState(false);
   const [weeklyFlowStep, setWeeklyFlowStep] = useState(0);
+  const [isCommandBarVisible, setIsCommandBarVisible] = useState(true);
   const athCelebrationTimeoutRef = useRef(null);
   const aiCommandBarRef = useRef(null);
 
@@ -173,9 +176,38 @@ export default function App() {
 
   const handleOpenFabQuickAdd = useCallback(() => {
     setActivePage('dashboard');
+    setIsCommandBarVisible(true);
     window.setTimeout(() => {
       aiCommandBarRef.current?.focus?.();
     }, 120);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const skipped = window.localStorage.getItem(ONBOARDING_SKIPPED_STORAGE_KEY) === 'true';
+    setHasSkippedOnboarding(skipped);
+  }, [authUser?.id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handleGlobalShortcuts = (event) => {
+      if ((event.metaKey || event.ctrlKey) && String(event.key || '').toLowerCase() === 'k') {
+        event.preventDefault();
+        setIsCommandBarVisible(true);
+        window.setTimeout(() => {
+          aiCommandBarRef.current?.focus?.();
+        }, 60);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalShortcuts);
+    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
   }, []);
 
   useEffect(() => {
@@ -903,6 +935,7 @@ export default function App() {
     && !onboardingState.loading
     && !isPortfolioLoading
     && !onboardingState.hasCompleted
+    && !hasSkippedOnboarding
     && (portfolio.length === 0 || !onboardingState.hasPreferenceRecord);
 
   const weeklySummary = useMemo(() => {
@@ -997,10 +1030,24 @@ export default function App() {
       riskProfile: String(payload.risk_profile || ''),
     }));
 
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(ONBOARDING_SKIPPED_STORAGE_KEY);
+    }
+    setHasSkippedOnboarding(false);
+
     setActivePage('dashboard');
     triggerCelebration();
     toast.success('Kurulum tamamlandı. Hoş geldin!');
   }, [authUser?.id, triggerCelebration]);
+
+  const handleSkipOnboarding = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(ONBOARDING_SKIPPED_STORAGE_KEY, 'true');
+    }
+
+    setHasSkippedOnboarding(true);
+    toast('Kurulum simdilik ertelendi.');
+  }, []);
 
   const renderPercentText = (value) => {
     const numericValue = Number(value || 0);
@@ -1186,6 +1233,7 @@ export default function App() {
         open={shouldShowOnboarding}
         loading={onboardingState.saving}
         onComplete={handleCompleteOnboarding}
+        onSkip={handleSkipOnboarding}
       />
 
       <SidebarMenu
@@ -1210,11 +1258,30 @@ export default function App() {
       </div>
 
       <div className={`mb-4 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
-        <AiCommandBar
-          ref={aiCommandBarRef}
-          onExecute={handleExecuteAiCommand}
-          onQuickAddAsset={handleQuickAddFromPriceResult}
-        />
+        {isCommandBarVisible ? (
+          <AiCommandBar
+            ref={aiCommandBarRef}
+            onExecute={handleExecuteAiCommand}
+            onQuickAddAsset={handleQuickAddFromPriceResult}
+            onDismiss={() => setIsCommandBarVisible(false)}
+            autoFocusOnMount
+          />
+        ) : (
+          <div className="mx-auto w-full max-w-[960px] px-3 sm:px-4 md:px-8">
+            <button
+              type="button"
+              onClick={() => {
+                setIsCommandBarVisible(true);
+                window.setTimeout(() => {
+                  aiCommandBarRef.current?.focus?.();
+                }, 60);
+              }}
+              className="rounded-2xl border border-slate-300 bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm backdrop-blur-xl transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Komut Satirini Ac (Ctrl+K)
+            </button>
+          </div>
+        )}
       </div>
 
       <main className={`mx-auto max-w-[1400px] space-y-6 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>

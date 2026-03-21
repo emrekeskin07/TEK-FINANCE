@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bitcoin, CandlestickChart, Coins, DollarSign, Landmark, Rocket, Scale, Shield } from 'lucide-react';
+import { Bitcoin, CandlestickChart, Coins, DollarSign, Landmark, Rocket, Scale, Shield, X } from 'lucide-react';
 
 const INTEREST_OPTIONS = [
   { key: 'hisse', label: 'Hisse Senedi', Icon: CandlestickChart },
@@ -47,7 +47,7 @@ const SLIDE_VARIANTS = {
   }),
 };
 
-export default function OnboardingWizard({ open, loading, onComplete }) {
+export default function OnboardingWizard({ open, loading, onComplete, onSkip }) {
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
   const [selectedInterests, setSelectedInterests] = useState([]);
@@ -63,6 +63,22 @@ export default function OnboardingWizard({ open, loading, onComplete }) {
     }
     return String(firstAssetCommand || '').trim().length > 0;
   }, [step, selectedInterests, riskProfile, firstAssetCommand]);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape' && !loading) {
+        event.preventDefault();
+        onSkip?.();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [open, loading, onSkip]);
 
   if (!open) {
     return null;
@@ -98,15 +114,44 @@ export default function OnboardingWizard({ open, loading, onComplete }) {
     });
   };
 
+  const handlePrimaryAction = async () => {
+    if (!canContinue || loading) {
+      return;
+    }
+
+    if (step < 3) {
+      nextStep();
+      return;
+    }
+
+    await handleComplete();
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    await handlePrimaryAction();
+  };
+
   return (
     <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/45 p-4 backdrop-blur-md">
-      <div className="w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-white/95 shadow-[0_36px_100px_rgba(2,6,23,0.45)] dark:bg-slate-950/95">
-        <div className="border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+      <form onSubmit={handleSubmit} className="w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-white/95 shadow-[0_36px_100px_rgba(2,6,23,0.45)] dark:bg-slate-950/95">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+          <div>
           <p className="text-ui-body font-semibold text-slate-500 dark:text-slate-400">TEK Finans Kurulum Sihirbazı</p>
           <h3 className="mt-1 text-ui-h2 text-slate-800 dark:text-slate-100">3 adımda sana özel bir başlangıç hazırlayalım</h3>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
             <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-300" style={{ width: `${(step / 3) * 100}%` }} />
           </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onSkip?.()}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            aria-label="Kurulum modalini kapat"
+            disabled={loading}
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         <div className="min-h-[340px] px-6 py-6 md:px-8 md:py-7">
@@ -179,6 +224,7 @@ export default function OnboardingWizard({ open, loading, onComplete }) {
                       <input
                         value={firstAssetCommand}
                         onChange={(event) => setFirstAssetCommand(event.target.value)}
+                        autoFocus
                         className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-500 dark:text-slate-100 dark:placeholder:text-slate-500"
                         placeholder="Örn: 100 gram altınım var"
                       />
@@ -202,8 +248,7 @@ export default function OnboardingWizard({ open, loading, onComplete }) {
 
           {step < 3 ? (
             <button
-              type="button"
-              onClick={nextStep}
+              type="submit"
               disabled={!canContinue || loading}
               className="rounded-xl border border-violet-300/35 bg-violet-600 px-4 py-2 text-ui-body font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -211,8 +256,7 @@ export default function OnboardingWizard({ open, loading, onComplete }) {
             </button>
           ) : (
             <button
-              type="button"
-              onClick={handleComplete}
+              type="submit"
               disabled={!canContinue || loading}
               className="rounded-xl border border-emerald-300/35 bg-emerald-600 px-4 py-2 text-ui-body font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -220,7 +264,18 @@ export default function OnboardingWizard({ open, loading, onComplete }) {
             </button>
           )}
         </div>
-      </div>
+
+        <div className="border-t border-slate-200 px-6 py-3 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={() => onSkip?.()}
+            className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            disabled={loading}
+          >
+            Şimdilik Atla
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -229,10 +284,12 @@ OnboardingWizard.propTypes = {
   open: PropTypes.bool,
   loading: PropTypes.bool,
   onComplete: PropTypes.func,
+  onSkip: PropTypes.func,
 };
 
 OnboardingWizard.defaultProps = {
   open: false,
   loading: false,
   onComplete: async () => {},
+  onSkip: () => {},
 };
