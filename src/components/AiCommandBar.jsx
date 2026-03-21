@@ -10,11 +10,13 @@ import PropTypes from 'prop-types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Command, Loader2, Plus, Sparkles, X } from 'lucide-react';
 import { fetchSymbolSuggestions, fetchYahooData } from '../services/api';
+import { parseNaturalInvestmentCommand } from '../services/nlInvestmentParser';
 
 const PLACEHOLDER_HINTS = [
-  '1000 TL altın ekle...',
+  '1000 TL Tesla al...',
+  '70 gram altın ekle...',
   'Portföyüm ne durumda?',
-  'Hedefime ne kadar kaldı?',
+  '5 adet Apple hissesi ekle...',
 ];
 
 const TYPE_SPEED_MS = 45;
@@ -22,7 +24,7 @@ const DELETE_SPEED_MS = 26;
 const HOLD_MS = 1100;
 const PRICE_LOOKUP_DEBOUNCE_MS = 360;
 const COMMAND_HISTORY_STORAGE_KEY = 'tek-finance:ai-command-history';
-const MAX_HISTORY_COUNT = 12;
+const MAX_HISTORY_COUNT = 3;
 
 const QUICK_ACTIONS = [
   { id: 'portfolio', label: '📈 Portföy Özeti', command: 'Portföyüm ne durumda?' },
@@ -61,81 +63,34 @@ const writeCommandHistory = (history) => {
   window.localStorage.setItem(COMMAND_HISTORY_STORAGE_KEY, JSON.stringify(history));
 };
 
-const parseIntent = (inputValue) => {
-  const raw = String(inputValue || '').trim();
-  const normalized = normalize(raw);
-
-  if (!normalized) {
-    return { kind: 'empty', raw };
-  }
-
-  if (normalized.includes('portföyüm ne durumda') || normalized.includes('portfoyum ne durumda') || normalized.includes('portföyüm nasıl') || normalized.includes('portfoyum nasil')) {
-    return { kind: 'portfolio_status', raw };
-  }
-
-  if (normalized.includes('hedefime ne kadar kaldı') || normalized.includes('hedefime ne kadar kaldi')) {
-    return { kind: 'goal_status', raw };
-  }
-
-  if (normalized.includes('altın fiyatı ne') || normalized.includes('altin fiyati ne') || normalized.includes('gram altın kaç') || normalized.includes('gram altin kac')) {
-    return { kind: 'gold_price', raw };
-  }
-
-  const addMatch = raw.match(/(\d+(?:[\.,]\d+)?)\s*(tl|try)?\s*(altın|altin|gümüş|gumus|nakit|dolar|usd)?\s*(ekle|yatır|yatir)?/i);
-  if (addMatch) {
-    const amountRaw = String(addMatch[1] || '').replace(',', '.');
-    const amount = Number(amountRaw);
-    const assetToken = normalize(addMatch[3] || 'nakit');
-
-    let assetType = 'nakit';
-    if (assetToken.includes('alt')) {
-      assetType = 'altin';
-    } else if (assetToken.includes('gümüş') || assetToken.includes('gumus')) {
-      assetType = 'gumus';
-    } else if (assetToken.includes('dolar') || assetToken.includes('usd')) {
-      assetType = 'usd';
-    }
-
-    if (Number.isFinite(amount) && amount > 0 && normalized.includes('ekle')) {
-      return {
-        kind: 'add_asset',
-        raw,
-        amount,
-        assetType,
-      };
-    }
-  }
-
-  return { kind: 'unknown', raw };
-};
-
-const buildPreview = (intent) => {
-  if (!intent || intent.kind === 'empty') {
+const buildPreviewFromParsed = (parsed) => {
+  if (!parsed || parsed.kind === 'empty') {
     return '';
   }
 
-  if (intent.kind === 'portfolio_status') {
+  if (parsed.kind === 'portfolio_status') {
     return 'Portföy özeti ve analiz bölümüne yönlendirilecek.';
   }
 
-  if (intent.kind === 'goal_status') {
+  if (parsed.kind === 'goal_status') {
     return 'Hedef ilerleme özeti açılacak.';
   }
 
-  if (intent.kind === 'gold_price') {
+  if (parsed.kind === 'gold_price') {
     return 'Anlık Gram Altın fiyatı gösterilecek.';
   }
 
-  if (intent.kind === 'add_asset') {
-    const amountText = intent.amount.toLocaleString('tr-TR', { maximumFractionDigits: 2 });
-    const labelMap = {
-      nakit: 'Nakit',
-      altin: 'Altın',
-      gumus: 'Gümüş',
-      usd: 'USD',
-    };
+  if (parsed.kind === 'add_asset') {
+    const quantityText = Number.isFinite(Number(parsed.quantity))
+      ? Number(parsed.quantity).toLocaleString('tr-TR', { maximumFractionDigits: 4 })
+      : '';
+    const unitText = parsed.unit || (parsed.asset_type === 'gold' || parsed.asset_type === 'silver' ? 'gram' : 'adet');
+    const assetText = parsed.asset_name || parsed.asset_type || 'varlık';
+    return `${quantityText ? `${quantityText} ${unitText}` : ''} ${assetText} için işlem hazırlanıyor.`.replace(/\s+/g, ' ').trim();
+  }
 
-    return `₺${amountText} tutarında ${labelMap[intent.assetType] || 'Nakit'} varlık ekleniyor...`;
+  if (parsed.kind === 'unknown' && parsed.suggestion) {
+    return parsed.suggestion;
   }
 
   return 'Komut analiz ediliyor. Daha net bir ifade deneyebilirsin.';
@@ -194,15 +149,16 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
   const [hintIndex, setHintIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [resultMessage, setResultMessage] = useState('');
+  const [resultFeedback, setResultFeedback] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isPriceLoading, setIsPriceLoading] = useState(false);
   const [priceResult, setPriceResult] = useState(null);
   const [commandHistory, setCommandHistory] = useState([]);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [activeChipId, setActiveChipId] = useState('');
 
-  const intent = useMemo(() => parseIntent(value), [value]);
-  const previewText = useMemo(() => buildPreview(intent), [intent]);
+  const parsedIntent = useMemo(() => parseNaturalInvestmentCommand(value), [value]);
+  const previewText = useMemo(() => buildPreviewFromParsed(parsedIntent), [parsedIntent]);
 
   useImperativeHandle(ref, () => ({
     focus: () => {
@@ -354,23 +310,70 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
       return;
     }
 
-    const parsedIntent = parseIntent(commandText);
+    const parsed = parseNaturalInvestmentCommand(commandText);
 
-    if (parsedIntent.kind === 'unknown' && priceResult) {
+    setIsAnalyzing(true);
+    setResultFeedback({
+      type: 'analyzing',
+      title: 'Analyzing...',
+      message: 'Komutunuz doğal dil parser tarafından çözümleniyor.',
+    });
+
+    if (parsed.kind === 'unknown' && parsed.suggestion) {
+      setIsAnalyzing(false);
+      setResultFeedback({
+        type: 'error',
+        title: 'Komut netleşmedi',
+        message: parsed.suggestion,
+      });
+      return;
+    }
+
+    if (parsed.kind === 'unknown' && priceResult) {
       const localPriceMessage = `${priceResult.name} (${priceResult.symbol}) anlık fiyatı: ${formattedPrice} ${priceResult.currency} (${formattedChange})`;
-      setResultMessage(localPriceMessage);
+      setIsAnalyzing(false);
+      setResultFeedback({
+        type: 'info',
+        title: '📊 Fiyat Bilgisi',
+        message: localPriceMessage,
+      });
       pushHistory(commandText);
       return;
     }
 
-    const result = await onExecute?.(parsedIntent);
-    const nextMessage = String(result?.message || '');
-    if (nextMessage) {
-      setResultMessage(nextMessage);
-    }
+    try {
+      const result = await onExecute?.(parsed);
+      const nextMessage = String(result?.message || '').trim();
+      const fallbackSuccess = parsed.kind === 'add_asset'
+        ? `✅ ${parsed.quantity || ''}${parsed.unit ? ` ${parsed.unit}` : ''} ${parsed.asset_name || parsed.asset_type || 'varlık'} işlendi. 📊 Average cost updated.`.replace(/\s+/g, ' ').trim()
+        : 'Komut başarıyla uygulandı.';
 
-    if (isSuccessfulResult(nextMessage, parsedIntent.kind)) {
-      pushHistory(commandText);
+      setIsAnalyzing(false);
+
+      const resolvedMessage = nextMessage || fallbackSuccess;
+      setResultFeedback({
+        type: 'success',
+        title: parsed.kind === 'add_asset' ? '✅ İşlem Alındı' : '✅ Komut Uygulandı',
+        message: resolvedMessage,
+        meta: {
+          intent: parsed.intent,
+          assetType: parsed.asset_type,
+          assetName: parsed.asset_name,
+          quantity: parsed.quantity,
+          unit: parsed.unit,
+        },
+      });
+
+      if (isSuccessfulResult(resolvedMessage, parsed.kind)) {
+        pushHistory(commandText);
+      }
+    } catch {
+      setIsAnalyzing(false);
+      setResultFeedback({
+        type: 'error',
+        title: 'Komut işlenemedi',
+        message: 'Lütfen ifadeyi biraz daha net yazıp tekrar deneyin.',
+      });
     }
   };
 
@@ -407,7 +410,6 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
     : '';
 
   const historyItems = useMemo(() => commandHistory.slice(0, 3), [commandHistory]);
-  const shouldShowHistory = historyItems.length > 0 && (!value.trim() || showHistoryPanel);
 
   const handleQuickAction = async (chip) => {
     if (!chip) {
@@ -437,17 +439,17 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
   };
 
   return (
-    <section className="mx-auto w-full max-w-[960px] px-3 sm:px-4 md:px-8">
+    <section className="mx-auto w-full max-w-[1160px] px-3 sm:px-4 md:px-8">
       <motion.form
         onSubmit={handleSubmit}
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
-        className={`rounded-2xl border bg-white/90 p-3 shadow-md backdrop-blur-xl dark:bg-slate-900/85 ${isFocused ? 'border-violet-400/65 shadow-[0_0_0_1px_rgba(167,139,250,0.45),0_0_36px_rgba(59,130,246,0.22)] animate-pulse' : 'border-slate-200 dark:border-slate-700'}`}
+        className={`rounded-3xl border bg-white/92 p-4 shadow-[0_28px_70px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:bg-slate-900/88 ${isFocused ? 'border-violet-400/70 shadow-[0_0_0_1px_rgba(167,139,250,0.5),0_0_48px_rgba(59,130,246,0.22)]' : 'border-slate-200 dark:border-slate-700'}`}
       >
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-violet-300/35 bg-violet-500/12 text-violet-500 dark:text-violet-300">
-            <Sparkles className="h-4 w-4" />
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-300/35 bg-violet-500/12 text-violet-500 dark:text-violet-300">
+            <Sparkles className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
             <input
@@ -457,14 +459,14 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
               onKeyDown={handleInputKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-500 dark:text-slate-100 dark:placeholder:text-slate-500"
+              className="w-full bg-transparent text-lg text-slate-800 outline-none placeholder:text-slate-500 dark:text-slate-100 dark:placeholder:text-slate-500"
               placeholder={`Nasıl yardımcı olabilirim? ${typedHint}`}
             />
           </div>
-          {isPriceLoading ? <Loader2 className="h-4 w-4 animate-spin text-violet-400" /> : null}
+          {isPriceLoading || isAnalyzing ? <Loader2 className="h-5 w-5 animate-spin text-violet-400" /> : null}
           <button
             type="submit"
-            className="inline-flex h-9 items-center gap-1 rounded-lg border border-violet-300/40 bg-violet-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-violet-700"
+            className="inline-flex h-11 items-center gap-1 rounded-xl border border-violet-300/40 bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-700"
           >
             <Command className="h-3.5 w-3.5" />
             Çalıştır
@@ -480,7 +482,7 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
         </div>
 
         <AnimatePresence>
-          {shouldShowHistory ? (
+          {showHistoryPanel && historyItems.length > 0 ? (
             <motion.div
               initial={{ opacity: 0, y: -8, height: 0 }}
               animate={{ opacity: 1, y: 0, height: 'auto' }}
@@ -579,17 +581,41 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAss
         </AnimatePresence>
 
         <AnimatePresence>
-          {resultMessage ? (
+          {resultFeedback ? (
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className="mt-2 rounded-2xl border border-slate-200/80 bg-slate-100 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              className={`mt-2 rounded-2xl border px-3 py-2 text-sm ${resultFeedback.type === 'error' ? 'border-rose-300/60 bg-rose-500/10 text-rose-200' : resultFeedback.type === 'success' ? 'border-emerald-300/50 bg-emerald-500/10 text-emerald-100' : 'border-slate-200/80 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}
             >
-              {`AI: ${resultMessage}`}
+              <p className="font-semibold">{resultFeedback.title}</p>
+              <p className="mt-1">{resultFeedback.message}</p>
+              {resultFeedback.meta ? (
+                <p className="mt-1 text-xs opacity-80">
+                  intent: {resultFeedback.meta.intent || '-'} | asset_type: {resultFeedback.meta.assetType || '-'} | asset_name: {resultFeedback.meta.assetName || '-'} | quantity: {resultFeedback.meta.quantity ?? '-'} | unit: {resultFeedback.meta.unit || '-'}
+                </p>
+              ) : null}
             </motion.div>
           ) : null}
         </AnimatePresence>
+
+        {historyItems.length > 0 ? (
+          <div className="mt-3 flex flex-col items-start gap-2">
+            {historyItems.map((entry, index) => (
+              <button
+                key={`${entry}-${index}`}
+                type="button"
+                onClick={async () => {
+                  setValue(entry);
+                  await executeCommand(entry);
+                }}
+                className="max-w-[85%] rounded-2xl border border-slate-300/70 bg-white px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              >
+                {entry}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </motion.form>
     </section>
   );

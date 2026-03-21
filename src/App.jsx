@@ -688,6 +688,10 @@ export default function App() {
 
   const handleExecuteAiCommand = useCallback(async (intent) => {
     const kind = String(intent?.kind || 'unknown');
+    const parsedQuantity = Number(intent?.quantity || 0);
+    const parsedAmount = Number(intent?.amount || 0);
+    const parsedUnit = String(intent?.unit || '').toLowerCase();
+    const assetName = String(intent?.asset_name || '').trim();
 
     if (kind === 'portfolio_status') {
       navigateToPage('dashboard');
@@ -716,12 +720,24 @@ export default function App() {
       return { message: `Anlık Gram Altın: ${gramGold.toLocaleString('tr-TR', { maximumFractionDigits: 2 })} TL` };
     }
 
-    if (kind === 'add_asset') {
-      const amountTL = Number(intent?.amount || 0);
-      const assetType = String(intent?.assetType || 'nakit');
+    if (kind === 'market_query') {
+      navigateToPage('analysis');
+      return { message: 'Piyasa odaklı soru algılandı, analiz sayfasına yönlendiriyorum.' };
+    }
 
-      if (!Number.isFinite(amountTL) || amountTL <= 0) {
-        return { message: 'Tutarı anlayamadım, örn: 500 TL nakit ekle.' };
+    if (kind === 'update_asset') {
+      navigateToPage('portfolio');
+      return { message: 'Güncelleme isteği algılandı. Lütfen portföyden varlığı seçip güncelleyin.' };
+    }
+
+    if (kind === 'add_asset') {
+      const assetType = String(intent?.assetType || 'nakit');
+      const amountTL = Number.isFinite(parsedAmount) && parsedAmount > 0
+        ? parsedAmount
+        : (parsedUnit === 'tl' || parsedUnit === 'try' ? parsedQuantity : 0);
+
+      if (!Number.isFinite(parsedQuantity) && !Number.isFinite(amountTL)) {
+        return { message: 'Miktarı anlayamadım, örn: 70 gram gümüş ekle.' };
       }
 
       const openPrefilledModal = (prefillData) => {
@@ -732,7 +748,9 @@ export default function App() {
 
       if (assetType === 'altin') {
         const gramGold = Number(marketData?.['GC=F__GRAM'] || marketData?.GRAM_ALTIN || 0);
-        const quantityGram = gramGold > 0 ? (amountTL / gramGold) : 0;
+        const quantityGram = parsedUnit === 'gram' || parsedUnit === 'gr'
+          ? parsedQuantity
+          : (gramGold > 0 ? (amountTL / gramGold) : 0);
 
         window.setTimeout(() => {
           openPrefilledModal({
@@ -746,12 +764,16 @@ export default function App() {
           });
         }, 120);
 
-        return { message: `Altın alımı için yaklaşık ${amountTL.toLocaleString('tr-TR')} TL prefill hazırlandı.` };
+        return { message: parsedUnit === 'gram' || parsedUnit === 'gr'
+          ? `${quantityGram.toLocaleString('tr-TR', { maximumFractionDigits: 4 })} gram altın için form hazırlandı.`
+          : `Altın alımı için yaklaşık ${amountTL.toLocaleString('tr-TR')} TL prefill hazırlandı.` };
       }
 
       if (assetType === 'gumus') {
         const silverGram = Number(marketData?.['SI=F__GRAM'] || 0);
-        const quantityGram = silverGram > 0 ? (amountTL / silverGram) : 0;
+        const quantityGram = parsedUnit === 'gram' || parsedUnit === 'gr'
+          ? parsedQuantity
+          : (silverGram > 0 ? (amountTL / silverGram) : 0);
 
         window.setTimeout(() => {
           openPrefilledModal({
@@ -765,12 +787,16 @@ export default function App() {
           });
         }, 120);
 
-        return { message: `Gümüş alımı için yaklaşık ${amountTL.toLocaleString('tr-TR')} TL prefill hazırlandı.` };
+        return { message: parsedUnit === 'gram' || parsedUnit === 'gr'
+          ? `${quantityGram.toLocaleString('tr-TR', { maximumFractionDigits: 4 })} gram gümüş için form hazırlandı.`
+          : `Gümüş alımı için yaklaşık ${amountTL.toLocaleString('tr-TR')} TL prefill hazırlandı.` };
       }
 
       if (assetType === 'usd') {
         const usdTryRate = Number(rates?.USD || marketData?.['TRY=X'] || 0);
-        const quantityUsd = usdTryRate > 0 ? (amountTL / usdTryRate) : 0;
+        const quantityUsd = parsedUnit === 'usd'
+          ? parsedQuantity
+          : (usdTryRate > 0 ? (amountTL / usdTryRate) : 0);
 
         window.setTimeout(() => {
           openPrefilledModal({
@@ -785,6 +811,25 @@ export default function App() {
         }, 120);
 
         return { message: `USD alımı için yaklaşık ${amountTL.toLocaleString('tr-TR')} TL prefill hazırlandı.` };
+      }
+
+      if (assetType === 'stock' || assetType === 'fund') {
+        const stockQuantity = Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : '';
+        const normalizedSymbol = String(assetName || '').toUpperCase().replace(/\s+/g, '_');
+
+        window.setTimeout(() => {
+          openPrefilledModal({
+            bank: 'Banka Belirtilmedi',
+            category: assetType === 'fund' ? 'Yatırım Fonu' : 'Hisse Senedi',
+            symbol: normalizedSymbol || 'UNKNOWN',
+            name: assetName || (assetType === 'fund' ? 'Yatırım Fonu' : 'Hisse Senedi'),
+            amount: stockQuantity,
+            avgPrice: '',
+            unitType: 'lot',
+          });
+        }, 120);
+
+        return { message: `${assetName || 'Varlık'} için ${stockQuantity || ''} adet prefill hazırlandı. Ortalama maliyeti girerek devam edebilirsiniz.`.trim() };
       }
 
       window.setTimeout(() => {
