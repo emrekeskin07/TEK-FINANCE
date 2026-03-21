@@ -10,6 +10,7 @@ import { calculateRealReturnPercent, getLatestAnnualInflationRate } from '../uti
 import PortfolioTableRow from './Table/PortfolioTableRow';
 import PortfolioTableControls from './Table/PortfolioTableControls';
 import PortfolioTableHeader from './Table/PortfolioTableHeader';
+import AssetGroup from './dashboard/AssetGroup';
 import { usePortfolioTableLogic } from '../hooks/usePortfolioTableLogic';
 
 
