@@ -21,6 +21,7 @@ import FinancialStrategyCenterPage from './components/FinancialStrategyCenterPag
 import SmartSuggestionsPage from './components/SmartSuggestionsPage';
 import OperationsPage from './components/OperationsPage';
 import SettingsPage from './components/SettingsPage';
+import OnboardingWizard from './components/OnboardingWizard';
 import Chart from './components/dashboard/Chart';
 import Stats from './components/dashboard/Stats';
 import KpiRibbon from './components/dashboard/KpiRibbon';
@@ -36,6 +37,7 @@ import {
   isDarkThemeId,
 } from './utils/themePresets';
 import { LEGAL_DISCLAIMER_TEXT } from './constants/trustContent';
+import { supabase } from './supabaseClient';
 
 const LAST_DARK_THEME_STORAGE_KEY = 'tek-finance:last-dark-theme';
 const PRIVACY_STARTUP_STORAGE_KEY = 'tek-finance:privacy-startup-enabled';
@@ -124,6 +126,13 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showAthCelebration, setShowAthCelebration] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+  const [onboardingState, setOnboardingState] = useState({
+    loading: true,
+    saving: false,
+    hasCompleted: false,
+    hasPreferenceRecord: false,
+    riskProfile: '',
+  });
   const athCelebrationTimeoutRef = useRef(null);
   const aiCommandBarRef = useRef(null);
 
@@ -150,6 +159,69 @@ export default function App() {
       aiCommandBarRef.current?.focus?.();
     }, 120);
   }, []);
+
+  useEffect(() => {
+    if (!supabase || !authUser?.id) {
+      setOnboardingState({
+        loading: false,
+        saving: false,
+        hasCompleted: false,
+        hasPreferenceRecord: false,
+        riskProfile: '',
+      });
+      return;
+    }
+
+    let isDisposed = false;
+
+    const loadOnboardingState = async () => {
+      setOnboardingState((prev) => ({ ...prev, loading: true }));
+
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('has_completed_onboarding,risk_profile')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+
+      if (isDisposed) {
+        return;
+      }
+
+      if (error) {
+        console.warn('user_preferences okunamadi:', error?.message || error);
+        setOnboardingState((prev) => ({
+          ...prev,
+          loading: false,
+          hasCompleted: false,
+          hasPreferenceRecord: false,
+          riskProfile: '',
+        }));
+        return;
+      }
+
+      const hasCompleted = Boolean(data?.has_completed_onboarding);
+      const riskProfile = String(data?.risk_profile || '').trim();
+      const hasPreferenceRecord = Boolean(data);
+
+      setOnboardingState((prev) => ({
+        ...prev,
+        loading: false,
+        hasCompleted,
+        hasPreferenceRecord,
+        riskProfile,
+      }));
+
+      if (hasCompleted && riskProfile === 'conservative') {
+        setInsightTone('neutral');
+      }
+    };
+
+    loadOnboardingState();
+
+    return () => {
+      isDisposed = true;
+    };
+  }, [authUser?.id]);
 
   useEffect(() => {
     if (!authUser) {
@@ -727,6 +799,58 @@ export default function App() {
     }
   }, [navigateToPage]);
 
+  const shouldShowOnboarding = Boolean(authUser)
+    && !onboardingState.loading
+    && !isPortfolioLoading
+    && !onboardingState.hasCompleted
+    && (portfolio.length === 0 || !onboardingState.hasPreferenceRecord);
+
+  const handleCompleteOnboarding = useCallback(async ({ interests, riskProfile, firstAssetCommand }) => {
+    if (!supabase || !authUser?.id) {
+      toast.error('Kurulum ayarlari kaydedilemedi.');
+      return;
+    }
+
+    setOnboardingState((prev) => ({ ...prev, saving: true }));
+
+    const payload = {
+      user_id: authUser.id,
+      interests: Array.isArray(interests) ? interests : [],
+      risk_profile: String(riskProfile || '').trim() || null,
+      first_asset_command: String(firstAssetCommand || '').trim() || null,
+      has_completed_onboarding: true,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('user_preferences')
+      .upsert(payload, { onConflict: 'user_id' });
+
+    if (error) {
+      toast.error('Kurulum tercihleri kaydedilemedi.');
+      setOnboardingState((prev) => ({ ...prev, saving: false }));
+      return;
+    }
+
+    if (payload.risk_profile === 'conservative') {
+      setInsightTone('neutral');
+    } else {
+      setInsightTone('coaching');
+    }
+
+    setOnboardingState((prev) => ({
+      ...prev,
+      saving: false,
+      hasCompleted: true,
+      hasPreferenceRecord: true,
+      riskProfile: String(payload.risk_profile || ''),
+    }));
+
+    setActivePage('dashboard');
+    triggerCelebration();
+    toast.success('Kurulum tamamlandı. Hoş geldin!');
+  }, [authUser?.id, triggerCelebration]);
+
   const renderPercentText = (value) => {
     const numericValue = Number(value || 0);
     const percentText = `${numericValue >= 0 ? '+' : '-'}%${Math.abs(numericValue).toFixed(2)}`;
@@ -897,6 +1021,12 @@ export default function App() {
             iconTheme: { primary: '#10b981', secondary: '#1e293b' }
           }
         }} 
+      />
+
+      <OnboardingWizard
+        open={shouldShowOnboarding}
+        loading={onboardingState.saving}
+        onComplete={handleCompleteOnboarding}
       />
 
       <SidebarMenu
