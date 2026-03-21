@@ -86,6 +86,39 @@ html[data-theme='light-soft'] body {
 	html.dark .skeleton-ui::after {
 		background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.24), transparent);
 	}
+
+	.chart-range-tooltip {
+		position: relative;
+	}
+
+	.chart-range-tooltip::after {
+		content: attr(data-title);
+		position: absolute;
+		left: 50%;
+		top: -0.5rem;
+		transform: translate(-50%, -100%);
+		opacity: 0;
+		pointer-events: none;
+		white-space: nowrap;
+		border-radius: 0.5rem;
+		border: 1px solid rgba(168, 85, 247, 0.45);
+		background: #1a1a2e;
+		padding: 0.38rem 0.55rem;
+		font-size: 0.68rem;
+		font-weight: 600;
+		line-height: 1;
+		letter-spacing: 0.02em;
+		color: #f8fafc;
+		box-shadow: 0 10px 24px rgba(2, 6, 23, 0.38);
+		z-index: 80;
+		transition: opacity 220ms ease, transform 220ms ease;
+	}
+
+	.chart-range-tooltip:hover::after,
+	.chart-range-tooltip:focus-visible::after {
+		opacity: 1;
+		transform: translate(-50%, calc(-100% - 0.18rem));
+	}
 }
 
 @keyframes skeletonShimmer {

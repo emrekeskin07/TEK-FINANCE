@@ -273,7 +273,7 @@ export default function GoalTracker() {
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-tight text-slate-400">Finansal Hedef Takibi</p>
-          <h3 className="mt-1 text-xl font-black tracking-tight text-slate-50 md:text-2xl">Goal Tracker</h3>
+          <h3 className="mt-1 text-xl font-black tracking-tight text-slate-50 md:text-2xl">Hedef Takibi</h3>
           <p className="mt-2 text-xs text-slate-400">Bir hedef belirle, ilerlemeni takip et ve tahmini bitis suresini gor.</p>
         </div>
 

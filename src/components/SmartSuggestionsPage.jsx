@@ -11,19 +11,19 @@ const RISK_PROFILE_STORAGE_KEY = 'tek-finance:risk-profile';
 const RISK_PROFILES = [
   {
     id: 'Muhafazakar',
-    shortLabel: 'Safe',
+    shortLabel: 'Muhafazakâr',
     title: 'Muhafazakar',
     description: 'Ana parayı korumayı hedefler (Altın, Mevduat odaklı).',
   },
   {
     id: 'Dengeli',
-    shortLabel: 'Balanced',
+    shortLabel: 'Dengeli',
     title: 'Dengeli',
     description: 'Risk ve getiriyi orta yolda buluşturur (Hisse ve Değerli Maden karışımı).',
   },
   {
     id: 'Atılgan',
-    shortLabel: 'Aggressive',
+    shortLabel: 'Atılgan',
     title: 'Atılgan',
     description: 'Yüksek getiri için yüksek riski göze alır (Büyüme Hisseleri, Kripto odaklı).',
   },
@@ -135,7 +135,7 @@ export default function SmartSuggestionsPage({ portfolioDistribution, dashboardT
       <form onSubmit={handleAnalyze} className="mb-5 rounded-xl border border-white/10 bg-slate-950/65 p-4">
         <div className="mb-2 flex items-center gap-2">
           <MessageSquareText className="h-4 w-4 text-slate-300" />
-          <p className="text-sm font-semibold text-slate-200">AI Analiz Sohbeti</p>
+          <p className="text-sm font-semibold text-slate-200">Yapay Zeka Analizi</p>
         </div>
         <textarea
           value={promptText}

@@ -8,12 +8,12 @@ import Button from './common/Button';
 import { convertCurrency, formatCurrencyParts } from '../utils/helpers';
 
 const RANGE_OPTIONS = [
-  { key: '1G', label: '1G', days: 1 },
-  { key: '1H', label: '1H', days: 7 },
-  { key: '1A', label: '1A', days: 30 },
-  { key: '3A', label: '3A', days: 90 },
-  { key: '1Y', label: '1Y', days: 365 },
-  { key: 'TUMU', label: 'TÜMÜ', days: null },
+  { key: '1G', label: '1G', days: 1, title: '1 Gün' },
+  { key: '1H', label: '1H', days: 7, title: '1 Hafta' },
+  { key: '1A', label: '1A', days: 30, title: '1 Ay' },
+  { key: '3A', label: '3A', days: 90, title: '3 Ay' },
+  { key: '1Y', label: '1Y', days: 365, title: '1 Yıl' },
+  { key: 'TUMU', label: 'TÜMÜ', days: null, title: 'Tüm Zamanlar' },
 ];
 
 function TooltipContent({ active, payload, formatter }) {
@@ -174,6 +174,23 @@ export default function GrowthChart() {
     return Number(dataMax || 0) + resolveAggressiveDomainPadding(dataMin, dataMax);
   };
 
+  const hideNativeTooltip = (event) => {
+    const button = event.currentTarget;
+    if (button.hasAttribute('title')) {
+      button.setAttribute('data-native-title', button.getAttribute('title') || '');
+      button.removeAttribute('title');
+    }
+  };
+
+  const restoreNativeTooltip = (event) => {
+    const button = event.currentTarget;
+    const cachedTitle = button.getAttribute('data-native-title');
+    if (cachedTitle) {
+      button.setAttribute('title', cachedTitle);
+      button.removeAttribute('data-native-title');
+    }
+  };
+
   return (
     <motion.section
       layout
@@ -206,7 +223,14 @@ export default function GrowthChart() {
                 type="button"
                 variant="ghost"
                 onClick={() => setSelectedRange(option.key)}
-                className={`relative min-h-[44px] rounded-md px-3 py-2 text-[11px] ${
+                title={option.title}
+                data-title={option.title}
+                aria-label={option.title}
+                onMouseEnter={hideNativeTooltip}
+                onMouseLeave={restoreNativeTooltip}
+                onFocus={hideNativeTooltip}
+                onBlur={restoreNativeTooltip}
+                className={`chart-range-tooltip relative min-h-[44px] rounded-md px-3 py-2 text-[11px] ${
                   isActive
                     ? 'bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 text-slate-50 shadow-[0_0_14px_rgba(217,70,239,0.24)]'
                     : 'text-slate-400 hover:text-slate-100'

@@ -680,19 +680,19 @@ export default function PortfolioTable({
                           type="button"
                           onClick={() => onQuickBuyAsset?.(item)}
                           className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-emerald-400/30 bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-emerald-50 transform-gpu transition-transform duration-200 hover:scale-105 active:scale-95 hover:shadow-[0_0_24px_rgba(16,185,129,0.45)]"
-                          title="Al"
+                          title="Alım Kaydet"
                         >
                           <TrendingUp className="w-3.5 h-3.5" />
-                          <span>Al</span>
+                          <span>Alım Kaydet</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => openSellModal(item, activePrice)}
                           className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-rose-400/30 bg-rose-500 px-3 py-1.5 text-xs font-semibold text-rose-50 transform-gpu transition-transform duration-200 hover:scale-105 active:scale-95 hover:shadow-[0_0_24px_rgba(244,63,94,0.45)]"
-                          title="Sat"
+                          title="Satış Kaydet"
                         >
                           <TrendingDown className="w-3.5 h-3.5" />
-                          <span>Sat</span>
+                          <span>Satış Kaydet</span>
                         </button>
                         <button
                           type="button"
