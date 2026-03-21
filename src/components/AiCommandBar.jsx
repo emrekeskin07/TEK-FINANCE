@@ -8,7 +8,8 @@ import React, {
 } from 'react';
 import PropTypes from 'prop-types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Command, Sparkles } from 'lucide-react';
+import { Command, Loader2, Plus, Sparkles } from 'lucide-react';
+import { fetchSymbolSuggestions, fetchYahooData } from '../services/api';
 
 const PLACEHOLDER_HINTS = [
   '1000 TL altın ekle...',
@@ -19,6 +20,7 @@ const PLACEHOLDER_HINTS = [
 const TYPE_SPEED_MS = 45;
 const DELETE_SPEED_MS = 26;
 const HOLD_MS = 1100;
+const PRICE_LOOKUP_DEBOUNCE_MS = 360;
 
 const normalize = (value) => String(value || '').toLocaleLowerCase('tr-TR').trim();
 
@@ -102,7 +104,53 @@ const buildPreview = (intent) => {
   return 'Komut analiz ediliyor. Daha net bir ifade deneyebilirsin.';
 };
 
-const AiCommandBar = forwardRef(function AiCommandBar({ onExecute }, ref) {
+const shouldSkipPriceLookup = (input) => {
+  const normalized = normalize(input);
+  if (!normalized || normalized.length < 2) {
+    return true;
+  }
+
+  const commandTokens = ['ekle', 'yatır', 'yatir', 'portföyüm', 'portfoyum', 'hedefime', 'kaldı', 'kaldi'];
+  return commandTokens.some((token) => normalized.includes(token));
+};
+
+const normalizeSuggestionToSymbol = (suggestion, input) => {
+  const typed = String(input || '').trim();
+  const normalizedTyped = normalize(typed);
+
+  if (normalizedTyped === 'bitcoin' || normalizedTyped === 'btc') {
+    return { symbol: 'BTC-USD', name: 'Bitcoin' };
+  }
+
+  if (normalizedTyped === 'gram altın' || normalizedTyped === 'gram altin') {
+    return { symbol: 'GC=F', name: 'Gram Altın' };
+  }
+
+  const symbol = String(suggestion?.symbol || typed).trim().toUpperCase();
+  const name = String(suggestion?.name || suggestion?.symbol || typed).trim();
+  return { symbol, name };
+};
+
+const inferCategoryFromSymbol = (symbol, name) => {
+  const normalizedSymbol = String(symbol || '').toUpperCase();
+  const normalizedName = normalize(name);
+
+  if (normalizedSymbol.includes('BTC') || normalizedSymbol.includes('ETH') || normalizedName.includes('bitcoin')) {
+    return 'Kripto';
+  }
+
+  if (normalizedSymbol.includes('=X') || normalizedSymbol.includes('-USD')) {
+    return 'Döviz';
+  }
+
+  if (normalizedSymbol === 'GC=F' || normalizedSymbol === 'SI=F' || normalizedName.includes('altın') || normalizedName.includes('altin')) {
+    return 'Değerli Madenler';
+  }
+
+  return 'Hisse Senedi';
+};
+
+const AiCommandBar = forwardRef(function AiCommandBar({ onExecute, onQuickAddAsset }, ref) {
   const inputRef = useRef(null);
   const [value, setValue] = useState('');
   const [typedHint, setTypedHint] = useState('');
@@ -110,6 +158,8 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute }, ref) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [resultMessage, setResultMessage] = useState('');
+  const [isPriceLoading, setIsPriceLoading] = useState(false);
+  const [priceResult, setPriceResult] = useState(null);
 
   const intent = useMemo(() => parseIntent(value), [value]);
   const previewText = useMemo(() => buildPreview(intent), [intent]);
@@ -162,6 +212,58 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute }, ref) {
     return () => window.removeEventListener('keydown', onShortcut);
   }, []);
 
+  useEffect(() => {
+    const query = String(value || '').trim();
+    if (shouldSkipPriceLookup(query)) {
+      setPriceResult(null);
+      setIsPriceLoading(false);
+      return undefined;
+    }
+
+    let isDisposed = false;
+    const timeout = window.setTimeout(async () => {
+      setIsPriceLoading(true);
+
+      try {
+        const suggestions = await fetchSymbolSuggestions(query);
+        const primary = suggestions[0] || { symbol: query, name: query };
+        const normalized = normalizeSuggestionToSymbol(primary, query);
+        const quote = await fetchYahooData(normalized.symbol);
+
+        if (isDisposed) {
+          return;
+        }
+
+        if (!quote || !Number.isFinite(Number(quote.price))) {
+          setPriceResult(null);
+          return;
+        }
+
+        setPriceResult({
+          symbol: quote.symbol || normalized.symbol,
+          name: normalized.name || quote.symbol,
+          price: Number(quote.price),
+          currency: String(quote.currency || '').toUpperCase() || 'TRY',
+          changePercent: Number.isFinite(Number(quote.changePercent)) ? Number(quote.changePercent) : 0,
+          category: inferCategoryFromSymbol(quote.symbol || normalized.symbol, normalized.name),
+        });
+      } catch {
+        if (!isDisposed) {
+          setPriceResult(null);
+        }
+      } finally {
+        if (!isDisposed) {
+          setIsPriceLoading(false);
+        }
+      }
+    }, PRICE_LOOKUP_DEBOUNCE_MS);
+
+    return () => {
+      isDisposed = true;
+      window.clearTimeout(timeout);
+    };
+  }, [value]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -175,6 +277,32 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute }, ref) {
       window.setTimeout(() => setResultMessage(''), 3200);
     }
   };
+
+  const handleQuickAddFromPrice = () => {
+    if (!priceResult) {
+      return;
+    }
+
+    onQuickAddAsset?.({
+      symbol: priceResult.symbol,
+      name: priceResult.name,
+      category: priceResult.category,
+      avgPrice: priceResult.price,
+      currency: priceResult.currency,
+    });
+  };
+
+  const changeClass = priceResult
+    ? (priceResult.changePercent > 0 ? 'text-emerald-500' : (priceResult.changePercent < 0 ? 'text-red-500' : 'text-slate-400'))
+    : 'text-slate-400';
+
+  const formattedPrice = priceResult
+    ? priceResult.price.toLocaleString('tr-TR', { maximumFractionDigits: 4 })
+    : '';
+
+  const formattedChange = priceResult
+    ? `${priceResult.changePercent >= 0 ? '+' : '-'}%${Math.abs(priceResult.changePercent).toFixed(2)}`
+    : '';
 
   return (
     <section className="mx-auto w-full max-w-[960px] px-3 sm:px-4 md:px-8">
@@ -200,6 +328,7 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute }, ref) {
               placeholder={`Nasıl yardımcı olabilirim? ${typedHint}`}
             />
           </div>
+          {isPriceLoading ? <Loader2 className="h-4 w-4 animate-spin text-violet-400" /> : null}
           <button
             type="submit"
             className="inline-flex h-9 items-center gap-1 rounded-lg border border-violet-300/40 bg-violet-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-violet-700"
@@ -208,6 +337,34 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute }, ref) {
             Çalıştır
           </button>
         </div>
+
+        <AnimatePresence>
+          {priceResult ? (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-violet-300/30 bg-violet-500/10 px-3 py-2"
+            >
+              <div>
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">{priceResult.name} ({priceResult.symbol})</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  {formattedPrice} {priceResult.currency}
+                  <span className={`ml-2 text-xs font-semibold ${changeClass}`}>{formattedChange}</span>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleQuickAddFromPrice}
+                className="inline-flex items-center gap-1 rounded-lg border border-violet-300/35 bg-violet-600 px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-violet-700"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Portföyüme Ekle
+              </button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
         <AnimatePresence>
           {value.trim() ? (
@@ -241,10 +398,12 @@ const AiCommandBar = forwardRef(function AiCommandBar({ onExecute }, ref) {
 
 AiCommandBar.propTypes = {
   onExecute: PropTypes.func,
+  onQuickAddAsset: PropTypes.func,
 };
 
 AiCommandBar.defaultProps = {
   onExecute: async () => ({ message: '' }),
+  onQuickAddAsset: () => {},
 };
 
 export default AiCommandBar;

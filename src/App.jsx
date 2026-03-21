@@ -667,6 +667,28 @@ export default function App() {
     return { message: 'Bu komutu anlayamadım. Örn: 1000 TL altın ekle.' };
   }, [navigateToPage, marketData, rates, openAddModal]);
 
+  const handleQuickAddFromPriceResult = useCallback((payload) => {
+    if (!payload) {
+      return;
+    }
+
+    navigateToPage('dashboard');
+    window.setTimeout(() => {
+      openAddModal({
+        mode: 'buy',
+        prefillData: {
+          bank: 'Banka Belirtilmedi',
+          category: payload.category || 'Hisse Senedi',
+          symbol: payload.symbol || '',
+          name: payload.name || payload.symbol || 'Varlık',
+          amount: '',
+          avgPrice: Number(payload.avgPrice || 0) > 0 ? Number(payload.avgPrice) : '',
+          unitType: (payload.category === 'Değerli Madenler' && String(payload.symbol || '').toUpperCase() === 'GC=F') ? 'gram' : 'lot',
+        },
+      });
+    }, 120);
+  }, [navigateToPage, openAddModal]);
+
   const handleHeaderSearchNavigate = useCallback((queryText) => {
     const normalized = String(queryText || '').toLocaleLowerCase('tr-TR').trim();
 
@@ -901,6 +923,7 @@ export default function App() {
         <AiCommandBar
           ref={aiCommandBarRef}
           onExecute={handleExecuteAiCommand}
+          onQuickAddAsset={handleQuickAddFromPriceResult}
         />
       </div>
 
