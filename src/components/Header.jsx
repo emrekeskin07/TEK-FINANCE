@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, Eye, EyeOff, Menu, Plus, RefreshCcw, Zap } from 'lucide-react';
+import { Bell, Eye, EyeOff, Menu, Moon, Plus, RefreshCcw, Sun, Zap } from 'lucide-react';
 import { useSyncState } from '../context/SyncContext';
 import { usePrivacy } from '../context/PrivacyContext';
 import SplitText from './ui/SplitText';
@@ -11,6 +11,8 @@ export default function Header({
   setBaseCurrency,
   openAddModal,
   openQuickAddModal,
+  isDarkMode = false,
+  onToggleTheme = () => {},
   loading,
   syncFailed,
   onRefresh,
@@ -81,6 +83,17 @@ export default function Header({
       </div>
 
       <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 w-full md:w-auto">
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          className="inline-flex transform-gpu items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm w-full md:w-auto bg-slate-900/40 border-white/5 text-slate-200 hover:bg-slate-800/60"
+          title={isDarkMode ? 'Light Modea geç' : 'Dark Modea geç'}
+          aria-label={isDarkMode ? 'Light Modea geç' : 'Dark Modea geç'}
+        >
+          {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          <span className="text-xs font-semibold">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+        </button>
+
         <button
           type="button"
           onClick={togglePrivacy}

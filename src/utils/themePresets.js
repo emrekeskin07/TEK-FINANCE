@@ -1,10 +1,26 @@
 export const THEME_STORAGE_KEY = 'tek-finance:active-theme';
-export const DEFAULT_THEME_ID = 'deep-ocean';
+export const DEFAULT_THEME_ID = 'light-soft';
 
 export const THEME_PRESETS = {
+  'light-soft': {
+    id: 'light-soft',
+    label: 'Light Soft',
+    mode: 'light',
+    swatch: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 58%, #f5f3ff 100%)',
+    vars: {
+      '--primary': '147 51 234',
+      '--secondary': '168 85 247',
+      '--accent': '192 132 252',
+      '--bg-card': '255 255 255',
+      '--bg-page': '248 250 252',
+      '--text-main': '31 41 55',
+      '--text-muted': '107 114 128',
+    },
+  },
   'deep-ocean': {
     id: 'deep-ocean',
     label: 'Deep Ocean',
+    mode: 'dark',
     swatch: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 55%, #a78bfa 100%)',
     vars: {
       '--primary': '139 92 246',
@@ -19,6 +35,7 @@ export const THEME_PRESETS = {
   'cyber-pink': {
     id: 'cyber-pink',
     label: 'Cyber Pink',
+    mode: 'dark',
     swatch: 'linear-gradient(135deg, #d946ef 0%, #a855f7 56%, #8b5cf6 100%)',
     vars: {
       '--primary': '217 70 239',
@@ -33,6 +50,7 @@ export const THEME_PRESETS = {
   'golden-premium': {
     id: 'golden-premium',
     label: 'Golden Premium',
+    mode: 'dark',
     swatch: 'linear-gradient(135deg, #7c3aed 0%, #c026d3 58%, #a855f7 100%)',
     vars: {
       '--primary': '124 58 237',
@@ -47,6 +65,7 @@ export const THEME_PRESETS = {
 };
 
 export const THEME_OPTIONS = Object.values(THEME_PRESETS);
+export const isDarkThemeId = (themeId) => THEME_PRESETS[resolveThemeId(themeId)]?.mode === 'dark';
 
 export const resolveThemeId = (themeId) => (
   THEME_PRESETS[themeId] ? themeId : DEFAULT_THEME_ID
@@ -63,6 +82,10 @@ export const applyThemeToRoot = (themeId) => {
   Object.entries(theme.vars).forEach(([cssVar, cssValue]) => {
     document.documentElement.style.setProperty(cssVar, cssValue);
   });
+
+  const isDarkMode = theme.mode === 'dark';
+  document.documentElement.classList.toggle('dark', isDarkMode);
+  document.documentElement.classList.toggle('light', !isDarkMode);
 
   document.documentElement.setAttribute('data-theme', resolvedThemeId);
   return resolvedThemeId;

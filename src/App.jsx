@@ -31,7 +31,10 @@ import {
   DEFAULT_THEME_ID,
   resolveThemeId,
   applyThemeToRoot,
+  isDarkThemeId,
 } from './utils/themePresets';
+
+const LAST_DARK_THEME_STORAGE_KEY = 'tek-finance:last-dark-theme';
 
 const ATH_CELEBRATION_STORAGE_PREFIX = 'tek-finance:ath-celebration';
 const ATH_CELEBRATION_DURATION_MS = 3800;
@@ -200,6 +203,28 @@ export default function App() {
 
     const resolvedTheme = applyThemeToRoot(activeTheme);
     window.localStorage.setItem(THEME_STORAGE_KEY, resolvedTheme);
+
+    if (isDarkThemeId(resolvedTheme)) {
+      window.localStorage.setItem(LAST_DARK_THEME_STORAGE_KEY, resolvedTheme);
+    }
+  }, [activeTheme]);
+
+  const handleToggleThemeMode = useCallback(() => {
+    if (typeof window === 'undefined') {
+      setActiveTheme((prev) => (isDarkThemeId(prev) ? DEFAULT_THEME_ID : 'deep-ocean'));
+      return;
+    }
+
+    const isCurrentlyDark = isDarkThemeId(activeTheme);
+
+    if (isCurrentlyDark) {
+      setActiveTheme(DEFAULT_THEME_ID);
+      return;
+    }
+
+    const savedDarkTheme = resolveThemeId(window.localStorage.getItem(LAST_DARK_THEME_STORAGE_KEY));
+    const nextDarkTheme = isDarkThemeId(savedDarkTheme) ? savedDarkTheme : 'deep-ocean';
+    setActiveTheme(nextDarkTheme);
   }, [activeTheme]);
 
   useEffect(() => {
@@ -557,7 +582,7 @@ export default function App() {
 
   return (
     <SyncContext.Provider value={{ lastSyncTime, setLastSyncTime }}>
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-50 font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10">
+    <div className="relative min-h-screen overflow-hidden bg-page text-text-main font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-24 -top-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
         <div className="absolute right-0 top-16 h-80 w-80 rounded-full bg-secondary/16 blur-3xl" />
@@ -612,6 +637,8 @@ export default function App() {
           setBaseCurrency={setBaseCurrency}
           openAddModal={openAddModal}
           openQuickAddModal={openQuickAddModal}
+          isDarkMode={isDarkThemeId(activeTheme)}
+          onToggleTheme={handleToggleThemeMode}
           loading={loading}
           syncFailed={lastFetchFailed}
           onRefresh={handleManualRefresh}
