@@ -486,10 +486,10 @@ export default function PortfolioTable({
 
   return (
     <>
-    <div className="relative flex flex-col overflow-hidden rounded-2xl border border-white/5 bg-slate-900/40 shadow-[0_20px_68px_rgba(2,6,23,0.62)] backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-white/15 before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/10 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/10 after:content-['']">
+    <div className="relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md dark:border-white/5 dark:bg-slate-900/40 dark:shadow-[0_20px_68px_rgba(2,6,23,0.62)] dark:backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-white/15 before:pointer-events-none before:absolute before:left-4 before:right-4 before:top-0 before:h-px before:bg-white/10 before:content-[''] after:pointer-events-none after:absolute after:top-4 after:bottom-4 after:left-0 after:w-px after:bg-white/10 after:content-['']">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 p-6 md:p-8">
         <div className="flex items-center gap-3 flex-wrap">
-          <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-50">
+          <h3 className="text-ui-h2 flex items-center gap-2 text-slate-800 dark:text-slate-100">
             <Coins className="w-5 h-5 text-blue-400" />
             VARLIKLARIM
           </h3>
@@ -587,7 +587,7 @@ export default function PortfolioTable({
         </div>
 
         {lastUpdated ? (
-          <span className="text-xs text-slate-500">
+          <span className="text-ui-body text-slate-500">
             Son: {lastUpdated.toLocaleTimeString('tr-TR')}
           </span>
         ) : null}
@@ -600,7 +600,7 @@ export default function PortfolioTable({
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Varlık ara..."
-            className="w-full rounded-lg border border-white/10 bg-slate-900/35 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-fuchsia-400/60"
+            className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-ui-body text-slate-700 placeholder:text-slate-500 focus:outline-none focus:border-fuchsia-400/60 dark:border-white/10 dark:bg-slate-900/35 dark:text-slate-100"
           />
         </div>
 
@@ -667,7 +667,7 @@ export default function PortfolioTable({
           </div>
         ) : (
           <div className="max-h-[62vh] overflow-y-auto pr-1">
-            <div className="sticky top-0 z-20 grid grid-cols-12 gap-3 rounded-lg border border-white/10 bg-slate-900/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 md:px-5">
+            <div className="sticky top-0 z-20 grid grid-cols-12 gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-ui-body font-semibold uppercase tracking-[0.08em] text-slate-500 dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-400 md:px-5">
               <div className="col-span-2">Kurum</div>
               <div className="col-span-2">Varlık</div>
               <div className="col-span-2">Kategori</div>
@@ -735,14 +735,14 @@ export default function PortfolioTable({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="group/asset overflow-hidden rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl transition-all duration-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+              className="group/asset overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70 dark:border-white/5 dark:bg-slate-900/35 dark:backdrop-blur-xl transition-all duration-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"
             >
               <div className="grid grid-cols-12 items-center gap-3 px-4 py-3 md:px-5">
-                <div className="col-span-2 min-w-0 text-xs text-slate-400 truncate">
+                <div className="col-span-2 min-w-0 text-ui-body text-slate-500 dark:text-slate-400 truncate group-hover/asset:text-slate-700 dark:group-hover/asset:text-slate-200">
                   {item.bank || 'Banka Belirtilmedi'}
                 </div>
 
-                <div className="col-span-2 min-w-0 text-sm font-medium text-slate-100 truncate">
+                <div className="col-span-2 min-w-0 text-ui-body font-semibold text-slate-700 dark:text-slate-200 truncate group-hover/asset:text-slate-900 dark:group-hover/asset:text-slate-100">
                   {getAssetTitle(item)}
                 </div>
 
@@ -760,15 +760,15 @@ export default function PortfolioTable({
                   </button>
                 </div>
 
-                <div className="col-span-2 text-right text-sm font-semibold font-mono text-slate-100">
+                <div className="col-span-2 text-right text-ui-body font-semibold font-mono text-slate-700 dark:text-slate-200 group-hover/asset:text-slate-900 dark:group-hover/asset:text-slate-100">
                   {renderCurrencyWithMutedSymbol(itemTotalValue)}
                 </div>
 
-                <div className={`col-span-2 text-right text-xs font-semibold font-mono ${itemProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                <div className={`col-span-2 text-right text-ui-body font-semibold font-mono ${itemProfit >= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}`}>
                   {renderMaskedText(itemProfitSummary)}
                 </div>
 
-                <div className="col-span-1 text-right text-xs font-semibold font-mono text-slate-300">
+                <div className="col-span-1 text-right text-ui-body font-semibold font-mono text-slate-500 dark:text-slate-300">
                   {renderMaskedText(`%${itemWeightPercent}`)}
                 </div>
 
@@ -1042,14 +1042,14 @@ export default function PortfolioTable({
                 <button
                   type="button"
                   onClick={closeSellModal}
-                  className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
+                  className="rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-ui-body text-slate-600 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-slate-100 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/10"
                   disabled={sellSubmitting}
                 >
                   Vazgeç
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg border border-emerald-300/35 bg-emerald-500 px-3 py-2 text-sm font-semibold text-emerald-50 hover:bg-emerald-400 disabled:opacity-60"
+                  className="rounded-lg border border-emerald-300/35 bg-emerald-500 px-3 py-2 text-ui-body font-semibold text-emerald-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-emerald-400 disabled:opacity-60"
                   disabled={sellSubmitting}
                 >
                   {sellSubmitting ? 'Satılıyor...' : 'Satışı Onayla'}
@@ -1128,14 +1128,14 @@ export default function PortfolioTable({
                 <button
                   type="button"
                   onClick={closeIncreaseModal}
-                  className="rounded-lg border border-white/5 bg-slate-900/40 backdrop-blur-xl px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
+                  className="rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-ui-body text-slate-600 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-slate-100 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/10"
                   disabled={increaseSubmitting}
                 >
                   Vazgeç
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg border border-emerald-300/35 bg-emerald-500 px-3 py-2 text-sm font-semibold text-emerald-50 hover:bg-emerald-400 disabled:opacity-60"
+                  className="rounded-lg border border-emerald-300/35 bg-emerald-500 px-3 py-2 text-ui-body font-semibold text-emerald-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-emerald-400 disabled:opacity-60"
                   disabled={increaseSubmitting}
                 >
                   {increaseSubmitting ? 'Kaydediliyor...' : 'Kaydet'}

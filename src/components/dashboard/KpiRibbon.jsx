@@ -183,39 +183,39 @@ export default function KpiRibbon({
 
   return (
     <section className="col-span-12 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 md:p-4 dark:border-slate-800 dark:bg-slate-950/30">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-xs font-semibold uppercase tracking-tight text-slate-500">Toplam Varlık</p>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-5xl dark:text-slate-100">{totalValueText}</p>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        <article className="rounded-2xl border border-violet-200/70 bg-gradient-to-br from-violet-50 to-white p-5 shadow-lg dark:border-violet-400/25 dark:bg-slate-900">
+          <p className="text-ui-h2 text-slate-800 dark:text-slate-100">Toplam Varlık</p>
+          <p className="mt-2 text-ui-h1 text-slate-900 dark:text-slate-100">{totalValueText}</p>
           <div className={`mt-3 inline-flex items-center gap-2 text-sm font-semibold ${totalTrend.className}`}>
             {totalTrend.Icon ? <totalTrend.Icon className="h-4 w-4" aria-label={totalTrend.iconLabel} /> : null}
             <span>{totalProfitText}</span>
           </div>
-          <p className="mt-1 text-xs text-slate-400">All-Time Kâr/Zarar</p>
+          <p className="mt-1 text-ui-body text-slate-500 dark:text-slate-400">All-Time Kâr/Zarar</p>
         </article>
 
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-xs font-semibold uppercase tracking-tight text-slate-500">Bugünkü Performans</p>
-          <div className={`mt-2 inline-flex items-center gap-2 text-2xl font-bold md:text-4xl ${dailyTrend.className}`}>
+          <p className="text-ui-h2 text-slate-800 dark:text-slate-100">Bugünkü Performans</p>
+          <div className={`mt-2 inline-flex items-center gap-2 text-2xl font-bold tracking-tight md:text-4xl ${dailyTrend.className}`}>
             {dailyTrend.Icon ? <dailyTrend.Icon className="h-5 w-5" aria-label={dailyTrend.iconLabel} /> : null}
             <span>{dailyText}</span>
           </div>
-          <p className="mt-2 text-xs text-slate-400">Son iki gün kapanış değerine göre günlük net değişim.</p>
+          <p className="mt-2 text-ui-body text-slate-500 dark:text-slate-400">Son iki gün kapanış değerine göre günlük net değişim.</p>
         </article>
 
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-xs font-semibold uppercase tracking-tight text-slate-500">Reel Performans</p>
-          <div className={`mt-2 inline-flex items-center gap-2 text-2xl font-bold md:text-4xl ${realTrend.className}`}>
+          <p className="text-ui-h2 text-slate-800 dark:text-slate-100">Reel Performans</p>
+          <div className={`mt-2 inline-flex items-center gap-2 text-2xl font-bold tracking-tight md:text-4xl ${realTrend.className}`}>
             {realTrend.Icon ? <realTrend.Icon className="h-5 w-5" aria-label={realTrend.iconLabel} /> : null}
             <span>{realText}</span>
           </div>
-          <p className="mt-2 text-xs text-slate-400">{selectedInflationSourceLabel} enflasyonuna göre düzeltilmiş getiri.</p>
+          <p className="mt-2 text-ui-body text-slate-500 dark:text-slate-400">{selectedInflationSourceLabel} enflasyonuna göre düzeltilmiş getiri.</p>
         </article>
 
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-md md:col-span-3 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Hedef Takibi Özeti</p>
-            {goalProgress ? <p className="text-xs text-slate-500 dark:text-slate-400">{goalProgress.name} • Hedef {goalTargetText}</p> : null}
+            <p className="text-ui-h2 text-slate-800 dark:text-slate-100">Hedef Takibi Özeti</p>
+            {goalProgress ? <p className="text-ui-body text-slate-500 dark:text-slate-400">{goalProgress.name} • Hedef {goalTargetText}</p> : null}
           </div>
 
           {goalProgress ? (

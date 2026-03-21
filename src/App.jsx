@@ -932,8 +932,8 @@ export default function App() {
         <section className="px-3 pt-1 sm:px-4 md:px-8">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs text-slate-400">Ana Sayfa &gt; {pageMeta.crumb}</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 md:text-4xl">{pageMeta.title}</h2>
+              <p className="text-ui-body text-slate-400">Ana Sayfa &gt; {pageMeta.crumb}</p>
+              <h2 className="mt-1 text-ui-h1 text-slate-900 dark:text-slate-100">{pageMeta.title}</h2>
             </div>
 
             {activePage === 'dashboard' ? (
@@ -954,7 +954,7 @@ export default function App() {
               <DashboardSkeleton />
             ) : (
               <DashboardProvider value={dashboardContextValue}>
-                <div className="relative grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-12 md:gap-6 md:p-8">
+                <div className="relative grid grid-cols-1 gap-5 p-3 sm:p-4 md:grid-cols-12 md:gap-7 md:p-8">
                   <div id="dashboard-goal-summary" className="col-span-12">
                     <KpiRibbon
                       dashboardTotalValue={dashboardTotalValue}

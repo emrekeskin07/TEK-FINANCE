@@ -9,6 +9,11 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
+      fontSize: {
+        'ui-h1': ['2.125rem', { lineHeight: '1.1', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'ui-h2': ['1.125rem', { lineHeight: '1.35', letterSpacing: '-0.01em', fontWeight: '600' }],
+        'ui-body': ['0.875rem', { lineHeight: '1.45' }],
+      },
       spacing: {
         1.5: '0.375rem',
         2.5: '0.625rem',

@@ -359,11 +359,11 @@ export default function GrowthChart() {
     <motion.section
       layout
       transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-      className="col-span-12 lg:col-span-7 rounded-2xl border border-white/5 bg-slate-900/40 p-8 shadow-[0_26px_76px_rgba(2,6,23,0.62)] backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-fuchsia-400/35"
+      className="col-span-12 lg:col-span-7 rounded-2xl border border-slate-200 bg-white p-8 shadow-md dark:border-white/5 dark:bg-slate-900/40 dark:shadow-[0_26px_76px_rgba(2,6,23,0.62)] dark:backdrop-blur-xl transition-all duration-300 hover:scale-[1.01] hover:border-fuchsia-400/35"
     >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-tight text-slate-50">
+          <h3 className="flex items-center gap-2 text-ui-h2 text-slate-800 dark:text-slate-100">
             <TrendingUp className="h-4 w-4 text-primary" />
             Portföy Gelişimi
           </h3>
@@ -395,10 +395,10 @@ export default function GrowthChart() {
                   onMouseLeave={restoreNativeTooltip}
                   onFocus={hideNativeTooltip}
                   onBlur={restoreNativeTooltip}
-                  className={`chart-range-tooltip relative min-h-[44px] rounded-md px-3 py-2 text-[11px] ${
+                  className={`chart-range-tooltip relative min-h-[44px] rounded-md px-3 py-2 text-ui-body ${
                     isActive
                       ? 'bg-gradient-to-r from-violet-500/25 to-fuchsia-500/25 text-slate-50 shadow-[0_0_14px_rgba(217,70,239,0.24)]'
-                      : 'text-slate-400 hover:text-slate-100'
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
                   }`}
                 >
                   <span>{option.label}</span>
@@ -518,7 +518,7 @@ export default function GrowthChart() {
           </div>
         )}
 
-        <p className="pointer-events-none absolute bottom-2 right-2 text-[10px] text-slate-400">
+        <p className="pointer-events-none absolute bottom-2 right-2 text-ui-body text-slate-500 dark:text-slate-400">
           {MARKET_DATA_ATTRIBUTION}
         </p>
       </div>

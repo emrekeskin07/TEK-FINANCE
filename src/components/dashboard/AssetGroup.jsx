@@ -26,9 +26,9 @@ export default function AssetGroup({
             <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Portföy Grubu</p>
               <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                <h4 className="text-base font-semibold text-slate-100 break-words">{group.portfolioName}</h4>
+                <h4 className="text-ui-h2 text-slate-800 dark:text-slate-100 break-words">{group.portfolioName}</h4>
                 <span className="text-slate-500">-</span>
-                <p className="text-sm font-semibold text-slate-100">{renderCurrency(group.totalValue)}</p>
+                <p className="text-ui-body font-semibold text-slate-700 dark:text-slate-100">{renderCurrency(group.totalValue)}</p>
                 <span className="inline-flex items-center rounded-full border border-white/10 bg-black/35 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-slate-300">
                   {group.items.length} Varlık
                 </span>
