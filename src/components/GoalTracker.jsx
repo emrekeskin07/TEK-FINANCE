@@ -191,9 +191,56 @@ export default function GoalTracker() {
   const remainingAmount = Math.max(0, targetAmount - currentValue);
   const parsedTargetMonths = Math.max(1, Number(targetMonths || 0));
   const monthlyContributionNeeded = remainingAmount / parsedTargetMonths;
-  const estimatedMonthsToGoal = prediction.status === 'on-track' && Number.isFinite(Number(prediction.daysLeft))
-    ? Math.max(1, Math.ceil(Number(prediction.daysLeft) / 30))
-    : null;
+  const monthlyAvgSavings = useMemo(() => {
+    const series = Array.isArray(lineChartData) ? lineChartData : [];
+    if (series.length < 91) {
+      return 0;
+    }
+
+    const latestValue = Number(series[series.length - 1]?.value || 0);
+    const oneMonthAgoValue = Number(series[series.length - 31]?.value || 0);
+    const twoMonthsAgoValue = Number(series[series.length - 61]?.value || 0);
+    const threeMonthsAgoValue = Number(series[series.length - 91]?.value || 0);
+
+    if (
+      !Number.isFinite(latestValue)
+      || !Number.isFinite(oneMonthAgoValue)
+      || !Number.isFinite(twoMonthsAgoValue)
+      || !Number.isFinite(threeMonthsAgoValue)
+    ) {
+      return 0;
+    }
+
+    const monthDeltas = [
+      latestValue - oneMonthAgoValue,
+      oneMonthAgoValue - twoMonthsAgoValue,
+      twoMonthsAgoValue - threeMonthsAgoValue,
+    ];
+
+    const validDeltas = monthDeltas.filter((delta) => Number.isFinite(delta));
+    if (validDeltas.length === 0) {
+      return 0;
+    }
+
+    const averageDelta = validDeltas.reduce((sum, delta) => sum + delta, 0) / validDeltas.length;
+    return averageDelta > 0 ? averageDelta : 0;
+  }, [lineChartData]);
+
+  const estimatedMonthsBySavings = useMemo(() => {
+    if (remainingAmount <= 0) {
+      return 0;
+    }
+
+    if (!Number.isFinite(monthlyAvgSavings) || monthlyAvgSavings <= 0) {
+      return null;
+    }
+
+    return Math.max(1, Math.ceil(remainingAmount / monthlyAvgSavings));
+  }, [remainingAmount, monthlyAvgSavings]);
+
+  const estimatedMonthsText = estimatedMonthsBySavings === null
+    ? null
+    : (isPrivacyActive ? maskValue(String(estimatedMonthsBySavings)) : String(estimatedMonthsBySavings));
 
   useEffect(() => {
     if (!hasGoal || progress < 100 || !triggerCelebration) {
@@ -366,7 +413,12 @@ export default function GoalTracker() {
             <div className="mt-6">
               <div className="flex items-end justify-between gap-3">
                 <p className="text-[11px] font-semibold uppercase tracking-tight text-slate-400">Ilerleme</p>
-                <p className="text-2xl font-black leading-none text-white drop-shadow-[0_0_14px_rgba(167,139,250,0.45)]">{isPrivacyActive ? maskValue(percentageLabel) : percentageLabel}</p>
+                <div className="text-right">
+                  <p className="text-2xl font-black leading-none text-white drop-shadow-[0_0_14px_rgba(167,139,250,0.45)]">{isPrivacyActive ? maskValue(percentageLabel) : percentageLabel}</p>
+                  {estimatedMonthsText ? (
+                    <p className="mt-1 text-xs text-slate-300">Mevcut birikim hızınla {estimatedMonthsText} ay sonra hedefine ulaşabilirsin. 🚗</p>
+                  ) : null}
+                </div>
               </div>
 
               <div className="mt-3 rounded-full border border-white/10 bg-slate-900/80 p-1">
@@ -393,7 +445,6 @@ export default function GoalTracker() {
 
               <p className="mt-2 text-xs text-slate-300">
                 {`${goal.name} hedefinin %${progress.toFixed(0)}'ı tamamlandı.`}
-                {estimatedMonthsToGoal ? ` Mevcut birikim hızınla ${estimatedMonthsToGoal} ay sonra hedefine ulaşabilirsin.` : ''}
               </p>
             </div>
           </div>

@@ -63,6 +63,37 @@ const mapCategoryToFilter = (category) => {
   return String(category || 'Diğer');
 };
 
+const containsAny = (source, keywords) => keywords.some((keyword) => source.includes(keyword));
+
+const isFxBasedAsset = (asset) => {
+  const normalizedCategory = normalizeCategoryText(asset?.category);
+  const normalizedName = normalizeCategoryText(asset?.name);
+  const normalizedSymbol = normalizeCategoryText(asset?.symbol);
+  const sourceText = `${normalizedCategory} ${normalizedName} ${normalizedSymbol}`;
+
+  const fxKeywords = [
+    'döviz',
+    'doviz',
+    'usd',
+    'eur',
+    'gbp',
+    'xau',
+    'xag',
+    'altın',
+    'altin',
+    'gümüş',
+    'gumus',
+    'değerli maden',
+    'degerli maden',
+    'fx',
+    'yabancı',
+    'yabanci',
+    'eurobond',
+  ];
+
+  return containsAny(sourceText, fxKeywords);
+};
+
 const computeAssetValue = (asset, marketData) => {
   const amount = toPositiveNumber(asset?.amount);
   const activePrice = toPositiveNumber(resolveAssetActivePrice(asset, marketData));
@@ -205,9 +236,8 @@ export default function BankTotals({
         return accumulator;
       }
 
-      const key = mapCategoryToFilter(asset?.category);
       accumulator.total += value;
-      if (key === 'Döviz') {
+      if (isFxBasedAsset(asset)) {
         accumulator.fx += value;
       }
 
@@ -219,16 +249,17 @@ export default function BankTotals({
     }
 
     const fxShare = (totals.fx / totals.total) * 100;
+    const roundedFxShare = Math.round(fxShare);
 
-    if (fxShare >= 80) {
-      return 'İpucu: Portföyünün %80\'i döviz bazlı varlıklarda, TL devalüasyonuna karşı korumadasın.';
+    if (fxShare > 70) {
+      return `İpucu: Portföyünün %${roundedFxShare}'i döviz bazlı varlıklarda, TL devalüasyonuna karşı korumadasın. ✅`;
     }
 
-    if (fxShare >= 50) {
-      return 'İpucu: Döviz ağırlığın güçlü. Kur riskine karşı koruman dengeli seviyede.';
+    if (fxShare < 30) {
+      return 'İpucu: Portföyünün çoğu TL bazlı, enflasyon karşısında alım gücün eriyebilir. ⚠️';
     }
 
-    return 'İpucu: Döviz ağırlığın düşük. Kur oynaklığına karşı koruma için dağılımı dengeleyebilirsin.';
+    return `İpucu: Döviz bazlı varlık oranın %${roundedFxShare}. Koruma ve büyüme dengesini sürdürebilirsin.`;
   }, [portfolio, marketData]);
 
   const formatTryCurrencyText = (value) => {
@@ -383,7 +414,7 @@ export default function BankTotals({
                   })}
                 </ul>
 
-                <div className="mt-3 rounded-xl border border-indigo-300/25 bg-indigo-500/10 px-3 py-2 text-xs text-indigo-100">
+                <div className="mt-3 rounded-xl border border-indigo-300/25 bg-indigo-500/10 px-3 py-2 text-sm italic text-indigo-100">
                   {distributionTip}
                 </div>
               </div>

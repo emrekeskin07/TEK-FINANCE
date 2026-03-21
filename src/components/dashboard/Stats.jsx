@@ -27,25 +27,36 @@ export default function Stats({
   const profitPercentColorClass = profitPercentageValue >= 0 ? 'text-emerald-500' : 'text-red-500';
   const monthlyChangeNote = useMemo(() => {
     const series = Array.isArray(lineChartData) ? lineChartData : [];
-    if (series.length < 31) {
+    if (series.length < 61) {
       return 'Geçen aya göre değişim için veri toplanıyor.';
     }
 
     const latestValue = Number(series[series.length - 1]?.value || 0);
-    const monthAgoValue = Number(series[series.length - 31]?.value || 0);
+    const oneMonthAgoValue = Number(series[series.length - 31]?.value || 0);
+    const twoMonthsAgoValue = Number(series[series.length - 61]?.value || 0);
 
-    if (!Number.isFinite(latestValue) || !Number.isFinite(monthAgoValue) || Math.abs(monthAgoValue) < 0.01) {
+    if (!Number.isFinite(latestValue) || !Number.isFinite(oneMonthAgoValue) || !Number.isFinite(twoMonthsAgoValue)) {
       return 'Geçen aya göre değişim için veri toplanıyor.';
     }
 
-    const changePercent = ((latestValue - monthAgoValue) / Math.abs(monthAgoValue)) * 100;
-    const absPercent = Math.abs(changePercent).toFixed(1);
+    const netChangeCurrentMonth = latestValue - oneMonthAgoValue;
+    const netChangePreviousMonth = oneMonthAgoValue - twoMonthsAgoValue;
 
-    if (changePercent >= 0) {
-      return `Geçen aya göre %${absPercent} daha fazla tasarruf ettin.`;
+    if (Math.abs(netChangePreviousMonth) < 0.01) {
+      return 'Geçen aya göre değişim için veri toplanıyor.';
     }
 
-    return `Geçen aya göre %${absPercent} daha düşük birikim var; ritmi toparlayabilirsin.`;
+    const changePercent = ((netChangeCurrentMonth - netChangePreviousMonth) / netChangePreviousMonth) * 100;
+    const normalizedPercent = Number(Math.abs(changePercent).toFixed(1));
+    const percentText = Number.isInteger(normalizedPercent)
+      ? String(normalizedPercent)
+      : normalizedPercent.toFixed(1);
+
+    if (changePercent >= 0) {
+      return `Geçen aya göre %${percentText} daha fazla tasarruf ettin. 🔥`;
+    }
+
+    return `Geçen aya göre %${percentText} daha az birikim yaptın. 🤔`;
   }, [lineChartData]);
 
   return (
@@ -113,7 +124,7 @@ export default function Stats({
                       showPositiveSign
                     />
                   </p>
-                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{monthlyChangeNote}</p>
+                  <p className="mt-1 text-xs text-slate-400">{monthlyChangeNote}</p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-slate-900/55">
                   <p className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
