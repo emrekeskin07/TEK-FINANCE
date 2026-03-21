@@ -71,6 +71,7 @@ export default function KpiRibbon({
   isPrivacyActive,
   maskValue,
   isLoading,
+  onGoalNavigate,
 }) {
   const [goalState, setGoalState] = useState({ name: '', targetAmount: 0 });
 
@@ -237,6 +238,30 @@ export default function KpiRibbon({
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Hedef kartından ilk birikim hedefini oluşturarak ilerlemeyi takip edebilirsin.</p>
             </div>
           )}
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onGoalNavigate?.('ev')}
+              className="rounded-full border border-slate-300 px-3 py-1.5 text-ui-body font-semibold text-slate-600 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Ev Hedefi Varlıkları
+            </button>
+            <button
+              type="button"
+              onClick={() => onGoalNavigate?.('araba')}
+              className="rounded-full border border-slate-300 px-3 py-1.5 text-ui-body font-semibold text-slate-600 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Araba Hedefi Varlıkları
+            </button>
+            <button
+              type="button"
+              onClick={() => onGoalNavigate?.('emeklilik')}
+              className="rounded-full border border-slate-300 px-3 py-1.5 text-ui-body font-semibold text-slate-600 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Emeklilik Hedefi Varlıkları
+            </button>
+          </div>
         </article>
       </div>
     </section>
@@ -256,6 +281,7 @@ KpiRibbon.propTypes = {
   isPrivacyActive: PropTypes.bool,
   maskValue: PropTypes.func,
   isLoading: PropTypes.bool,
+  onGoalNavigate: PropTypes.func,
 };
 
 KpiRibbon.defaultProps = {
@@ -265,4 +291,5 @@ KpiRibbon.defaultProps = {
   isPrivacyActive: false,
   maskValue: (value) => value,
   isLoading: false,
+  onGoalNavigate: () => {},
 };

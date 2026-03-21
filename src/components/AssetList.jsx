@@ -9,6 +9,7 @@ export default function AssetList() {
   const {
     portfolio,
     marketData,
+    marketChanges,
     marketMeta,
     loading,
     lastUpdated,
@@ -29,6 +30,8 @@ export default function AssetList() {
     openAddModal,
     onQuickBuyAsset,
     onIncreaseAsset,
+    onAnalyzeAssetDrop,
+    onNavigateToGoalFromAsset,
     sellAsset,
     removeAsset,
   } = useDashboardData();
@@ -133,6 +136,7 @@ export default function AssetList() {
       <PortfolioTable
         portfolio={portfolio}
         marketData={marketData}
+        marketChanges={marketChanges}
         marketMeta={marketMeta}
         loading={loading}
         lastUpdated={lastUpdated}
@@ -153,6 +157,8 @@ export default function AssetList() {
         openEditModal={openEditModal}
         onQuickBuyAsset={onQuickBuyAsset}
         onIncreaseAsset={onIncreaseAsset}
+        onAnalyzeAssetDrop={onAnalyzeAssetDrop}
+        onNavigateToGoalFromAsset={onNavigateToGoalFromAsset}
         onQuickAddPortfolio={(portfolioName) => openAddModal({ portfolioName, forcePrefill: true })}
         handleSellAsset={sellAsset}
         handleRemoveAsset={removeAsset}

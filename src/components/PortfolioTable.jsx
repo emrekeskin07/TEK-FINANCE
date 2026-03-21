@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, TrendingUp, TrendingDown, FileText, Download, Plus, Wallet } from 'lucide-react';
+import { Coins, Edit2, Trash2, X, ChevronUp, ChevronDown, CheckCircle2, Flame, TrendingUp, TrendingDown, FileText, Download, Plus, Wallet, House, CarFront, BriefcaseBusiness } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyParts, formatTickerName, groupAssetsByPortfolio } from '../utils/helpers';
@@ -85,9 +85,22 @@ const getInflationScore = (itemCost, itemProfit) => {
   };
 };
 
+const resolveGoalFromCategory = (category) => {
+  const normalized = String(category || '').trim();
+  if (normalized === 'Değerli Madenler' || normalized === 'Nakit/Banka') {
+    return { key: 'ev', label: 'Ev', Icon: House };
+  }
+  if (normalized === 'Döviz') {
+    return { key: 'araba', label: 'Araba', Icon: CarFront };
+  }
+
+  return { key: 'emeklilik', label: 'Emeklilik', Icon: BriefcaseBusiness };
+};
+
 export default function PortfolioTable({
   portfolio,
   marketData,
+  marketChanges,
   marketMeta,
   loading,
   lastUpdated,
@@ -108,6 +121,8 @@ export default function PortfolioTable({
   openEditModal,
   onQuickBuyAsset,
   onIncreaseAsset,
+  onAnalyzeAssetDrop,
+  onNavigateToGoalFromAsset,
   onQuickAddPortfolio,
   handleSellAsset,
   handleRemoveAsset,
@@ -726,6 +741,9 @@ export default function PortfolioTable({
                 const itemProfitSummary = `${itemProfitSign}${Math.abs(Number(itemProfitPercent)).toFixed(2)}% / ${itemProfitSign}${formatCurrencyPlain(Math.abs(itemProfit))}`;
                 const inflationScore = getInflationScore(itemCost, itemProfit);
                 const isExpanded = expandedAssetId === item.id;
+                const relation = resolveGoalFromCategory(categoryName);
+                const dailyDropPercent = Number(marketChanges?.[item.symbol]);
+                const shouldShowAiAnalyze = Number.isFinite(dailyDropPercent) && dailyDropPercent <= -5;
 
                 return (
             <motion.article
@@ -742,8 +760,30 @@ export default function PortfolioTable({
                   {item.bank || 'Banka Belirtilmedi'}
                 </div>
 
-                <div className="col-span-2 min-w-0 text-ui-body font-semibold text-slate-700 dark:text-slate-200 truncate group-hover/asset:text-slate-900 dark:group-hover/asset:text-slate-100">
-                  {getAssetTitle(item)}
+                <div className="col-span-2 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-ui-body font-semibold text-slate-700 dark:text-slate-200 truncate group-hover/asset:text-slate-900 dark:group-hover/asset:text-slate-100">
+                      {getAssetTitle(item)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToGoalFromAsset?.(relation.key)}
+                      className="inline-flex items-center gap-1 rounded-full border border-slate-300/70 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                      title={`${relation.label} hedefine git`}
+                    >
+                      <relation.Icon className="h-3 w-3" />
+                      {relation.label}
+                    </button>
+                  </div>
+                  {shouldShowAiAnalyze ? (
+                    <button
+                      type="button"
+                      onClick={() => onAnalyzeAssetDrop?.({ asset: item, changePercent: dailyDropPercent })}
+                      className="mt-1 inline-flex items-center rounded-full border border-amber-300/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-200 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg"
+                    >
+                      AI Analyze (%{Math.abs(dailyDropPercent).toFixed(1)} düşüş)
+                    </button>
+                  ) : null}
                 </div>
 
                 <div className="col-span-2 min-w-0">
@@ -1153,6 +1193,7 @@ export default function PortfolioTable({
 PortfolioTable.propTypes = {
   portfolio: PropTypes.arrayOf(PropTypes.object).isRequired,
   marketData: PropTypes.object,
+  marketChanges: PropTypes.object,
   marketMeta: PropTypes.object,
   loading: PropTypes.bool,
   lastUpdated: PropTypes.instanceOf(Date),
@@ -1176,6 +1217,8 @@ PortfolioTable.propTypes = {
   openEditModal: PropTypes.func.isRequired,
   onQuickBuyAsset: PropTypes.func,
   onIncreaseAsset: PropTypes.func,
+  onAnalyzeAssetDrop: PropTypes.func,
+  onNavigateToGoalFromAsset: PropTypes.func,
   onQuickAddPortfolio: PropTypes.func,
   handleSellAsset: PropTypes.func,
   handleRemoveAsset: PropTypes.func.isRequired,
@@ -1183,6 +1226,7 @@ PortfolioTable.propTypes = {
 
 PortfolioTable.defaultProps = {
   marketData: {},
+  marketChanges: {},
   marketMeta: {},
   loading: false,
   lastUpdated: null,
@@ -1198,6 +1242,8 @@ PortfolioTable.defaultProps = {
   onExportExcelReport: null,
   onQuickBuyAsset: null,
   onIncreaseAsset: null,
+  onAnalyzeAssetDrop: null,
+  onNavigateToGoalFromAsset: null,
   onQuickAddPortfolio: null,
   handleSellAsset: null,
 };

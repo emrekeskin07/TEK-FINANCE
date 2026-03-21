@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import Confetti from 'react-confetti';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Sparkles } from 'lucide-react';
 import { usePortfolio } from './hooks/usePortfolio';
 import { useMarketPrices } from './hooks/useMarketPrices';
@@ -46,6 +47,27 @@ const INSIGHT_TONE_STORAGE_KEY = 'tek-finance:insight-tone';
 
 const ATH_CELEBRATION_STORAGE_PREFIX = 'tek-finance:ath-celebration';
 const ATH_CELEBRATION_DURATION_MS = 3800;
+const WEEKLY_FLOW_STORAGE_PREFIX = 'tek-finance:weekly-flow';
+
+const GOAL_BY_CATEGORY = {
+  'Hisse Senedi': 'emeklilik',
+  Kripto: 'emeklilik',
+  'Değerli Madenler': 'ev',
+  Döviz: 'araba',
+  'Yatırım Fonu': 'emeklilik',
+  'Nakit/Banka': 'ev',
+};
+
+const resolveGoalFromCategory = (category) => GOAL_BY_CATEGORY[String(category || '').trim()] || 'emeklilik';
+
+const resolveIsoWeekKey = (date = new Date()) => {
+  const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = utcDate.getUTCDay() || 7;
+  utcDate.setUTCDate(utcDate.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((utcDate - yearStart) / 86400000) + 1) / 7);
+  return `${utcDate.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+};
 const PAGE_TO_PATH = {
   dashboard: '/',
   portfolio: '/portfolio',
@@ -133,6 +155,10 @@ export default function App() {
     hasPreferenceRecord: false,
     riskProfile: '',
   });
+  const [postPurchaseFlow, setPostPurchaseFlow] = useState(null);
+  const [marketDropInsight, setMarketDropInsight] = useState(null);
+  const [weeklyFlowOpen, setWeeklyFlowOpen] = useState(false);
+  const [weeklyFlowStep, setWeeklyFlowStep] = useState(0);
   const athCelebrationTimeoutRef = useRef(null);
   const aiCommandBarRef = useRef(null);
 
@@ -524,6 +550,42 @@ export default function App() {
 
   const animatedProfitPercent = useAnimatedCounter(Number(profitPercentage));
 
+  const handleAddAssetWithFlow = useCallback(async (payload) => {
+    const beforeTotal = Number(dashboardTotalValue || 0);
+    const addedValue = Number(payload?.amount || 0) * Number(payload?.avgPrice || 0);
+    const assetCategory = String(payload?.category || 'Diğer').trim();
+    const goalKey = resolveGoalFromCategory(assetCategory);
+    const goalLabel = goalKey === 'ev' ? 'Ev' : (goalKey === 'araba' ? 'Araba' : 'Emeklilik');
+
+    const isSuccess = await addAsset(payload);
+    if (!isSuccess) {
+      return false;
+    }
+
+    const growthPercent = beforeTotal > 0
+      ? ((addedValue / beforeTotal) * 100)
+      : 100;
+
+    const categoryCurrentValue = Number(categoryTotals?.[assetCategory] || 0);
+    const projectedTotal = beforeTotal + addedValue;
+    const projectedCategoryValue = categoryCurrentValue + addedValue;
+    const categoryWeightPercent = projectedTotal > 0
+      ? ((projectedCategoryValue / projectedTotal) * 100)
+      : 0;
+
+    const daysCloser = Math.max(3, Math.min(30, Math.round(Math.abs(addedValue) / 1500) || 3));
+
+    setPostPurchaseFlow({
+      growthPercent,
+      categoryLabel: assetCategory,
+      categoryWeightPercent,
+      daysCloser,
+      goalLabel,
+    });
+
+    return true;
+  }, [addAsset, dashboardTotalValue, categoryTotals]);
+
   const triggerCelebration = useCallback((durationMs = ATH_CELEBRATION_DURATION_MS) => {
     if (typeof window === 'undefined') {
       return;
@@ -799,11 +861,104 @@ export default function App() {
     }
   }, [navigateToPage]);
 
+  const handleAnalyzeAssetDrop = useCallback(({ asset, changePercent }) => {
+    const assetName = String(asset?.name || asset?.symbol || 'Varlık').trim();
+    const riskProfile = String(onboardingState.riskProfile || 'balanced').trim() || 'balanced';
+    const dropPercent = Number(changePercent || 0);
+
+    const reason = dropPercent <= -8
+      ? `${assetName} tarafında güçlü bir satış dalgası var. Hacim artışı ve kısa vadeli riskten kaçış etkili görünüyor.`
+      : `${assetName} fiyatında kısa vadeli düzeltme izleniyor. Piyasa haber akışı ve kâr realizasyonu baskı yaratıyor.`;
+
+    let advice = 'Panik satıştan kaçın, volatilite sakinleşene kadar kademeli izlemeye devam et.';
+    if (riskProfile === 'aggressive') {
+      advice = 'Risk profilin agresif: destek bölgelerinde kademeli ekleme düşünülebilir, ama stop disiplinini koru.';
+    } else if (riskProfile === 'conservative') {
+      advice = 'Risk profilin muhafazakar: yeni alım için acele etme, önce dengelenme sinyalini bekle.';
+    }
+
+    setMarketDropInsight({
+      assetName,
+      dropPercent: Math.abs(dropPercent),
+      reason,
+      advice,
+    });
+  }, [onboardingState.riskProfile]);
+
+  const handleNavigateToGoalFromAsset = useCallback((goalKey) => {
+    navigateToPage('dashboard');
+    window.setTimeout(() => {
+      document.getElementById('dashboard-goal-summary')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+  }, [navigateToPage]);
+
+  const handleNavigateToAssetsForGoal = useCallback((goalKey) => {
+    const map = {
+      ev: 'Değerli Maden',
+      araba: 'Döviz',
+      emeklilik: 'Hisse Senedi',
+    };
+
+    navigateToPage('portfolio');
+    setActiveAssetCategory(map[String(goalKey || '').trim()] || 'Tümü');
+  }, [navigateToPage]);
+
   const shouldShowOnboarding = Boolean(authUser)
     && !onboardingState.loading
     && !isPortfolioLoading
     && !onboardingState.hasCompleted
     && (portfolio.length === 0 || !onboardingState.hasPreferenceRecord);
+
+  const weeklySummary = useMemo(() => {
+    const series = Array.isArray(lineChartData) ? lineChartData : [];
+    const latestValue = Number(series[series.length - 1]?.value || dashboardTotalValue || 0);
+    const weekAgoValue = Number(series[Math.max(0, series.length - 8)]?.value || latestValue || 0);
+    const weeklyGain = latestValue - weekAgoValue;
+
+    const topMover = (Array.isArray(portfolio) ? portfolio : [])
+      .map((item) => ({
+        item,
+        change: Number(marketChanges?.[item.symbol]),
+      }))
+      .filter((entry) => Number.isFinite(entry.change))
+      .sort((a, b) => b.change - a.change)[0] || null;
+
+    const riskProfile = String(onboardingState.riskProfile || 'balanced').trim() || 'balanced';
+    const forecast = riskProfile === 'aggressive'
+      ? 'Momentum fırsatlarını kademeli alım stratejisiyle değerlendirmek bu hafta öne çıkıyor.'
+      : (riskProfile === 'conservative'
+        ? 'Koruma odaklı dağılımı sürdürüp güçlü geri çekilmelerde sınırlı ekleme daha sağlıklı görünüyor.'
+        : 'Dengeli risk ile seçici ekleme ve nakit tamponunu birlikte kullanman önerilir.');
+
+    return {
+      weeklyGain,
+      topMoverName: topMover ? String(topMover.item?.name || topMover.item?.symbol || '-') : '-',
+      topMoverPercent: topMover ? Number(topMover.change || 0) : 0,
+      forecast,
+    };
+  }, [lineChartData, dashboardTotalValue, portfolio, marketChanges, onboardingState.riskProfile]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (!authUser?.id || !onboardingState.hasCompleted || shouldShowOnboarding) {
+      return;
+    }
+
+    const weekKey = resolveIsoWeekKey(new Date());
+    const storageKey = `${WEEKLY_FLOW_STORAGE_PREFIX}:${authUser.id}`;
+    const lastSeenKey = String(window.localStorage.getItem(storageKey) || '').trim();
+
+    if (lastSeenKey === weekKey) {
+      return;
+    }
+
+    window.localStorage.setItem(storageKey, weekKey);
+    setWeeklyFlowStep(0);
+    setWeeklyFlowOpen(true);
+  }, [authUser?.id, onboardingState.hasCompleted, shouldShowOnboarding]);
 
   const handleCompleteOnboarding = useCallback(async ({ interests, riskProfile, firstAssetCommand }) => {
     if (!supabase || !authUser?.id) {
@@ -866,6 +1021,7 @@ export default function App() {
   const dashboardContextValue = useMemo(() => ({
     portfolio,
     marketData,
+    marketChanges,
     marketMeta,
     loading,
     portfolioLoading: isPortfolioLoading,
@@ -895,12 +1051,16 @@ export default function App() {
     openAddModal,
     onQuickBuyAsset: handleQuickBuyAsset,
     onIncreaseAsset: increaseAssetHolding,
+    onAnalyzeAssetDrop: handleAnalyzeAssetDrop,
+    onNavigateToGoalFromAsset: handleNavigateToGoalFromAsset,
+    onNavigateToAssetsForGoal: handleNavigateToAssetsForGoal,
     triggerCelebration,
     sellAsset,
     removeAsset,
   }), [
     portfolio,
     marketData,
+    marketChanges,
     marketMeta,
     loading,
     isPortfolioLoading,
@@ -928,6 +1088,9 @@ export default function App() {
     openAddModal,
     handleQuickBuyAsset,
     increaseAssetHolding,
+    handleAnalyzeAssetDrop,
+    handleNavigateToGoalFromAsset,
+    handleNavigateToAssetsForGoal,
     triggerCelebration,
     sellAsset,
     removeAsset,
@@ -1099,6 +1262,7 @@ export default function App() {
                       isPrivacyActive={isPrivacyActive}
                       maskValue={maskValue}
                       isLoading={loading || isPortfolioLoading}
+                      onGoalNavigate={handleNavigateToAssetsForGoal}
                     />
                   </div>
 
@@ -1208,6 +1372,169 @@ export default function App() {
         </div>
       </footer>
 
+      <AnimatePresence>
+        {postPurchaseFlow ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[130] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ y: 16, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 16, opacity: 0, scale: 0.98 }}
+              className="w-full max-w-xl rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-2xl"
+            >
+              <h3 className="text-ui-h2 text-slate-100">Tebrikler! Yeni varlık portföyüne işlendi.</h3>
+              <p className="mt-2 text-ui-body text-slate-300">
+                Portföyün yaklaşık %{postPurchaseFlow.growthPercent.toFixed(1)} büyüdü ve {postPurchaseFlow.categoryLabel} ağırlığın %{postPurchaseFlow.categoryWeightPercent.toFixed(1)} seviyesine çıktı.
+              </p>
+              <p className="mt-1 text-ui-body text-slate-300">
+                {postPurchaseFlow.goalLabel} hedefine yaklaşık {postPurchaseFlow.daysCloser} gün daha yaklaştın. Detayları analiz sayfasında görmek ister misin?
+              </p>
+
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPostPurchaseFlow(null)}
+                  className="rounded-lg border border-slate-700 bg-transparent px-3 py-2 text-ui-body text-slate-300 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:bg-slate-800"
+                >
+                  Sonra
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPostPurchaseFlow(null);
+                    navigateToPage('analysis');
+                  }}
+                  className="rounded-lg border border-violet-300/40 bg-violet-600 px-3 py-2 text-ui-body font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:bg-violet-700"
+                >
+                  Analize Git
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {marketDropInsight ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[131] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ y: 16, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 16, opacity: 0 }}
+              className="w-full max-w-xl rounded-2xl border border-white/10 bg-slate-950/95 p-5 shadow-2xl"
+            >
+              <h3 className="text-ui-h2 text-slate-100">AI Düşüş Analizi: {marketDropInsight.assetName}</h3>
+              <p className="mt-1 text-ui-body text-rose-300">Günlük düşüş: %{marketDropInsight.dropPercent.toFixed(2)}</p>
+              <p className="mt-3 text-ui-body text-slate-300">{marketDropInsight.reason}</p>
+              <p className="mt-2 text-ui-body font-semibold text-emerald-300">Öneri: {marketDropInsight.advice}</p>
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setMarketDropInsight(null)}
+                  className="rounded-lg border border-slate-700 bg-transparent px-3 py-2 text-ui-body text-slate-300 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:bg-slate-800"
+                >
+                  Kapat
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {weeklyFlowOpen ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[132] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ y: 16, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 16, opacity: 0, scale: 0.98 }}
+              className="w-full max-w-2xl rounded-2xl border border-white/10 bg-slate-950/95 p-6 shadow-2xl"
+            >
+              {weeklyFlowStep === 0 ? (
+                <>
+                  <h3 className="text-ui-h2 text-slate-100">Haftalık Özet</h3>
+                  <p className="mt-2 text-ui-body text-slate-300">Geçen hafta net değişimin {weeklySummary.weeklyGain.toLocaleString('tr-TR', { maximumFractionDigits: 2 })} oldu.</p>
+                </>
+              ) : null}
+
+              {weeklyFlowStep === 1 ? (
+                <>
+                  <h3 className="text-ui-h2 text-slate-100">En Çok Yükselen</h3>
+                  <p className="mt-2 text-ui-body text-slate-300">{weeklySummary.topMoverName} haftayı %{weeklySummary.topMoverPercent.toFixed(2)} değişimle kapattı.</p>
+                </>
+              ) : null}
+
+              {weeklyFlowStep === 2 ? (
+                <>
+                  <h3 className="text-ui-h2 text-slate-100">AI Tahmini</h3>
+                  <p className="mt-2 text-ui-body text-slate-300">{weeklySummary.forecast}</p>
+                </>
+              ) : null}
+
+              {weeklyFlowStep === 3 ? (
+                <>
+                  <h3 className="text-ui-h2 text-slate-100">Bu Haftanın İlk Adımı</h3>
+                  <p className="mt-2 text-ui-body text-slate-300">Hadi bu haftaki ilk yatırımını gir ve ivmeyi koru.</p>
+                </>
+              ) : null}
+
+              <div className="mt-5 flex justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (weeklyFlowStep === 0) {
+                      setWeeklyFlowOpen(false);
+                      return;
+                    }
+
+                    setWeeklyFlowStep((prev) => Math.max(0, prev - 1));
+                  }}
+                  className="rounded-lg border border-slate-700 bg-transparent px-3 py-2 text-ui-body text-slate-300 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:bg-slate-800"
+                >
+                  {weeklyFlowStep === 0 ? 'Kapat' : 'Geri'}
+                </button>
+
+                {weeklyFlowStep < 3 ? (
+                  <button
+                    type="button"
+                    onClick={() => setWeeklyFlowStep((prev) => Math.min(3, prev + 1))}
+                    className="rounded-lg border border-violet-300/40 bg-violet-600 px-3 py-2 text-ui-body font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:bg-violet-700"
+                  >
+                    Devam
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWeeklyFlowOpen(false);
+                      openAddModal();
+                    }}
+                    className="rounded-lg border border-emerald-300/35 bg-emerald-600 px-3 py-2 text-ui-body font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:bg-emerald-700"
+                  >
+                    Hadi Bu Haftaki İlk Yatırımını Gir
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
       <AlertDrawer
         isOpen={isAlertDrawerOpen}
         onClose={handleCloseAlertDrawer}
@@ -1235,7 +1562,7 @@ export default function App() {
           editingAssetId={editingAssetId}
           initialData={editingAssetData}
           mode={assetModalMode}
-          onAdd={addAsset}
+          onAdd={handleAddAssetWithFlow}
           onUpdate={updateAsset}
           portfolioNameOptions={portfolioNameOptions}
           initialPortfolioName={initialPortfolioName}
