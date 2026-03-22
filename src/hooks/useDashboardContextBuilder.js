@@ -39,6 +39,7 @@ export function useDashboardContextBuilder(params) {
     triggerCelebration,
     sellAsset,
     removeAsset,
+    activePage,
   } = params;
 
   const dashboardContextValue = useMemo(() => ({
@@ -80,6 +81,7 @@ export function useDashboardContextBuilder(params) {
     triggerCelebration,
     sellAsset,
     removeAsset,
+    activePage,
   }), [
     portfolio,
     marketData,
@@ -117,6 +119,7 @@ export function useDashboardContextBuilder(params) {
     triggerCelebration,
     sellAsset,
     removeAsset,
+    activePage,
   ]);
 
   const portfolioDistribution = useMemo(() => {

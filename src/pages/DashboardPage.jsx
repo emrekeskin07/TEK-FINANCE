@@ -1,5 +1,4 @@
 import React from 'react';
-import { DashboardProvider } from '../context/DashboardContext';
 import DashboardSkeleton from '../components/dashboard/DashboardSkeleton';
 import KpiRibbon from '../components/dashboard/KpiRibbon';
 import AiAssistantBrief from '../components/dashboard/AiAssistantBrief';
@@ -25,17 +24,18 @@ export default function DashboardPage({
   isPortfolioLoading,
   setIsCommandBarVisible,
   aiCommandBarRef,
+  activeAssetCategory,
+  setActiveAssetCategory,
 }) {
   if (showInitialDashboardSkeleton) {
     return <DashboardSkeleton />;
   }
 
   return (
-    <DashboardProvider value={dashboardContextValue}>
-      <div className="relative grid grid-cols-1 gap-5 p-3 sm:p-4 md:grid-cols-12 md:gap-7 md:p-8">
-        <div id="dashboard-goal-summary" className="col-span-12">
-          <KpiRibbon
-            dashboardTotalValue={dashboardTotalValue}
+    <div className="relative grid grid-cols-1 gap-5 p-3 sm:p-4 md:grid-cols-12 md:gap-7 md:p-8">
+      <div id="dashboard-goal-summary" className="col-span-12">
+        <KpiRibbon
+          dashboardTotalValue={dashboardTotalValue}
             totalProfit={totalProfit}
             profitPercentage={Number(profitPercentage || 0)}
             baseCurrency={baseCurrency}
@@ -75,7 +75,10 @@ export default function DashboardPage({
               <DistributionCard />
             </div>
 
-            <AssetList />
+            <AssetList
+              activeAssetCategory={activeAssetCategory}
+              setActiveAssetCategory={setActiveAssetCategory}
+            />
           </>
         )}
 
@@ -89,6 +92,5 @@ export default function DashboardPage({
           </div>
         ) : null}
       </div>
-    </DashboardProvider>
   );
 }

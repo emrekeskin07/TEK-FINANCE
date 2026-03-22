@@ -41,7 +41,10 @@ export function useAppNavigation({
 
   const handleSidebarNavigate = useCallback((nextPage) => {
     navigateToPage(nextPage);
-    setIsSidebarOpen(false);
+    // Sadece mobilde sidebar'ı kapat
+    if (window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+    }
   }, [navigateToPage, setIsSidebarOpen]);
 
   const handleHeaderSearchNavigate = useCallback((queryText) => {

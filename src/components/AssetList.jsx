@@ -5,7 +5,7 @@ import { useDashboardData } from '../context/DashboardContext';
 import { resolveAssetLivePrice, unitTypeToLabel } from '../utils/assetPricing';
 import { exportPortfolioReportExcelCsv, exportPortfolioReportPdf } from '../utils/reportExport';
 
-export default function AssetList() {
+export default function AssetList({ activeAssetCategory, setActiveAssetCategory }) {
   const {
     portfolio,
     marketData,
