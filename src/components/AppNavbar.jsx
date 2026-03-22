@@ -30,7 +30,7 @@ export default function AppNavbar({
 
   return (
     <div className="sticky top-0 z-40 bg-slate-900/60 backdrop-blur-3xl border-b border-white/5 transition-all duration-300">
-      <header className="flex h-16 sm:h-20 max-w-[1400px] mx-auto items-center justify-between px-4 md:px-8 gap-4">
+      <header className="flex h-16 sm:h-20 w-full items-center justify-between px-4 md:px-8 gap-4">
         <div className="flex shrink-0 items-center gap-3">
           <div className="h-9 w-9 overflow-hidden rounded-xl border border-primary/35 bg-primary/20 shadow-lg">
             <img src="/pwa-192x192.png" alt="TEK Finans logo" className="h-full w-full object-cover" />

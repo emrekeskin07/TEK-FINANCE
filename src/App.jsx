@@ -500,7 +500,7 @@ export default function App() {
           onQuickAddAsset={handleQuickAddFromPriceResult}
         />
 
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 md:px-8 md:py-8 space-y-6">
+        <main className="flex-1 w-full px-4 py-6 md:px-8 lg:px-10 md:py-8 space-y-6">
           <section>
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -612,7 +612,7 @@ export default function App() {
         </Routes>
       </main>
 
-      <footer className="w-full max-w-7xl mx-auto mt-8 px-4 md:px-8">
+      <footer className="w-full mt-8 px-4 md:px-8 lg:px-10">
         <div className="rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3">
           <p className="inline-flex items-start gap-2 text-xs text-amber-100">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-200" />
