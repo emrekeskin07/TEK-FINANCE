@@ -414,7 +414,7 @@ export default function EnflasyonAnaliziPage({
         <div className="mt-6 grid grid-cols-1 gap-5 xl:grid-cols-12">
           <div className="relative h-[320px] min-h-[320px] min-w-0 rounded-2xl border border-white/5 bg-slate-900/40 p-3 backdrop-blur-xl xl:col-span-8">
             {chartReady && filteredTimeline.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <AreaChart data={filteredTimeline} margin={{ top: 14, right: 16, left: 0, bottom: 8 }}>
                   <defs>
                     <linearGradient id="inflationNominalFill" x1="0" y1="0" x2="0" y2="1">

@@ -248,7 +248,7 @@ export default function GrowthChart() {
             </div>
           </div>
         ) : isReady && chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%" aspect={isCompactScreen ? 1 : undefined}>
+          <ResponsiveContainer width="100%" height="100%" aspect={isCompactScreen ? 1 : undefined} minWidth={0} minHeight={0}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(203,213,225,0.2)" vertical={false} />
               <XAxis

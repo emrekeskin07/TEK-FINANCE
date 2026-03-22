@@ -350,7 +350,7 @@ export default function BankTotals({
               className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-4"
             >
               <div className="relative h-[250px] w-full shrink-0 xl:h-[280px] xl:w-[52%]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <PieChart>
                     <Pie
                       data={chartData}

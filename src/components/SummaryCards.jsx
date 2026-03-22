@@ -708,7 +708,7 @@ export default function SummaryCards({
           <div ref={pieChartContainerRef} className="h-[280px] sm:h-[320px] md:h-[360px] w-full min-w-0 min-h-[280px] relative">
             {activePieData.length > 0 && canRenderPieChart ? (
               <>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <PieChart>
                   <defs>
                     <filter id="activeSliceShadowBlur" x="-50%" y="-50%" width="220%" height="220%">
@@ -802,7 +802,7 @@ export default function SummaryCards({
           </h3>
           <div ref={areaChartContainerRef} className="h-[260px] sm:h-[320px] md:h-[360px] w-full min-w-0 min-h-[260px] relative">
             {canRenderAreaChart ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <AreaChart data={safeLineChartData}>
                 <defs>
                   <linearGradient id="portfolioFlowGradient" x1="0" y1="0" x2="0" y2="1">
