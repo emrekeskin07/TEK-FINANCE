@@ -96,7 +96,8 @@ function SidebarContent({ activePage, isCollapsed, onNavigate, onToggleCollapse,
 }
 
 export default function SidebarMenu({
-  activePage,
+  activeTab,
+  setActiveTab,
   isCollapsed,
   isMobileOpen,
   onToggleCollapse,
@@ -109,9 +110,9 @@ export default function SidebarMenu({
     <>
       <aside className={`fixed left-0 top-0 z-40 hidden h-screen border-r border-white/10 bg-slate-950/90 p-4 shadow-[0_20px_60px_rgba(2,6,23,0.65)] backdrop-blur-xl lg:flex lg:flex-col ${isCollapsed ? 'w-[86px]' : 'w-[272px]'}`}>
         <SidebarContent
-          activePage={activePage}
+          activePage={activeTab}
           isCollapsed={isCollapsed}
-          onNavigate={onNavigate}
+          onNavigate={onNavigate || setActiveTab}
           onToggleCollapse={onToggleCollapse}
           user={user}
           onSignOut={onSignOut}
@@ -138,7 +139,7 @@ export default function SidebarMenu({
               className="fixed left-0 top-0 z-[95] flex h-screen w-[286px] flex-col border-r border-white/10 bg-slate-950/95 p-4 shadow-[0_28px_90px_rgba(2,6,23,0.72)] backdrop-blur-2xl lg:hidden"
             >
               <SidebarContent
-                activePage={activePage}
+                activePage={activeTab}
                 isCollapsed={false}
                 onNavigate={(page) => {
                   onNavigate(page);
@@ -157,7 +158,7 @@ export default function SidebarMenu({
 }
 
 SidebarMenu.propTypes = {
-  activePage: PropTypes.string.isRequired,
+  activeTab: PropTypes.string.isRequired,
   isCollapsed: PropTypes.bool,
   isMobileOpen: PropTypes.bool,
   onToggleCollapse: PropTypes.func,
