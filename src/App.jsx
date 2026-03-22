@@ -434,14 +434,14 @@ export default function App() {
 
   return (
     <SyncContext.Provider value={{ lastSyncTime, setLastSyncTime }}>
-    <div className={`relative min-h-screen overflow-hidden bg-page text-text-main font-sans px-4 py-5 md:px-8 md:py-8 xl:px-10 xl:py-10 ${isPrivacyActive ? 'privacy-mode' : ''} ${isPrivacyTransitioning ? 'privacy-transitioning' : ''}`}>
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-24 -top-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute right-0 top-16 h-80 w-80 rounded-full bg-secondary/16 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-accent/14 blur-3xl" />
+    <div className={`flex w-full min-h-screen bg-page text-text-main font-sans ${isPrivacyActive ? 'privacy-mode' : ''} ${isPrivacyTransitioning ? 'privacy-transitioning' : ''}`}>
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -left-24 -top-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl opacity-60" />
+        <div className="absolute right-0 top-16 h-80 w-80 rounded-full bg-secondary/16 blur-3xl opacity-60" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-accent/14 blur-3xl opacity-60" />
       </div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 flex w-full">
       {showAthCelebration && activePage === 'dashboard' ? (
         <Confetti
           width={viewportSize.width}
@@ -487,20 +487,21 @@ export default function App() {
         onSignOut={handleSignOut}
       />
 
-      <AppNavbar
-        isSidebarCollapsed={isSidebarCollapsed}
-        user={authUser}
-        onSignOut={handleSignOut}
-        onOpenSettings={() => navigateToPage('ayarlar')}
-        isPrivacyActive={isPrivacyActive}
-        onTogglePrivacy={handleTogglePrivacyMode}
-        aiCommandBarRef={aiCommandBarRef}
-        onExecuteAiCommand={handleExecuteAiCommand}
-        onQuickAddAsset={handleQuickAddFromPriceResult}
-      />
+      <div className={`flex-1 flex flex-col w-full min-w-0 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
+        <AppNavbar
+          isSidebarCollapsed={isSidebarCollapsed}
+          user={authUser}
+          onSignOut={handleSignOut}
+          onOpenSettings={() => navigateToPage('ayarlar')}
+          isPrivacyActive={isPrivacyActive}
+          onTogglePrivacy={handleTogglePrivacyMode}
+          aiCommandBarRef={aiCommandBarRef}
+          onExecuteAiCommand={handleExecuteAiCommand}
+          onQuickAddAsset={handleQuickAddFromPriceResult}
+        />
 
-      <main className={`mx-auto max-w-[1400px] space-y-6 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
-        <section className="px-3 pt-1 sm:px-4 md:px-8">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 md:px-8 md:py-8 space-y-6">
+          <section>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-ui-body text-slate-400">Ana Sayfa &gt; {pageMeta.crumb}</p>
@@ -611,7 +612,7 @@ export default function App() {
         </Routes>
       </main>
 
-      <footer className={`mx-auto mt-8 max-w-[1400px] transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-[86px]' : 'lg:ml-[272px]'}`}>
+      <footer className="w-full max-w-7xl mx-auto mt-8 px-4 md:px-8">
         <div className="rounded-xl border border-amber-300/25 bg-amber-500/10 px-4 py-3">
           <p className="inline-flex items-start gap-2 text-xs text-amber-100">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-200" />
@@ -682,6 +683,7 @@ export default function App() {
           initialPortfolioName={initialPortfolioName}
         />
       ) : null}
+      </div>
       </div>
     </div>
     </SyncContext.Provider>

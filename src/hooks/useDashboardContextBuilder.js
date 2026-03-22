@@ -135,7 +135,7 @@ export function useDashboardContextBuilder(params) {
       value: Number(item.value.toFixed(2)),
       percent: Number(((item.value / grandTotal) * 100).toFixed(2)),
     }));
-  }, [categoryTotals]);
+  }, [categoryTotals, portfolio, marketData, rates]);
 
   return { dashboardContextValue, portfolioDistribution };
 }
